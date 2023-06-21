@@ -99,7 +99,7 @@ resource "oci_core_instance" "this" {
 
 locals {
   linux_boot_volumes  = [for instance in var.instances_configuration["instances"] : instance.boot_volume_size >= 50 ? null : file(format("\n\nERROR: The boot volume size for linux instance %s is less than 50GB which is not permitted. Please add a boot volume size of 50GB or more", instance.hostname))]
-  linux_block_volumes = var.storage_configuration["block_volumes"] != null ? [for block in var.storage_configuration["block_volumes"] : block.block_volume_size >= 50 && block.block_volume_size <= 32768 ? null : file(format("\n\nERROR: Block volume size %s for block volume %s should be between 50GB and 32768GB", block.block_volume_size, block.display_name))] : null
+  linux_block_volumes = var.storage_configuration != null ? (var.storage_configuration["block_volumes"] != null ? [for block in var.storage_configuration["block_volumes"] : block.block_volume_size >= 50 && block.block_volume_size <= 32768 ? null : file(format("\n\nERROR: Block volume size %s for block volume %s should be between 50GB and 32768GB", block.block_volume_size, block.display_name))] : null) : null
 }
 
 data "template_file" "block_volumes_templates" {
@@ -127,12 +127,12 @@ data "template_cloudinit_config" "config" {
 }
 
 data "oci_identity_availability_domains" "bv_ads" {
-  for_each       = var.storage_configuration["block_volumes"] != null ? var.storage_configuration["block_volumes"] : {}
+  for_each       = var.storage_configuration != null ? (var.storage_configuration["block_volumes"] != null ? var.storage_configuration["block_volumes"] : {}) : {}
   compartment_id = each.value.compartment_ocid != null ? each.value.compartment_ocid : var.storage_configuration.default_compartment_ocid
 }
 
 resource "oci_core_volume" "block" {
-  for_each            = var.storage_configuration["block_volumes"] != null ? var.storage_configuration["block_volumes"] : {}
+  for_each            = var.storage_configuration != null ? (var.storage_configuration["block_volumes"] != null ? var.storage_configuration["block_volumes"] : {}) : {}
   availability_domain = data.oci_identity_availability_domains.bv_ads[each.value.block_volume_name].availability_domains[each.value.availability_domain - 1].name
   compartment_id      = each.value.compartment_ocid != null ? each.value.compartment_ocid : var.storage_configuration.default_compartment_ocid
   display_name        = each.value.block_volume_name
@@ -144,7 +144,7 @@ resource "oci_core_volume" "block" {
 }
 
 resource "oci_core_volume_attachment" "attachment" {
-  for_each                            = var.storage_configuration["block_volumes"] != null ? [for bv in var.storage_configuration["block_volumes"] : bv.attach_to_instance != null ? var.storage_configuration["block_volumes"] : {}][0] : null
+  for_each                            = var.storage_configuration != null ? (var.storage_configuration["block_volumes"] != null ? [for bv in var.storage_configuration["block_volumes"] : bv.attach_to_instance != null ? var.storage_configuration["block_volumes"] : {}][0] : null) : {}
   attachment_type                     = var.instances_configuration["instances"][each.value.attach_to_instance.instance_key].attached_storage.block_volume_attachment_type
   instance_id                         = oci_core_instance.this[each.value.attach_to_instance.instance_key].id
   volume_id                           = oci_core_volume.block[each.value.block_volume_name].id
@@ -153,12 +153,12 @@ resource "oci_core_volume_attachment" "attachment" {
 }
 
 data "oci_identity_availability_domains" "fs_ads" {
-  for_each       = var.storage_configuration["file_storage"]["file_system"] != null ? var.storage_configuration["file_storage"]["file_system"] : {}
+  for_each       = var.storage_configuration != null ? (var.storage_configuration["file_storage"]["file_system"] != null ? var.storage_configuration["file_storage"]["file_system"] : {}) : {}
   compartment_id = each.value.compartment_ocid != null ? each.value.compartment_ocid : var.storage_configuration.default_compartment_ocid
 }
 
 resource "oci_file_storage_file_system" "this" {
-  for_each            = var.storage_configuration["file_storage"]["file_system"] != null ? var.storage_configuration["file_storage"]["file_system"] : {}
+  for_each            = var.storage_configuration != null ? (var.storage_configuration["file_storage"]["file_system"] != null ? var.storage_configuration["file_storage"]["file_system"] : {}) : {}
   availability_domain = data.oci_identity_availability_domains.fs_ads[each.value.file_system_name].availability_domains[each.value.availability_domain - 1].name
   compartment_id      = each.value.compartment_ocid != null ? each.value.compartment_ocid : var.storage_configuration.default_compartment_ocid
   display_name        = each.value.file_system_name
@@ -166,12 +166,12 @@ resource "oci_file_storage_file_system" "this" {
 }
 
 data "oci_identity_availability_domains" "mt_ads" {
-  for_each       = var.storage_configuration["file_storage"]["mount_target"] != null ? var.storage_configuration["file_storage"]["mount_target"] : {}
+  for_each       = var.storage_configuration != null ? (var.storage_configuration["file_storage"]["mount_target"] != null ? var.storage_configuration["file_storage"]["mount_target"] : {}) : {}
   compartment_id = each.value.compartment_ocid != null ? each.value.compartment_ocid : var.storage_configuration.default_compartment_ocid
 }
 
 resource "oci_file_storage_mount_target" "this" {
-  for_each            = var.storage_configuration["file_storage"]["mount_target"] != null ? var.storage_configuration["file_storage"]["mount_target"] : {}
+  for_each            = var.storage_configuration != null ? (var.storage_configuration["file_storage"]["mount_target"] != null ? var.storage_configuration["file_storage"]["mount_target"] : {}) : {}
   availability_domain = data.oci_identity_availability_domains.mt_ads[each.value.mount_target_name].availability_domains[each.value.availability_domain - 1].name
   display_name        = each.value.mount_target_name
   compartment_id      = each.value.compartment_ocid != null ? each.value.compartment_ocid : var.storage_configuration.default_compartment_ocid
@@ -180,14 +180,14 @@ resource "oci_file_storage_mount_target" "this" {
 
 
 resource "oci_file_storage_export_set" "this" {
-  for_each        = var.storage_configuration["file_storage"]["mount_target"] != null ? var.storage_configuration["file_storage"]["mount_target"] : {}
+  for_each        = var.storage_configuration != null ? (var.storage_configuration["file_storage"]["mount_target"] != null ? var.storage_configuration["file_storage"]["mount_target"] : {}) : {}
   mount_target_id = oci_file_storage_mount_target.this[each.key].id
   display_name    = each.value.mount_target_name
 }
 
 
 resource "oci_file_storage_export" "this" {
-  for_each       = var.storage_configuration["file_storage"]["export"] != null ? var.storage_configuration["file_storage"]["export"] : {}
+  for_each       = var.storage_configuration != null ? (var.storage_configuration["file_storage"]["export"] != null ? var.storage_configuration["file_storage"]["export"] : {}) : {}
   export_set_id  = oci_file_storage_export_set.this[each.value.mount_target_key].id
   file_system_id = oci_file_storage_file_system.this[each.value.filesystem_key].id
   path           = each.value.path
