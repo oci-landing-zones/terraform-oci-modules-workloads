@@ -140,7 +140,7 @@ resource "oci_core_volume" "block" {
   defined_tags        = each.value.defined_tags != null ? each.value.defined_tags : var.storage_configuration.default_defined_tags
   freeform_tags       = merge(local.cislz_module_tag, each.value.freeform_tags != null ? each.value.freeform_tags : var.storage_configuration.default_freeform_tags)
   vpus_per_gb         = each.value.vpus_per_gb
-  kms_key_id          = coalesce(var.instances_configuration.default_cis_level,"1") == "2" ? (each.value.kms_key_id != null ? each.value.kms_key_id : var.storage_configuration.default_kms_key_ocid != null ? var.storage_configuration.default_kms_key_ocid : try(substr(var.storage_configuration.default_kms_key_ocid, 0, 0))) : each.value.kms_key_id
+  kms_key_id          = coalesce(var.storage_configuration.default_cis_level,"1") == "2" ? (each.value.kms_key_id != null ? each.value.kms_key_id : var.storage_configuration.default_kms_key_ocid != null ? var.storage_configuration.default_kms_key_ocid : try(substr(var.storage_configuration.default_kms_key_ocid, 0, 0))) : each.value.kms_key_id
 }
 
 resource "oci_core_volume_attachment" "attachment" {
@@ -162,7 +162,7 @@ resource "oci_file_storage_file_system" "this" {
   availability_domain = data.oci_identity_availability_domains.fs_ads[each.value.file_system_name].availability_domains[each.value.availability_domain - 1].name
   compartment_id      = each.value.compartment_ocid != null ? each.value.compartment_ocid : var.storage_configuration.default_compartment_ocid
   display_name        = each.value.file_system_name
-  kms_key_id          = coalesce(var.instances_configuration.default_cis_level,"1") == "2" ? (each.value.kms_key_id != null ? each.value.kms_key_id : var.storage_configuration.default_kms_key_ocid != null ? var.storage_configuration.default_kms_key_ocid : try(substr(var.storage_configuration.default_kms_key_ocid, 0, 0))) : each.value.kms_key_id
+  kms_key_id          = coalesce(var.storage_configuration.default_cis_level,"1") == "2" ? (each.value.kms_key_id != null ? each.value.kms_key_id : var.storage_configuration.default_kms_key_ocid != null ? var.storage_configuration.default_kms_key_ocid : try(substr(var.storage_configuration.default_kms_key_ocid, 0, 0))) : each.value.kms_key_id
 }
 
 data "oci_identity_availability_domains" "mt_ads" {

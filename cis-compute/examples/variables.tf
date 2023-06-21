@@ -60,6 +60,7 @@ variable "storage_configuration" {
     default_freeform_tags    = optional(map(string)), # the default freeform tags. It's overriden by the frreform_tags attribute within each object.
     default_kms_key_ocid     = optional(string),      # the default kms key to assign as the master encryption key. It's overriden by the kms_key_id attribute within each object.
     default_subnet_ocid      = optional(string),      # the default subnet used for file system mount target. It's overriden by the subnet_ocid attribute within each mount_targe object.
+    default_cis_level        = optional(string)       # The CIS OCI Benchmark profile level. Level "1" is be practical and prudent. Level "2" is intended for environments where security is more critical than manageability and usability. Default is "1".
 
     block_volumes = optional(map(object({    # the block volumes to manage in this configuration.
       compartment_ocid    = optional(string) # the compartment where the block volume is created. default_compartment_ocid is used if this is not defined.
