@@ -3,15 +3,15 @@
 
 output "instances" {
   description = "The Compute instances"
-  value       = var.enable_output ? oci_core_instance.this : null
+  value       = var.enable_output ? oci_core_instance.these : null
 }
 
 output "block_volumes" {
   description = "The block volumes"
-  value       = var.enable_output ? oci_core_volume.block : null
+  value       = var.enable_output ? oci_core_volume.these : null
 }
 
 output "file_systems" {
   description = "The file systems"
-  value       = var.enable_output ? oci_file_storage_file_system.this : null
+  value       = var.enable_output ? oci_file_storage_file_system.these : null
 }

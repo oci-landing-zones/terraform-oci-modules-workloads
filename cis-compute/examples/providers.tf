@@ -10,6 +10,16 @@ provider "oci" {
   private_key_password = var.private_key_password
 }
 
+provider "oci" {
+  alias                = "replication_region"
+  region               = var.replication_region != null ? var.replication_region : var.region
+  tenancy_ocid         = var.tenancy_ocid
+  user_ocid            = var.user_ocid
+  fingerprint          = var.fingerprint
+  private_key_path     = var.private_key_path
+  private_key_password = var.private_key_password
+}
+
 terraform {
    required_providers {
      oci = {
