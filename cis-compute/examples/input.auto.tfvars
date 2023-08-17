@@ -122,13 +122,6 @@ storage_configuration = {
         }
       }
     }
-    /* export = {
-      EXP-1 = {
-        filesystem_key = "FS-1"
-        mount_target_key = "MT-1"
-        path = "/andre"
-      }
-    } */
   } 
 }
 
