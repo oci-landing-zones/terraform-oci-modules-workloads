@@ -8,7 +8,7 @@ variable "fingerprint" { default = "" }
 variable "private_key_path" { default = "" }
 variable "private_key_password" { default = "" }
 
-variable "replication_region" { 
+variable "block_volumes_replication_region" { 
   description = "The replication region for block volumes. Leave unset if replication occurs to an availability domain within the block volume region."
   default = null
 }
@@ -64,6 +64,7 @@ variable "instances_configuration" {
       freeform_tags = optional(map(string)) # instances freeform_tags. default_freeform_tags is used if this is not defined.
     }))
   })
+  default = null
 }
 
 variable "storage_configuration" {
@@ -92,21 +93,30 @@ variable "storage_configuration" {
         kms_key_id              = optional(string) # the KMS key to assign as the master encryption key. default_kms_key_id is used if this is not defined.
         encrypt_in_transit      = optional(bool,true)  # whether the block volume should encrypt traffic. Works only with paravirtualized attachment type. Default is true.
       }))
-      backup_policy = optional(string)      # the Oracle managed backup policy. Valid values: "gold", "silver", "bronze". 
-      replication_availability_domain = optional(number) # the availability domain (AD) to replicate the volume. The AD is picked from the region specified by 'replication_region' variable if defined. Otherwise picked the region specified by 'region' variable.
+      replication = optional(object({ # replication settings
+        availability_domain = number # the availability domain (AD) to replicate the volume. The AD is picked from the region specified by 'block_volumes_replication_region' variable if defined. Otherwise picked from the region specified by 'region' variable.
+      }))
+      backup_policy = optional(string)      # the Oracle managed backup policy. Valid values: "gold", "silver", "bronze". Case insensitive.
       defined_tags  = optional(map(string)) # block volume defined_tags. default_defined_tags is used if this is not defined.
       freeform_tags = optional(map(string)) # block volume freeform_tags. default_freeform_tags is used if this is not defined.
     }))),
 
     file_storage = optional(object({ # file storage settings.
-      file_system = map(object({     # the file systems.
+      file_systems = map(object({     # the file systems.
         cis_level           = optional(string)
         compartment_id      = optional(string) # the file system compartment. default_compartment_id is used if this is not defined.
         file_system_name    = string           # the file_system name.
         availability_domain = optional(number,1)  # the file system availability domain..   
         kms_key_id          = optional(string) # the KMS key to assign as the master encryption key. default_kms_key_id is used if this is not defined.
+        replication         = optional(object({ # replication settings
+          file_system_target_id = string  # the file system replication target. It must be an existing unexported file system, in the same or in a different region than the source file system.
+          interval_in_minutes = optional(number,60) # time interval (in minutes) between replication snapshots. Default is 60 minutes.
+        }))
+        snapshot_policy_id = optional(string) # the snapshot policy 
+        defined_tags  = optional(map(string)) # file system defined_tags. default_defined_tags is used if this is not defined.
+        freeform_tags = optional(map(string)) # file system freeform_tags. default_freeform_tags is used if this is not defined.
       }))
-      mount_target = map(object({ # the mount targets.
+      mount_targets = map(object({ # the mount targets.
         compartment_id      = optional(string) # the mount target compartment. default_compartment_id is used if this is not defined.
         mount_target_name   = string           # the mount target and export set name.
         availability_domain = optional(number,1) # the mount target availability domain.  
@@ -122,6 +132,26 @@ variable "storage_configuration" {
           })))
         })))
       }))
+      snapshot_policies = optional(map(object({
+        name = string
+        compartment_id = optional(string)
+        availability_domain = optional(number,1)
+        prefix = optional(string)
+        schedules = optional(list(object({
+          period = string # "DAILY", "WEEKLY", "MONTHLY", "YEARLY"
+          prefix = optional(string)
+          time_zone = optional(string,"UTC")
+          hour_of_day = optional(number,23)
+          day_of_week = optional(string)
+          day_of_month = optional(number)
+          month = optional(string)
+          retention_in_seconds = optional(number)
+          start_time = optional(string)
+        })))
+        defined_tags  = optional(map(string)) # snapshot policy defined_tags. default_defined_tags is used if this is not defined.
+        freeform_tags = optional(map(string)) # snapshot policy freeform_tags. default_freeform_tags is used if this is not defined.
+      })))
     }))
   })
+  default = null
 }

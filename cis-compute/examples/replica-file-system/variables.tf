@@ -1,5 +1,17 @@
-# Copyright (c) 2023, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2023 Oracle and/or its affiliates.
 # Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
+
+variable "tenancy_ocid" {}
+variable "region" { description = "Your tenancy region" }
+variable "user_ocid" { default = "" }
+variable "fingerprint" { default = "" }
+variable "private_key_path" { default = "" }
+variable "private_key_password" { default = "" }
+
+variable "replication_region" { 
+  description = "The replication region for block volumes and file systems. Leave unset if replication occurs within the same source region."
+  default = null
+}
 
 variable "instances_configuration" {
   description = "Compute instances configuration attributes."
@@ -31,7 +43,7 @@ variable "instances_configuration" {
         preserve_on_instance_deletion = optional(bool,true) # whether to preserve boot volume after deletion. Default is true.
       }))
       attached_storage = optional(object({ # storage settings. Attributes required by the cloud init script to attach block volumes.
-        device_disk_mappings = optional(string) # device mappings to mount block volumes. If providing multiple mapping, separate the mappings with a blank space.
+        device_disk_mappings = optional(string) # device mappings to mount block volumes.
         attachment_type = optional(string) # the type of attachment for block volumes.
       }))
       networking = optional(object({ # networking settings
@@ -58,6 +70,7 @@ variable "instances_configuration" {
 variable "storage_configuration" {
   description = "Storage configuration attributes."
   type = object({
+
     default_compartment_id   = optional(string),      # the default compartment where all resources are defined. It's overriden by the compartment_id attribute within each object.
     default_kms_key_id       = optional(string),      # the default KMS key to assign as the master encryption key. It's overriden by the kms_key_id attribute within each object.
     default_subnet_id        = optional(string),      # the default subnet used for all file system mount targets. It's overriden by the subnet_id attribute within each mount_target object.
@@ -80,16 +93,14 @@ variable "storage_configuration" {
         kms_key_id              = optional(string) # the KMS key to assign as the master encryption key. default_kms_key_id is used if this is not defined.
         encrypt_in_transit      = optional(bool,true)  # whether the block volume should encrypt traffic. Works only with paravirtualized attachment type. Default is true.
       }))
-      replication = optional(object({ # replication settings
-        availability_domain = number # the availability domain (AD) to replicate the volume. The AD is picked from the region specified by 'block_volumes_replication_region' variable if defined. Otherwise picked from the region specified by 'region' variable.
-      }))
-      backup_policy = optional(string)      # the Oracle managed backup policy. Valid values: "gold", "silver", "bronze".   
+      backup_policy = optional(string)      # the Oracle managed backup policy. Valid values: "gold", "silver", "bronze". 
+      replication_availability_domain = optional(number) # the availability domain (AD) to replicate the volume. The AD is picked from the region specified by 'replication_region' variable if defined. Otherwise picked from the region specified by 'region' variable.
       defined_tags  = optional(map(string)) # block volume defined_tags. default_defined_tags is used if this is not defined.
       freeform_tags = optional(map(string)) # block volume freeform_tags. default_freeform_tags is used if this is not defined.
     }))),
 
     file_storage = optional(object({ # file storage settings.
-      file_systems = map(object({     # the file systems.
+      file_system = map(object({     # the file systems.
         cis_level           = optional(string)
         compartment_id      = optional(string) # the file system compartment. default_compartment_id is used if this is not defined.
         file_system_name    = string           # the file_system name.
@@ -99,11 +110,10 @@ variable "storage_configuration" {
           file_system_target_id = string  # the file system replication target. It must be an existing unexported file system, in the same or in a different region than the source file system.
           interval_in_minutes = optional(number,60) # time interval (in minutes) between replication snapshots. Default is 60 minutes.
         })) 
-        snapshot_policy_id = optional(string) # the snapshot policy
         defined_tags  = optional(map(string)) # file system defined_tags. default_defined_tags is used if this is not defined.
         freeform_tags = optional(map(string)) # file system freeform_tags. default_freeform_tags is used if this is not defined.
       }))
-      mount_targets = optional(map(object({ # the mount targets.
+      mount_target = optional(map(object({ # the mount targets.
         compartment_id      = optional(string) # the mount target compartment. default_compartment_id is used if this is not defined.
         mount_target_name   = string           # the mount target and export set name.
         availability_domain = optional(number,1) # the mount target availability domain.  
@@ -119,64 +129,7 @@ variable "storage_configuration" {
           })))
         })))
       })))
-      snapshot_policies = optional(map(object({
-        name = string
-        compartment_id = optional(string)
-        availability_domain = optional(number,1)
-        prefix = optional(string)
-        schedules = optional(list(object({
-          period = string # "DAILY", "WEEKLY", "MONTHLY", "YEARLY"
-          prefix = optional(string)
-          time_zone = optional(string,"UTC")
-          hour_of_day = optional(number,23)
-          day_of_week = optional(string)
-          day_of_month = optional(number)
-          month = optional(string)
-          retention_in_seconds = optional(number)
-          start_time = optional(string)
-        })))
-        defined_tags  = optional(map(string)) # snapshot policy defined_tags. default_defined_tags is used if this is not defined.
-        freeform_tags = optional(map(string)) # snapshot policy freeform_tags. default_freeform_tags is used if this is not defined.
-      })))
     }))
   })
   default = null
 }
-
-variable "enable_output" {
-  description = "Whether Terraform should enable the module output."
-  type        = bool
-  default     = true
-}
-
-variable "module_name" {
-  description = "The module name."
-  type        = string
-  default     = "cis-compute"
-}
-
-variable compartments_dependency {
-  description = "A map of objects containing the externally managed compartments this module may depend on. All map objects must have the same type and must contain at least an 'id' attribute (representing the compartment OCID) of string type." 
-  type = map(any)
-  default = null
-}
-
-variable network_dependency {
-  description = "A map of objects containing the externally managed network resources this module may depend on. All map objects must have the same type and must contain at least an 'id' attribute (representing the network resource OCID) of string type." 
-  type = map(any)
-  default = null
-}
-
-variable kms_dependency {
-  description = "A map of objects containing the externally managed encryption keys this module may depend on. All map objects must have the same type and must contain at least an 'id' attribute (representing the key OCID) of string type." 
-  type = map(any)
-  default = null
-}
-
-variable file_system_dependency {
-  description = "A map of objects containing the externally managed file storage resources this module may depend on. This is used when setting file system replication using target file systems managed in another Terraform configuration. All map objects must have the same type and must contain at least an 'id' attribute (representing the file system OCID) of string type." 
-  type = map(any)
-  default = null
-}
-
-

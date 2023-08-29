@@ -5,7 +5,7 @@ terraform {
   required_providers {
     oci = {
       source  = "oracle/oci"
-      configuration_aliases = [ oci, oci.replication_region ]
+      configuration_aliases = [ oci, oci.block_volumes_replication_region ]
     }
   }
 }

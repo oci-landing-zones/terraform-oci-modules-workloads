@@ -2,28 +2,34 @@
 # Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
 data "oci_identity_availability_domains" "fs_ads" {
-  for_each = var.storage_configuration != null ? (var.storage_configuration["file_storage"] != null ? (var.storage_configuration["file_storage"]["file_system"] != null ? var.storage_configuration["file_storage"]["file_system"] : {}) : {}) : {}
+  for_each = var.storage_configuration != null ? (var.storage_configuration["file_storage"] != null ? (var.storage_configuration["file_storage"]["file_systems"] != null ? var.storage_configuration["file_storage"]["file_systems"] : {}) : {}) : {}
+    compartment_id = each.value.compartment_id != null ? (length(regexall("^ocid1.*$", each.value.compartment_id)) > 0 ? each.value.compartment_id : var.compartments_dependency[each.value.compartment_id].id) : (length(regexall("^ocid1.*$", var.storage_configuration.default_compartment_id)) > 0 ? var.storage_configuration.default_compartment_id : var.compartments_dependency[var.storage_configuration.default_compartment_id].id)
+}
+
+data "oci_identity_availability_domains" "snapshot_ads" {
+  for_each = var.storage_configuration != null ? (var.storage_configuration["file_storage"] != null ? (var.storage_configuration["file_storage"]["snapshot_policies"] != null ? var.storage_configuration["file_storage"]["snapshot_policies"] : {}) : {}) : {}
     compartment_id = each.value.compartment_id != null ? (length(regexall("^ocid1.*$", each.value.compartment_id)) > 0 ? each.value.compartment_id : var.compartments_dependency[each.value.compartment_id].id) : (length(regexall("^ocid1.*$", var.storage_configuration.default_compartment_id)) > 0 ? var.storage_configuration.default_compartment_id : var.compartments_dependency[var.storage_configuration.default_compartment_id].id)
 }
 
 resource "oci_file_storage_file_system" "these" {
-  for_each = var.storage_configuration != null ? (var.storage_configuration["file_storage"] != null ? (var.storage_configuration["file_storage"]["file_system"] != null ? var.storage_configuration["file_storage"]["file_system"] : {}) : {}) : {}
+  for_each = var.storage_configuration != null ? (var.storage_configuration["file_storage"] != null ? (var.storage_configuration["file_storage"]["file_systems"] != null ? var.storage_configuration["file_storage"]["file_systems"] : {}) : {}) : {}
     availability_domain = data.oci_identity_availability_domains.fs_ads[each.key].availability_domains[each.value.availability_domain - 1].name
-    #compartment_id      = each.value.compartment_ocid != null ? each.value.compartment_ocid : var.storage_configuration.default_compartment_ocid
-    compartment_id = each.value.compartment_id != null ? (length(regexall("^ocid1.*$", each.value.compartment_id)) > 0 ? each.value.compartment_id : var.compartments_dependency[each.value.compartment_id].id) : (length(regexall("^ocid1.*$", var.storage_configuration.default_compartment_id)) > 0 ? var.storage_configuration.default_compartment_id : var.compartments_dependency[var.storage_configuration.default_compartment_id].id)
+    compartment_id      = each.value.compartment_id != null ? (length(regexall("^ocid1.*$", each.value.compartment_id)) > 0 ? each.value.compartment_id : var.compartments_dependency[each.value.compartment_id].id) : (length(regexall("^ocid1.*$", var.storage_configuration.default_compartment_id)) > 0 ? var.storage_configuration.default_compartment_id : var.compartments_dependency[var.storage_configuration.default_compartment_id].id)
     display_name        = each.value.file_system_name
     kms_key_id          = coalesce(each.value.cis_level,var.storage_configuration.default_cis_level,"1") == "2" ? (each.value.kms_key_id != null ? (length(regexall("^ocid1.*$", each.value.kms_key_id)) > 0 ? each.value.kms_key_id : var.kms_dependency[each.value.kms_key_id].id) : var.storage_configuration.default_kms_key_id != null ? (length(regexall("^ocid1.*$", var.storage_configuration.default_kms_key_id)) > 0 ? var.storage_configuration.default_kms_key_id : var.kms_dependency[var.storage_configuration.default_kms_key_id].id) : try(substr(var.storage_configuration.default_kms_key_id, 0, 0))) : null
-    #kms_key_id          = coalesce(var.storage_configuration.default_cis_level,"1") == "2" ? (each.value.kms_key_id != null ? each.value.kms_key_id : var.storage_configuration.default_kms_key_ocid != null ? var.storage_configuration.default_kms_key_ocid : try(substr(var.storage_configuration.default_kms_key_ocid, 0, 0))) : each.value.kms_key_id
+    filesystem_snapshot_policy_id = each.value.snapshot_policy_id != null ? oci_file_storage_filesystem_snapshot_policy.these[each.value.snapshot_policy_id].id : null
+    defined_tags        = each.value.defined_tags != null ? each.value.defined_tags : var.storage_configuration.default_defined_tags
+    freeform_tags       = merge(local.cislz_module_tag, each.value.freeform_tags != null ? each.value.freeform_tags : var.storage_configuration.default_freeform_tags)
 }
 
 data "oci_identity_availability_domains" "mt_ads" {
-  for_each = var.storage_configuration != null ? (var.storage_configuration["file_storage"] != null ? (var.storage_configuration["file_storage"]["mount_target"] != null ? var.storage_configuration["file_storage"]["mount_target"] : {}) : {}) : {}
+  for_each = var.storage_configuration != null ? (var.storage_configuration["file_storage"] != null ? (var.storage_configuration["file_storage"]["mount_targets"] != null ? var.storage_configuration["file_storage"]["mount_targets"] : {}) : {}) : {}
     #compartment_id = each.value.compartment_ocid != null ? each.value.compartment_ocid : var.storage_configuration.default_compartment_ocid
     compartment_id = each.value.compartment_id != null ? (length(regexall("^ocid1.*$", each.value.compartment_id)) > 0 ? each.value.compartment_id : var.compartments_dependency[each.value.compartment_id].id) : (length(regexall("^ocid1.*$", var.storage_configuration.default_compartment_id)) > 0 ? var.storage_configuration.default_compartment_id : var.compartments_dependency[var.storage_configuration.default_compartment_id].id)
 }
 
 resource "oci_file_storage_mount_target" "these" {
-  for_each = var.storage_configuration != null ? (var.storage_configuration["file_storage"] != null ? (var.storage_configuration["file_storage"]["mount_target"] != null ? var.storage_configuration["file_storage"]["mount_target"] : {}) : {}) : {}
+  for_each = var.storage_configuration != null ? (var.storage_configuration["file_storage"] != null ? (var.storage_configuration["file_storage"]["mount_targets"] != null ? var.storage_configuration["file_storage"]["mount_targets"] : {}) : {}) : {}
     compartment_id = each.value.compartment_id != null ? (length(regexall("^ocid1.*$", each.value.compartment_id)) > 0 ? each.value.compartment_id : var.compartments_dependency[each.value.compartment_id].id) : (length(regexall("^ocid1.*$", var.storage_configuration.default_compartment_id)) > 0 ? var.storage_configuration.default_compartment_id : var.compartments_dependency[var.storage_configuration.default_compartment_id].id)
     availability_domain = data.oci_identity_availability_domains.mt_ads[each.key].availability_domains[each.value.availability_domain - 1].name
     display_name        = each.value.mount_target_name
@@ -34,14 +40,14 @@ resource "oci_file_storage_mount_target" "these" {
 
 
 resource "oci_file_storage_export_set" "these" {
-  for_each = var.storage_configuration != null ? (var.storage_configuration["file_storage"] != null ? (var.storage_configuration["file_storage"]["mount_target"] != null ? var.storage_configuration["file_storage"]["mount_target"] : {}) : {}) : {}
+  for_each = var.storage_configuration != null ? (var.storage_configuration["file_storage"] != null ? (var.storage_configuration["file_storage"]["mount_targets"] != null ? var.storage_configuration["file_storage"]["mount_targets"] : {}) : {}) : {}
     mount_target_id = oci_file_storage_mount_target.these[each.key].id
     display_name    = each.value.mount_target_name
 }
 
 locals {
   exports = flatten([
-    for mt_key, mt in (var.storage_configuration["file_storage"] != null ? (var.storage_configuration["file_storage"]["mount_target"] != null ? var.storage_configuration["file_storage"]["mount_target"] : {}) : {}): [
+    for mt_key, mt in (var.storage_configuration["file_storage"] != null ? (var.storage_configuration["file_storage"]["mount_targets"] != null ? var.storage_configuration["file_storage"]["mount_targets"] : {}) : {}): [
       for exp_key, exp in (mt["exports"] != null ? mt["exports"] : {}) : {
         mt_key  = mt_key
         exp_key = exp_key
@@ -75,4 +81,43 @@ resource "oci_file_storage_export" "these" {
         require_privileged_source_port = option.value.use_port
       }
     }
+}
+
+locals {
+  replicated_file_systems = {for k,v in (var.storage_configuration != null ? (var.storage_configuration["file_storage"] != null ? (var.storage_configuration["file_storage"]["file_systems"] != null ? var.storage_configuration["file_storage"]["file_systems"] : {}) : {}) : {}) : k => v if v.replication != null}
+}
+resource "oci_file_storage_replication" "these" {
+  for_each = local.replicated_file_systems
+    compartment_id       = each.value.compartment_id != null ? (length(regexall("^ocid1.*$", each.value.compartment_id)) > 0 ? each.value.compartment_id : var.compartments_dependency[each.value.compartment_id].id) : (length(regexall("^ocid1.*$", var.storage_configuration.default_compartment_id)) > 0 ? var.storage_configuration.default_compartment_id : var.compartments_dependency[var.storage_configuration.default_compartment_id].id)
+    display_name         = "${each.value.file_system_name}-replication"
+    source_id            = oci_file_storage_file_system.these[each.key].id
+    target_id            = length(regexall("^ocid1.*$", each.value.replication.file_system_target_id)) > 0 ? each.value.replication.file_system_target_id : contains(keys(oci_file_storage_file_system.these),each.value.replication.file_system_target_id) ? oci_file_storage_file_system.these[each.value.replication.file_system_target_id].id : var.file_system_dependency[each.value.replication.file_system_target_id].id
+    replication_interval = each.value.replication.interval_in_minutes
+    defined_tags         = each.value.defined_tags != null ? each.value.defined_tags : var.storage_configuration.default_defined_tags
+    freeform_tags        = merge(local.cislz_module_tag, each.value.freeform_tags != null ? each.value.freeform_tags : var.storage_configuration.default_freeform_tags)
+}
+
+resource "oci_file_storage_filesystem_snapshot_policy" "these" {
+  for_each = var.storage_configuration != null ? (var.storage_configuration["file_storage"] != null ? (var.storage_configuration["file_storage"]["snapshot_policies"] != null ? var.storage_configuration["file_storage"]["snapshot_policies"] : {}) : {}) : {}
+    compartment_id       = each.value.compartment_id != null ? (length(regexall("^ocid1.*$", each.value.compartment_id)) > 0 ? each.value.compartment_id : var.compartments_dependency[each.value.compartment_id].id) : (length(regexall("^ocid1.*$", var.storage_configuration.default_compartment_id)) > 0 ? var.storage_configuration.default_compartment_id : var.compartments_dependency[var.storage_configuration.default_compartment_id].id)
+    availability_domain  = data.oci_identity_availability_domains.snapshot_ads[each.key].availability_domains[each.value.availability_domain - 1].name
+    display_name         = each.value.name
+    policy_prefix        = each.value.prefix
+    dynamic "schedules" {
+      iterator = sch
+      for_each = each.value.schedules != null ? each.value.schedules : []
+      content {
+        schedule_prefix = sch.value["prefix"]
+        period = sch.value["period"]
+        time_zone = sch.value["time_zone"]
+        hour_of_day = sch.value["hour_of_day"]
+        day_of_week = sch.value["day_of_week"]
+        day_of_month = sch.value["day_of_month"]
+        month = sch.value["month"]
+        retention_duration_in_seconds = sch.value["retention_in_seconds"]
+        time_schedule_start = sch.value["start_time"]
+      }
+    }
+    defined_tags  = each.value.defined_tags != null ? each.value.defined_tags : var.storage_configuration.default_defined_tags
+    freeform_tags = merge(local.cislz_module_tag, each.value.freeform_tags != null ? each.value.freeform_tags : var.storage_configuration.default_freeform_tags)
 }

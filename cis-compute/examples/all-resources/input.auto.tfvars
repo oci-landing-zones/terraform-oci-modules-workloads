@@ -13,25 +13,34 @@
 # Tenancy Connectivity Variables
 #---------------------------------------
 
-tenancy_ocid         = "ocid1.tenancy.oc1..aaaaaaaa3pbmdv223ttwv4wjvmn4jvcw4gxc3skym74itutnnoisg5zrbnuq" 
+tenancy_ocid         = "ocid1.tenancy.oc1..aaaaaaaaixl3xlr4kr6h3yax2zbijclgim5q2l2pv2qmfithywqhw4tgbvuq" #ateamocidev
+user_ocid            = "ocid1.user.oc1..aaaaaaaalxqallveu54dikz2yvwztfa6aaonjyn7mopu2oyy4hqjjbbdukca" #andre.correa@oracle.com local
+fingerprint          = "ec:5e:dd:5a:4c:75:b7:00:e5:ee:44:f9:05:47:4f:fe" #tenant admin
+private_key_path     = "../../private_key_ateamocidev.pem"
+private_key_password = ""
+region               = "us-ashburn-1"
+
+replication_region = "sa-saopaulo-1"
+
+#tenancy_ocid         = "ocid1.tenancy.oc1..aaaaaaaa3pbmdv223ttwv4wjvmn4jvcw4gxc3skym74itutnnoisg5zrbnuq" 
 #user_ocid            = "ocid1.user.oc1..aaaaaaaaw3evukcrc5a72revdr6gj4bfay6ilsyuwu75fmbx3t6xw2qxa5pa" #stack-compute-admin-user
 #fingerprint          = "ec:12:aa:28:1f:47:99:c2:1d:86:74:f6:d7:b3:c8:cf"  
 #private_key_path     = "../stack-compute-admin-user_cislzground.pem"
-private_key_password = ""  
-region               = "us-ashburn-1" 
+#private_key_password = ""  
+#region               = "us-ashburn-1" 
 
-user_ocid="ocid1.user.oc1..aaaaaaaajhy4l62q5y2thovx4em2ttq3c35ff3hs3czsp6c7p45exoczufia"
-fingerprint="47:dd:e6:92:c8:06:90:84:03:0f:94:30:8a:9d:48:2a"
-private_key_path="../private_key_cislzground.pem"
+#user_ocid="ocid1.user.oc1..aaaaaaaajhy4l62q5y2thovx4em2ttq3c35ff3hs3czsp6c7p45exoczufia"
+#fingerprint="47:dd:e6:92:c8:06:90:84:03:0f:94:30:8a:9d:48:2a"
+#private_key_path="../private_key_cislzground.pem"
 
 #---------------------------------------
 # Input variable
 #---------------------------------------
 
 instances_configuration = {
-  default_compartment_id    = "ocid1.compartment.oc1..aaaaaaaa7gcnlsdfsrcdfft3hta66l7giznjh7ky6gagoxh26j5rm6jyacnq" #cis-landing-zone/cislz-appdev-cmp
-  default_subnet_id         = "ocid1.subnet.oc1.iad.aaaaaaaady5hxhf72ycl3yuvqxxay7h5ifyj6aa6alxibgghq46lvj7nwzeq" #cislz-0-vcn/cislz-0-app-subnet
-  default_kms_key_id        = null
+  default_compartment_id = "ocid1.compartment.oc1..aaaaaaaasmzo3tz65cnhnkyi3pnj77q7jftby2uwiqauuhbvppz7edqn67xq" #cis_landing_zone/cislztf-appdev-cmp
+  default_subnet_id = "ocid1.subnet.oc1.iad.aaaaaaaax7tes37ulxp62pk6w5iigt2z5hc4rqdtui676espctwrhrexge7a" #cis_landing_zone/cislztf-network-cmp/vcn1/vcn1-app-subnet
+  default_kms_key_id = null
   default_ssh_public_key_path = "~/.ssh/id_rsa.pub"
   instances = {
     INSTANCE-1 = {
@@ -66,14 +75,12 @@ instances_configuration = {
 }
 
 storage_configuration = {
-  default_compartment_id = "ocid1.compartment.oc1..aaaaaaaa7gcnlsdfsrcdfft3hta66l7giznjh7ky6gagoxh26j5rm6jyacnq" #cis-landing-zone/cislz-appdev-cmp
-  default_subnet_id = "ocid1.subnet.oc1.iad.aaaaaaaady5hxhf72ycl3yuvqxxay7h5ifyj6aa6alxibgghq46lvj7nwzeq"
+  default_compartment_id = "ocid1.compartment.oc1..aaaaaaaasmzo3tz65cnhnkyi3pnj77q7jftby2uwiqauuhbvppz7edqn67xq" #cis_landing_zone/cislztf-appdev-cmp
+  default_subnet_id = "ocid1.subnet.oc1.iad.aaaaaaaax7tes37ulxp62pk6w5iigt2z5hc4rqdtui676espctwrhrexge7a" #cis_landing_zone/cislztf-network-cmp/vcn1/vcn1-app-subnet
   block_volumes = {
     BV-1 = {
-      display_name        = "block-volume-1"
-      #availability_domain = 1   
-      #volume_size        = 50
-      #vpus_per_gb        = 0           
+      display_name = "block-volume-1"
+      availability_domain = 1   
       attach_to_instance = { 
         instance_key = "INSTANCE-1"      
         device_name  = "/dev/oracleoci/oraclevdb"
@@ -82,32 +89,20 @@ storage_configuration = {
         encrypt_in_transit = false
       }
       backup_policy = "bronze"
-      replication_availability_domain = 2
-    }
-    BV-2 = {
-      display_name        = "block-volume-2"
-      #availability_domain = 1   
-      #volume_size         = 50
-      #vpus_per_gb         = 0           
-      attach_to_instance = { 
-        instance_key = "INSTANCE-1"      
-        device_name  = "/dev/oracleoci/oraclevdc"
+      replication = {
+        availability_domain = 1
       }
-      encryption = {
-        encrypt_in_transit = false
-      }
-      backup_policy = "silver"
-      replication_availability_domain = 3
     }
   }
 
    file_storage = {
-    file_system = {
+    file_systems = {
       FS-1 = {
         file_system_name = "file-system-1"
+        availability_domain = 1
       }
     }
-    mount_target = {
+    mount_targets = {
       MT-1 = {
         mount_target_name = "mount-target-1"
         exports = {

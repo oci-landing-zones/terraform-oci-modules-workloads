@@ -2,7 +2,7 @@
 # Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
 data "oci_identity_availability_domains" "ads" {
-  for_each       = var.instances_configuration["instances"]
+  for_each       = var.instances_configuration != null ? var.instances_configuration["instances"] : {}
   compartment_id = each.value.compartment_id != null ? (length(regexall("^ocid1.*$", each.value.compartment_id)) > 0 ? each.value.compartment_id : var.compartments_dependency[each.value.compartment_id].id) : (length(regexall("^ocid1.*$", var.instances_configuration.default_compartment_id)) > 0 ? var.instances_configuration.default_compartment_id : var.compartments_dependency[var.instances_configuration.default_compartment_id].id)
 }
 
@@ -30,7 +30,7 @@ data "oci_core_app_catalog_listing_resource_versions" "existing" {
 }
 
 locals {
-  accept_app_catalog = { for k, v in var.instances_configuration["instances"] : k => v if v.image.id == null }
+  accept_app_catalog = { for k, v in (var.instances_configuration != null ? var.instances_configuration["instances"] : {}) : k => v if v.image.id == null }
 }
 
 resource "oci_core_app_catalog_listing_resource_version_agreement" "these" {
@@ -54,7 +54,7 @@ resource "oci_core_app_catalog_subscription" "these" {
   }
 
 resource "oci_core_instance" "these" {
-  for_each = var.instances_configuration["instances"]
+  for_each = var.instances_configuration != null ? var.instances_configuration["instances"] : {}
     lifecycle {
       precondition {
         condition = coalesce(each.value.cis_level,var.instances_configuration.default_cis_level,"1") == "2" ? (each.value.kms_key_id != null || var.instances_configuration.default_kms_key_id != null ? true : false) : true # false triggers this.
@@ -114,7 +114,7 @@ resource "oci_core_instance" "these" {
 } */
 
 data "template_file" "block_volumes_templates" {
-  for_each = var.instances_configuration["instances"]
+  for_each = var.instances_configuration != null ? var.instances_configuration["instances"] : {}
     template = file("${path.module}/userdata/linux_mount.sh")
     vars = {
       length               = (length(split(" ", each.value.attached_storage.device_disk_mappings)) - 1)
@@ -124,7 +124,7 @@ data "template_file" "block_volumes_templates" {
 }
 
 data "template_cloudinit_config" "config" {
-  for_each      = var.instances_configuration["instances"]
+  for_each      = var.instances_configuration != null ? var.instances_configuration["instances"] : {}
     gzip          = false
     base64_encode = true
 
