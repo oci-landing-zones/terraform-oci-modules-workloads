@@ -45,7 +45,7 @@ instances_configuration = {
   instances = {
     INSTANCE-1 = {
       shape     = "VM.Standard2.4"
-      hostname  = "oracle-linux-7-stig-instance-1"
+      name      = "Oracle Linux 7 STIG Instance 1"
       placement = {
         availability_domain = 1
         fault_domain = 2
@@ -62,6 +62,7 @@ instances_configuration = {
         encrypt_in_transit = false
       }
       networking = {
+        hostname  = "oracle-linux-7-stig-instance-1"
         assign_public_ip = false
         subnet_id = null
         network_security_groups = null

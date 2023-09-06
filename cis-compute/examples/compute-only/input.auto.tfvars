@@ -46,15 +46,15 @@ instances_configuration = {
     INSTANCE-1 = {
       cis_level = "2"
       #shape     = "VM.Standard2.4"
-      shape     = "VM.Standard.E4.Flex"
-      hostname  = "oracle-linux-7-stig-instance-1"
+      shape = "VM.Standard.E4.Flex"
+      name  = "Oracle Linux 7 STIG Instance 1"
       placement = {
         availability_domain = 1
         fault_domain = 2
       }
       boot_volume = {
         size = 120
-        preserve_on_instance_deletion = false
+        preserve_on_instance_deletion = true
       }
       attached_storage = {
         device_disk_mappings = "/u01:/dev/oracleoci/oraclevdb /u02:/dev/oracleoci/oraclevdc /u03:/dev/oracleoci/oraclevdd /u04:/dev/oracleoci/oraclevde"
@@ -65,6 +65,7 @@ instances_configuration = {
         kms_key_id = "ocid1.key.oc1.iad.ejsppeqvaafyi.abuwcljrrhq3h3fyhcrhabscof6moevm4i3mgcwlwmpa7ihdtu5oyfs6ayna"
       }
       networking = {
+        hostname  = "oracle-linux-7-stig-instance-1"
         assign_public_ip = false
         subnet_id = null
         network_security_groups = null

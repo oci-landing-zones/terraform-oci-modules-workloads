@@ -13,10 +13,10 @@ variable "instances_configuration" {
     default_freeform_tags       = optional(map(string)), # the default freeform tags. It's overriden by the frreform_tags attribute within each object.
 
     instances = map(object({ # the instances to manage in this configuration.
-      cis_level            = optional(string)
-      compartment_id       = optional(string)           # the compartment where the instance is created. default_compartment_ocid is used if this is not defined.
-      shape                = string                     # the instance shape.
-      hostname             = string                     # the instance hostname.
+      cis_level        = optional(string)
+      compartment_id   = optional(string)           # the compartment where the instance is created. default_compartment_ocid is used if this is not defined.
+      shape            = string                     # the instance shape.
+      name             = string                     # the instance display name.
       image = object({ # the base image. You must provider either the id or (name and publisher name).
         id = optional(string) # the base image id for creating the instance. It takes precedence over name and publisher_name.
         name = optional(string) # the image name to search for in marketplace.
@@ -36,13 +36,14 @@ variable "instances_configuration" {
         attachment_type = optional(string) # the type of attachment for block volumes.
       }))
       networking = optional(object({ # networking settings
+        hostname                = optional(string) # the instance hostname.
         assign_public_ip        = optional(bool,false)     # whether to assign the instance a public IP. Default is false.
         subnet_id               = optional(string)   # the subnet where the instance is created. default_subnet_id is used if this is not defined.
         network_security_groups = optional(list(string))  # list of network security groups the instance should be placed into.
       }))
       encryption = optional(object({ # encryption settings
-        kms_key_id              = optional(string) # the KMS key to assign as the master encryption key. default_kms_key_id is used if this is not defined.
-        encrypt_in_transit      = optional(bool,true)   # if the boot volume should encrypt in transit traffic. Default is true.
+        kms_key_id         = optional(string) # the KMS key to assign as the master encryption key. default_kms_key_id is used if this is not defined.
+        encrypt_in_transit = optional(bool,true)   # if the boot volume should encrypt in transit traffic. Default is true.
       }))
       flex_shape_settings = optional(object({ # flex shape settings
         memory = optional(number,16) # the instance memory for Flex shapes. Default is 16GB.
