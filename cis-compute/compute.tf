@@ -64,15 +64,9 @@ resource "oci_core_instance" "these" {
         condition = each.value.image.id != null || (each.value.image.name != null && each.value.image.publisher_name != null) 
         error_message = "VALIDATION FAILURE in instance ${each.key}: Either image.id or (image.name and image.publisher_name) must be provided. image.id takes precedence over the pair image.name/image.publisher_name."
       }
-      precondition {
-        condition = each.value.attached_storage != null ? (contains(["paravirtualized","iscsi"], lower(each.value.attached_storage.attachment_type)) ? true : false) : true
-        error_message = "VALIDATION FAILURE in instance ${each.key}: \"${each.value.attached_storage.attachment_type}\" value is invalid for attached_storage.attachment_type attribute. Valid values are \"paravirtualized\" or \"iscsi\" (case insensitive). "
-      }
     }  
     compartment_id       = each.value.compartment_id != null ? (length(regexall("^ocid1.*$", each.value.compartment_id)) > 0 ? each.value.compartment_id : var.compartments_dependency[each.value.compartment_id].id) : (length(regexall("^ocid1.*$", var.instances_configuration.default_compartment_id)) > 0 ? var.instances_configuration.default_compartment_id : var.compartments_dependency[var.instances_configuration.default_compartment_id].id)
-    #availability_domain  = data.oci_identity_availability_domains.ads[each.key].availability_domains[coalesce((each.value.placement != null ? each.value.placement.availability_domain : 1), 1) - 1].name
     availability_domain  = data.oci_identity_availability_domains.ads[each.key].availability_domains[(each.value.placement != null ? each.value.placement.availability_domain : 1) - 1].name
-    #fault_domain         = format("FAULT-DOMAIN-%s", coalesce((each.value.placement != null ? each.value.placement.fault_domain : 1),1))
     fault_domain         = format("FAULT-DOMAIN-%s", each.value.placement != null ? each.value.placement.fault_domain : 1)
     shape                = each.value.shape
     display_name         = each.value.name
@@ -91,9 +85,13 @@ resource "oci_core_instance" "these" {
       boot_volume_size_in_gbs = each.value.boot_volume != null ? each.value.boot_volume.size : 50
       source_type = "image"
       source_id   = each.value.image.id != null ? each.value.image.id : [for i in local.versions : i.listing_resource_id if i.publisher == each.value.image.publisher_name && i.display_name == each.value.image.name][0]
-      #kms_key_id = coalesce(var.instances_configuration.default_cis_level,"1") == "2" ? (each.value.kms_key_id != null ? each.value.kms_key_id : try(substr(each.value.kms_key_id, 0, 0))) : each.value.kms_key_id
-      kms_key_id  = coalesce(each.value.cis_level,var.instances_configuration.default_cis_level,"1") == "2" ? (each.value.encryption != null ? (each.value.encryption.kms_key_id != null ? (length(regexall("^ocid1.*$", each.value.encryption.kms_key_id)) > 0 ? each.value.encryption.kms_key_id : var.kms_dependency[each.value.encryption.kms_key_id].id) : (var.instances_configuration.default_kms_key_id != null ? (length(regexall("^ocid1.*$", var.instances_configuration.default_kms_key_id)) > 0 ? var.instances_configuration.default_kms_key_id : var.kms_dependency[var.instances_configuration.default_kms_key_id].id) : null)) : (var.instances_configuration.default_kms_key_id != null ? (length(regexall("^ocid1.*$", var.instances_configuration.default_kms_key_id)) > 0 ? var.instances_configuration.default_kms_key_id : var.kms_dependency[var.instances_configuration.default_kms_key_id].id): null)) : null
-      #kms_key_id = each.value.kms_key_id != null ? (length(regexall("^ocid1.*$", each.value.kms_key_id)) > 0 ? each.value.kms_key_id : var.kms_dependency[each.value.kms_key_id].id) : null
+      kms_key_id  = each.value.encryption != null ? (each.value.encryption.kms_key_id != null ? (length(regexall("^ocid1.*$", each.value.encryption.kms_key_id)) > 0 ? each.value.encryption.kms_key_id : var.kms_dependency[each.value.encryption.kms_key_id].id) : (var.instances_configuration.default_kms_key_id != null ? (length(regexall("^ocid1.*$", var.instances_configuration.default_kms_key_id)) > 0 ? var.instances_configuration.default_kms_key_id : var.kms_dependency[var.instances_configuration.default_kms_key_id].id) : null)) : (var.instances_configuration.default_kms_key_id != null ? (length(regexall("^ocid1.*$", var.instances_configuration.default_kms_key_id)) > 0 ? var.instances_configuration.default_kms_key_id : var.kms_dependency[var.instances_configuration.default_kms_key_id].id) : null)
+    }
+    launch_options {
+      boot_volume_type = each.value.boot_volume != null ? upper(each.value.boot_volume.type) : "PARAVIRTUALIZED"
+      firmware = each.value.boot_volume != null ? (each.value.boot_volume.firmware != null ? upper(each.value.boot_volume.firmware) : null) : null
+      network_type = each.value.networking != null ? upper(each.value.networking.type) : "PARAVIRTUALIZED"
+      remote_data_volume_type = each.value.attached_storage != null ? upper(each.value.attached_storage.emulation_type) : "PARAVIRTUALIZED"
     }
     dynamic "shape_config" {
       for_each = length(regexall("Flex", each.value.shape)) > 0 ? [each.value.shape] : []
@@ -104,7 +102,7 @@ resource "oci_core_instance" "these" {
     }
     metadata = {
       ssh_authorized_keys = each.value.ssh_public_key != null ? file(each.value.ssh_public_key) : file(var.instances_configuration.default_ssh_public_key_path)
-      user_data           = data.template_cloudinit_config.config[each.key].rendered
+      user_data           = contains(keys(data.template_cloudinit_config.config),each.key) ? data.template_cloudinit_config.config[each.key].rendered : null
     }
 }
 
@@ -120,17 +118,17 @@ resource "oci_core_volume_backup_policy_assignment" "these_boot_volumes" {
 } */
 
 data "template_file" "block_volumes_templates" {
-  for_each = var.instances_configuration != null ? var.instances_configuration["instances"] : {}
+  for_each = var.instances_configuration != null ? {for k, v in var.instances_configuration["instances"] : k => v if v.attached_storage != null} : {}
     template = file("${path.module}/userdata/linux_mount.sh")
     vars = {
       length               = (length(split(" ", each.value.attached_storage.device_disk_mappings)) - 1)
       device_disk_mappings = each.value.attached_storage.device_disk_mappings
-      block_vol_att_type   = lower(each.value.attached_storage.attachment_type)
+      block_vol_att_type   = each.value.attached_storage.emulation_type != null ? lower(each.value.attached_storage.emulation_type) : "paravirtualized"
     }
 }
 
 data "template_cloudinit_config" "config" {
-  for_each      = var.instances_configuration != null ? var.instances_configuration["instances"] : {}
+  for_each      = var.instances_configuration != null ? {for k, v in var.instances_configuration["instances"] : k => v if v.attached_storage != null} : {}
     gzip          = false
     base64_encode = true
 

@@ -25,145 +25,42 @@ region               = "<your tenancy region>"     # This is your region, where 
 #---------------------------------------
 
 instances_configuration = {
-  default_compartment_ocid = "ocid1.compartment"
-  #default_defined_tags   = null
-  #default_freeform_tags  = null
-  default_subnet_ocid         = "ocid1.subnet."
-  default_kms_key_ocid        = "ocid1.key"
+  default_compartment_id = "ocid1.compartment.oc1..aaaaaaaasmzo3tz65cnhnkyi3pnj77q7jftby2uwiqauuhbvppz7edqn67xq" #cis_landing_zone/cislztf-appdev-cmp
+  default_subnet_id = "ocid1.subnet.oc1.iad.aaaaaaaax7tes37ulxp62pk6w5iigt2z5hc4rqdtui676espctwrhrexge7a" #cis_landing_zone/cislztf-network-cmp/vcn1/vcn1-app-subnet
+  default_kms_key_id = null
   default_ssh_public_key_path = "~/.ssh/id_rsa.pub"
   instances = {
-    COMPUTE-INSTANCE = {
-      availability_domain  = 1
-      shape                = "VM.Standard2.4"
-      hostname             = "COMPUTE-INSTANCE"
-      boot_volume_size     = 120
-      preserve_boot_volume = false
-      assign_public_ip     = true
-      kms_key_id           = "ocid1.key.o"
-      compartment_ocid     = "ocid1.compartment"
-      subnet_ocid          = "ocid1.subnet"
-      ssh_public_key       = "~/.ssh/id_rsa.pub"
-      #defined_tags = null
-      #freeform_tags = null
-      attached_storage = {
-        device_disk_mappings         = "/u01:/dev/oracleoci/oraclevdb /u05:/dev/oracleoci/oraclevdc /u80:/dev/oracleoci/oraclevdd /u02:/dev/oracleoci/oraclevde /u03:/dev/oracleoci/oraclevdf /u04:/dev/oracleoci/oraclevdg"
-        block_volume_attachment_type = "paravirtualized"
+    INSTANCE-1 = {
+      cis_level = "2"
+      #shape     = "VM.Standard2.4"
+      shape = "VM.Standard.E4.Flex"
+      name  = "Oracle Linux 7 STIG Instance 1"
+      placement = {
+        availability_domain = 1
+        fault_domain = 2
       }
-      encrypt_in_transit      = false
-      fault_domain            = 1
-      network_security_groups = []
-      image_ocid              = null
+      boot_volume = {
+        size = 120
+        preserve_on_instance_deletion = true
+      }
+      attached_storage = {
+        device_disk_mappings = "/u01:/dev/oracleoci/oraclevdb /u02:/dev/oracleoci/oraclevdc /u03:/dev/oracleoci/oraclevdd /u04:/dev/oracleoci/oraclevde"
+        emulation_type = "paravirtualized"
+      }
+      encryption = {
+        encrypt_in_transit = false
+        kms_key_id = "ocid1.key.oc1.iad.ejsppeqvaafyi.abuwcljrrhq3h3fyhcrhabscof6moevm4i3mgcwlwmpa7ihdtu5oyfs6ayna"
+      }
+      networking = {
+        hostname  = "oracle-linux-7-stig-instance-1"
+        assign_public_ip = false
+        subnet_id = null
+        network_security_groups = null
+      }
       image = {
-        image_name     = "Visual Studio Code Remote Workstation"
-        publisher_name = "Oracle HPC"
+        name = "Oracle Linux 7 STIG"
+        publisher_name = "Oracle Linux"
       }
-
     }
-    COMPUTE-INSTANCE2 = {
-      availability_domain  = 1
-      shape                = "VM.Standard2.4"
-      hostname             = "COMPUTE-INSTANCE2"
-      boot_volume_size     = 120
-      preserve_boot_volume = false
-      kms_key_id           = "ocid1.key."
-      compartment_ocid     = null
-      subnet_ocid          = "ocid1.subne"
-      ssh_public_key       = "~/.ssh/id_rsa.pub"
-      #defined_tags = null
-      #freeform_tags = null
-      attached_storage = {
-        device_disk_mappings         = "/u01:/dev/oracleoci/oraclevdb /u05:/dev/oracleoci/oraclevdc /u80:/dev/oracleoci/oraclevdd /u02:/dev/oracleoci/oraclevde /u03:/dev/oracleoci/oraclevdf /u04:/dev/oracleoci/oraclevdg"
-        block_volume_attachment_type = "paravirtualized"
-      }
-      encrypt_in_transit      = false
-      fault_domain            = 1
-      network_security_groups = []
-      image = {
-        image_name     = "Visual Studio Code Remote Workstation"
-        publisher_name = "Oracle HPC"
-      }
-
-    }
-    COMPUTE-INSTANCE3 = {
-      availability_domain  = 1
-      shape                = "VM.Standard3.Flex"
-      memory               = 12
-      ocpus                = 1
-      hostname             = "COMPUTE-INSTANCE3"
-      boot_volume_size     = 120
-      preserve_boot_volume = false
-      attached_storage = {
-        device_disk_mappings         = "/u01:/dev/oracleoci/oraclevdb /u05:/dev/oracleoci/oraclevdc /u80:/dev/oracleoci/oraclevdd /u02:/dev/oracleoci/oraclevde /u03:/dev/oracleoci/oraclevdf /u04:/dev/oracleoci/oraclevdg"
-        block_volume_attachment_type = "paravirtualized"
-      }
-      encrypt_in_transit      = false
-      fault_domain            = 1
-      network_security_groups = []
-      image_ocid              = "ocid1.image.oc1"
-
-    }
-  }
-
-}
-
-storage_configuration = {
-
-  default_compartment_ocid = "ocid1.compartment"
-  #default_defined_tags   = null
-  #default_freeform_tags  = null
-  default_kms_key_ocid = ""
-  default_subnet_ocid  = "ocid1.subne"
-
-
-  block_volumes = {
-    BLOCK_VOLUME_1 = {
-      compartment_ocid    = null
-      block_volume_name   = "BLOCK_VOLUME_1"
-      availability_domain = 1
-      block_volume_size   = 50
-      vpus_per_gb         = 10
-      encrypt_in_transit  = false
-      kms_key_id          = "ocid1.key"
-      attach_to_instance = {
-        instance_key = "COMPUTE-INSTANCE"
-        device_name  = "/dev/oracleoci/oraclevdb"
-      }
-      #defined_tags = null
-      #freeform_tags = null
-
-    }
-  }
-  file_storage = {
-    # file_system = {
-    #   FILE_SYSTEM_1 = {
-    #     file_system_name    = "FILE_SYSTEM_1"
-    #     availability_domain = 1
-    #     compartment_ocid    = null
-    #     kms_key_id          = null
-    #   }
-    # }
-    # mount_target = {
-    #   MOUNT_TARGET_1 = {
-    #     mount_target_name   = "MOUNT_TARGET_1"
-    #     availability_domain = 1
-    #     compartment_ocid    = null
-    #     subnet_ocid         = null
-    #   }
-    # }
-    # export = {
-    #   EXPORT_1 = {
-    #     filesystem_key   = "FILE_SYSTEM_1"
-    #     mount_target_key = "MOUNT_TARGET_1"
-    #     path             = "/"
-    #     # export_options = [
-    #     #   {
-    #     #     source   = "10.0.9.0/24"
-    #     #     access   = "READ_WRITE"
-    #     #     identity = "ROOT"
-    #     #     use_port = true
-    #     #   }
-    #     # ]
-    #   }
-    # }
   }
 }

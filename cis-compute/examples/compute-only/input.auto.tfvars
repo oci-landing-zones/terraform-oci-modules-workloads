@@ -58,7 +58,6 @@ instances_configuration = {
       }
       attached_storage = {
         device_disk_mappings = "/u01:/dev/oracleoci/oraclevdb /u02:/dev/oracleoci/oraclevdc /u03:/dev/oracleoci/oraclevdd /u04:/dev/oracleoci/oraclevde"
-        attachment_type = "paravirtualized"
       }
       encryption = {
         encrypt_in_transit = false
@@ -69,6 +68,28 @@ instances_configuration = {
         assign_public_ip = false
         subnet_id = null
         network_security_groups = null
+      }
+      image = {
+        name = "Oracle Linux 7 STIG"
+        publisher_name = "Oracle Linux"
+      }
+    }
+    INSTANCE-2 = {
+      shape = "VM.Standard.E4.Flex"
+      name  = "Oracle Linux 7 STIG Instance 2"
+      placement = {
+        availability_domain = 1
+        fault_domain = 3
+      }
+      boot_volume = {
+        size = 120
+        preserve_on_instance_deletion = false
+      }
+      encryption = {
+        encrypt_in_transit = false
+      }
+      networking = {
+        hostname  = "oracle-linux-7-stig-instance-2"
       }
       image = {
         name = "Oracle Linux 7 STIG"

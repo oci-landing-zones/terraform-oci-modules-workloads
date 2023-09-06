@@ -47,11 +47,19 @@ resource "oci_core_volume" "these" {
 
 resource "oci_core_volume_attachment" "these" {
   for_each = var.storage_configuration != null ? (var.storage_configuration["block_volumes"] != null ? [for bv in var.storage_configuration["block_volumes"] : bv.attach_to_instance != null ? var.storage_configuration["block_volumes"] : {}][0] : {}) : {}
-    attachment_type                     = lower(var.instances_configuration["instances"][each.value.attach_to_instance.instance_key].attached_storage.attachment_type)
-    instance_id                         = oci_core_instance.these[each.value.attach_to_instance.instance_key].id
+    lifecycle {
+      precondition {
+        condition = contains(keys(oci_core_instance.these),each.value.attach_to_instance.instance_id) || (var.instances_dependency != null ? contains(keys(var.instances_dependency),each.value.attach_to_instance.instance_id) : true)
+        error_message = "VALIDATION FAILURE when attaching block volume to instance. Instance referred by \"${each.value.attach_to_instance.instance_id}\" not found."
+      }
+    }
+    #attachment_type                     = lower(var.instances_configuration["instances"][each.value.attach_to_instance.instance_id].attached_storage.emulation_type)
+    attachment_type                     = contains(keys(oci_core_instance.these),each.value.attach_to_instance.instance_id) ? oci_core_instance.these[each.value.attach_to_instance.instance_id].launch_options[0].remote_data_volume_type : (contains(keys(var.instances_dependency),each.value.attach_to_instance.instance_id) ? var.instances_dependency[each.value.attach_to_instance.instance_id].launch_options[0].remote_data_volume_type : null)
+    instance_id                         = contains(keys(oci_core_instance.these),each.value.attach_to_instance.instance_id) ? oci_core_instance.these[each.value.attach_to_instance.instance_id].id : (contains(keys(var.instances_dependency),each.value.attach_to_instance.instance_id) ? var.instances_dependency[each.value.attach_to_instance.instance_id].id : null)
     volume_id                           = oci_core_volume.these[each.key].id
     device                              = each.value.attach_to_instance.device_name
-    is_pv_encryption_in_transit_enabled = lower(var.instances_configuration["instances"][each.value.attach_to_instance.instance_key].attached_storage.attachment_type) == "paravirtualized" ? (each.value.encryption != null ? each.value.encryption.encrypt_in_transit : true) : true
+    #is_pv_encryption_in_transit_enabled = upper(var.instances_configuration["instances"][each.value.attach_to_instance.instance_id].attached_storage.emulation_type) == "PARAVIRTUALIZED" ? (each.value.encryption != null ? each.value.encryption.encrypt_in_transit : true) : true
+    is_pv_encryption_in_transit_enabled = contains(keys(oci_core_instance.these),each.value.attach_to_instance.instance_id) ? oci_core_instance.these[each.value.attach_to_instance.instance_id].is_pv_encryption_in_transit_enabled : (contains(keys(var.instances_dependency),each.value.attach_to_instance.instance_id) ? var.instances_dependency[each.value.attach_to_instance.instance_id].is_pv_encryption_in_transit_enabled : false)
 }
 
 resource "oci_core_volume_backup_policy_assignment" "these" {

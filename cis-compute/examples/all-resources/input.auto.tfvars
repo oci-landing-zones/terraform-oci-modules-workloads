@@ -20,7 +20,7 @@ private_key_path     = "../../private_key_ateamocidev.pem"
 private_key_password = ""
 region               = "us-ashburn-1"
 
-replication_region = "sa-saopaulo-1"
+block_volumes_replication_region = "sa-saopaulo-1"
 
 #tenancy_ocid         = "ocid1.tenancy.oc1..aaaaaaaa3pbmdv223ttwv4wjvmn4jvcw4gxc3skym74itutnnoisg5zrbnuq" 
 #user_ocid            = "ocid1.user.oc1..aaaaaaaaw3evukcrc5a72revdr6gj4bfay6ilsyuwu75fmbx3t6xw2qxa5pa" #stack-compute-admin-user
@@ -44,8 +44,8 @@ instances_configuration = {
   default_ssh_public_key_path = "~/.ssh/id_rsa.pub"
   instances = {
     INSTANCE-1 = {
-      shape     = "VM.Standard2.4"
-      name      = "Oracle Linux 7 STIG Instance 1"
+      shape = "VM.Standard.E4.Flex"
+      name  = "Oracle Linux 7 STIG Instance 1 (all-resources)"
       placement = {
         availability_domain = 1
         fault_domain = 2
@@ -56,13 +56,13 @@ instances_configuration = {
       }
       attached_storage = {
         device_disk_mappings = "/u01:/dev/oracleoci/oraclevdb /u02:/dev/oracleoci/oraclevdc /u03:/dev/oracleoci/oraclevdd /u04:/dev/oracleoci/oraclevde"
-        attachment_type = "paravirtualized"
+        emulation_type = "paravirtualized"
       }
       encryption = {
         encrypt_in_transit = false
       }
       networking = {
-        hostname  = "oracle-linux-7-stig-instance-1"
+        hostname  = "oracle-linux-7-stig-instance-1-all-resources"
         assign_public_ip = false
         subnet_id = null
         network_security_groups = null
@@ -83,7 +83,7 @@ storage_configuration = {
       display_name = "block-volume-1"
       availability_domain = 1   
       attach_to_instance = { 
-        instance_key = "INSTANCE-1"      
+        instance_id = "INSTANCE-1"      
         device_name  = "/dev/oracleoci/oraclevdb"
       }
       encryption = {
@@ -96,7 +96,7 @@ storage_configuration = {
     }
   }
 
-   file_storage = {
+   /* file_storage = {
     file_systems = {
       FS-1 = {
         file_system_name = "file-system-1"
@@ -118,7 +118,7 @@ storage_configuration = {
         }
       }
     }
-  } 
+  } */
 }
 
 

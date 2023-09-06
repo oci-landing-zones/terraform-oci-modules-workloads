@@ -39,23 +39,26 @@ variable "instances_configuration" {
         fault_domain         = optional(number,1) # the instance fault domain. Default is 1.
       }))
       boot_volume = optional(object({ # boot volume settings
+        type = optional(string) # boot volume emulation type. Valid values: "PARAVIRTUALIZED" (default for platform images), "SCSI", "ISCSI", "IDE", "VFIO".
+        firmware = optional(string) # firmware used to boot the VM. Valid options: "BIOS" (compatible with both 32 bit and 64 bit operating systems that boot using MBR style bootloaders), "UEFI_64" (default for platform images).
         size = optional(number,50) # boot volume size. Default is 50GB (minimum allowed by OCI).
         preserve_on_instance_deletion = optional(bool,true) # whether to preserve boot volume after deletion. Default is true.
         backup_policy = optional(string,"bronze") # the Oracle managed backup policy. Valid values: "gold", "silver", "bronze". Default is "bronze".
       }))
       attached_storage = optional(object({ # storage settings. Attributes required by the cloud init script to attach block volumes.
-        device_disk_mappings = optional(string) # device mappings to mount block volumes. If providing multiple mapping, separate the mappings with a blank space.
-        attachment_type = optional(string) # the type of attachment for block volumes.
+        device_disk_mappings = string # device mappings to mount block volumes. If providing multiple mapping, separate the mappings with a blank space.
+        emulation_type = optional(string) # Emulation type for attached storage volumes. Valid values: "paravirtualized" (default for platform images), "scsi", "iscsi", "ide", "vfio". Module supported values for automated attachment: "paravirtualized", "scsi".
       }))
       networking = optional(object({ # networking settings
+        type                    = optional(string)
         hostname                = optional(string) # the instance hostname.
         assign_public_ip        = optional(bool,false)     # whether to assign the instance a public IP. Default is false.
         subnet_id               = optional(string)   # the subnet where the instance is created. default_subnet_id is used if this is not defined.
         network_security_groups = optional(list(string))  # list of network security groups the instance should be placed into.
       }))
       encryption = optional(object({ # encryption settings
-        kms_key_id              = optional(string) # the KMS key to assign as the master encryption key. default_kms_key_id is used if this is not defined.
-        encrypt_in_transit      = optional(bool,true)   # if the boot volume should encrypt in transit traffic. Default is true.
+        kms_key_id         = optional(string) # the KMS key to assign as the master encryption key. default_kms_key_id is used if this is not defined.
+        encrypt_in_transit = optional(bool,true)   # if the boot volume should encrypt in transit traffic. Default is true.
       }))
       flex_shape_settings = optional(object({ # flex shape settings
         memory = optional(number,16) # the instance memory for Flex shapes. Default is 16GB.
