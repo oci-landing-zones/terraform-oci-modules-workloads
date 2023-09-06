@@ -37,58 +37,44 @@ block_volumes_replication_region = "sa-saopaulo-1"
 # Input variable
 #---------------------------------------
 
-storage_configuration = {
+instances_configuration = {
   default_compartment_id = "ocid1.compartment.oc1..aaaaaaaasmzo3tz65cnhnkyi3pnj77q7jftby2uwiqauuhbvppz7edqn67xq" #cis_landing_zone/cislztf-appdev-cmp
   default_subnet_id = "ocid1.subnet.oc1.iad.aaaaaaaax7tes37ulxp62pk6w5iigt2z5hc4rqdtui676espctwrhrexge7a" #cis_landing_zone/cislztf-network-cmp/vcn1/vcn1-app-subnet
-  block_volumes = {
-    BV-1 = {
-      display_name = "block-volume-1"
-      availability_domain = 1   
+  default_kms_key_id = null
+  default_ssh_public_key_path = "~/.ssh/id_rsa.pub"
+  instances = {
+    INSTANCE-1 = {
+      cis_level = "2"
+      #shape     = "VM.Standard2.4"
+      shape     = "VM.Standard.E4.Flex"
+      hostname  = "oracle-linux-7-stig-instance-1"
+      placement = {
+        availability_domain = 1
+        fault_domain = 2
+      }
+      boot_volume = {
+        size = 120
+        preserve_on_instance_deletion = false
+      }
+      attached_storage = {
+        device_disk_mappings = "/u01:/dev/oracleoci/oraclevdb /u02:/dev/oracleoci/oraclevdc /u03:/dev/oracleoci/oraclevdd /u04:/dev/oracleoci/oraclevde"
+        attachment_type = "paravirtualized"
+      }
       encryption = {
         encrypt_in_transit = false
+        kms_key_id = "ocid1.key.oc1.iad.ejsppeqvaafyi.abuwcljrrhq3h3fyhcrhabscof6moevm4i3mgcwlwmpa7ihdtu5oyfs6ayna"
       }
-      replication = {
-        availability_domain = 1
+      networking = {
+        assign_public_ip = false
+        subnet_id = null
+        network_security_groups = null
       }
-      backup_policy = "bronze"  
+      image = {
+        name = "Oracle Linux 7 STIG"
+        publisher_name = "Oracle Linux"
+      }
     }
   }
-
-   file_storage = {
-    file_systems = {
-      FS-1 = {
-        file_system_name = "file-system-1"
-        availability_domain = 1
-        replication = {
-          file_system_target_id = "ocid1.filesystem.oc1.sa_saopaulo_1.aaaaaaaaaad7wft5m5zhkllqojxwiottmewxgylpobqxk3dpfuys2ylefuyqaaaa"
-        }
-        snapshot_policy_id = "SNAPSHOT-POLICY-1"
-      }
-    }
-    mount_targets = {
-      MT-1 = {
-        mount_target_name = "mount-target-1"
-        exports = {
-          EXP-1 = {
-            path = "/andre"
-            file_system_key = "FS-1"
-            options = [
-              {source = "0.0.0.0/0", access = "READ_ONLY", identity = "NONE", use_port = true}, 
-              {source = "160.34.115.85/32", access = "READ_WRITE", identity = "ROOT", use_port = true}
-            ]
-          }
-        }
-      }
-    }
-    snapshot_policies = {
-      SNAPSHOT-POLICY-1 = {
-        name = "snapshot-policy-1"
-        schedules = [
-          {period = "DAILY", prefix = "daily"}
-        ]
-      }
-    }
-  } 
 }
 
 

@@ -25,7 +25,7 @@ locals {
 }
 
 data "oci_core_app_catalog_listing_resource_versions" "existing" {
-  for_each   = local.helper
+  for_each = var.instances_configuration != null ? local.helper : {}
     listing_id = each.value
 }
 
@@ -57,7 +57,7 @@ resource "oci_core_instance" "these" {
   for_each = var.instances_configuration != null ? var.instances_configuration["instances"] : {}
     lifecycle {
       precondition {
-        condition = coalesce(each.value.cis_level,var.instances_configuration.default_cis_level,"1") == "2" ? (each.value.kms_key_id != null || var.instances_configuration.default_kms_key_id != null ? true : false) : true # false triggers this.
+        condition = coalesce(each.value.cis_level,var.instances_configuration.default_cis_level,"1") == "2" ? (each.value.encryption != null ? (each.value.encryption.kms_key_id != null || var.instances_configuration.default_kms_key_id != null) : var.instances_configuration.default_kms_key_id != null) : true # false triggers this.
         error_message = "VALIDATION FAILURE (CIS Storage 4.1.2) in instance ${each.key}: A customer managed key is required when CIS level is set to 2. Either encryption.kms_key_id or default_kms_key_id must be provided."
       }
       precondition {
@@ -106,6 +106,12 @@ resource "oci_core_instance" "these" {
       ssh_authorized_keys = each.value.ssh_public_key != null ? file(each.value.ssh_public_key) : file(var.instances_configuration.default_ssh_public_key_path)
       user_data           = data.template_cloudinit_config.config[each.key].rendered
     }
+}
+
+resource "oci_core_volume_backup_policy_assignment" "these_boot_volumes" {
+  for_each = var.instances_configuration != null ? var.instances_configuration["instances"] : {}
+    asset_id  = oci_core_instance.these[each.key].boot_volume_id
+    policy_id = local.oracle_backup_policies[lower(each.value.boot_volume != null ? each.value.boot_volume.backup_policy : "bronze")]
 }
 
 /* locals {

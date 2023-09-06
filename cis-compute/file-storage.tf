@@ -6,18 +6,19 @@ data "oci_identity_availability_domains" "fs_ads" {
     compartment_id = each.value.compartment_id != null ? (length(regexall("^ocid1.*$", each.value.compartment_id)) > 0 ? each.value.compartment_id : var.compartments_dependency[each.value.compartment_id].id) : (length(regexall("^ocid1.*$", var.storage_configuration.default_compartment_id)) > 0 ? var.storage_configuration.default_compartment_id : var.compartments_dependency[var.storage_configuration.default_compartment_id].id)
 }
 
-data "oci_identity_availability_domains" "snapshot_ads" {
-  for_each = var.storage_configuration != null ? (var.storage_configuration["file_storage"] != null ? (var.storage_configuration["file_storage"]["snapshot_policies"] != null ? var.storage_configuration["file_storage"]["snapshot_policies"] : {}) : {}) : {}
-    compartment_id = each.value.compartment_id != null ? (length(regexall("^ocid1.*$", each.value.compartment_id)) > 0 ? each.value.compartment_id : var.compartments_dependency[each.value.compartment_id].id) : (length(regexall("^ocid1.*$", var.storage_configuration.default_compartment_id)) > 0 ? var.storage_configuration.default_compartment_id : var.compartments_dependency[var.storage_configuration.default_compartment_id].id)
-}
-
 resource "oci_file_storage_file_system" "these" {
   for_each = var.storage_configuration != null ? (var.storage_configuration["file_storage"] != null ? (var.storage_configuration["file_storage"]["file_systems"] != null ? var.storage_configuration["file_storage"]["file_systems"] : {}) : {}) : {}
+    lifecycle {
+      precondition {
+        condition = coalesce(each.value.cis_level,var.storage_configuration.default_cis_level,"1") == "2" ? each.value.kms_key_id != null || var.storage_configuration.default_kms_key_id != null : true
+        error_message = "VALIDATION FAILURE (CIS Storage 4.1.2) in file storage ${each.key}: A customer managed key is required when CIS level is set to 2. Either kms_key_id or default_kms_key_id must be provided."
+      }
+    }
     availability_domain = data.oci_identity_availability_domains.fs_ads[each.key].availability_domains[each.value.availability_domain - 1].name
     compartment_id      = each.value.compartment_id != null ? (length(regexall("^ocid1.*$", each.value.compartment_id)) > 0 ? each.value.compartment_id : var.compartments_dependency[each.value.compartment_id].id) : (length(regexall("^ocid1.*$", var.storage_configuration.default_compartment_id)) > 0 ? var.storage_configuration.default_compartment_id : var.compartments_dependency[var.storage_configuration.default_compartment_id].id)
     display_name        = each.value.file_system_name
-    kms_key_id          = coalesce(each.value.cis_level,var.storage_configuration.default_cis_level,"1") == "2" ? (each.value.kms_key_id != null ? (length(regexall("^ocid1.*$", each.value.kms_key_id)) > 0 ? each.value.kms_key_id : var.kms_dependency[each.value.kms_key_id].id) : var.storage_configuration.default_kms_key_id != null ? (length(regexall("^ocid1.*$", var.storage_configuration.default_kms_key_id)) > 0 ? var.storage_configuration.default_kms_key_id : var.kms_dependency[var.storage_configuration.default_kms_key_id].id) : try(substr(var.storage_configuration.default_kms_key_id, 0, 0))) : null
-    filesystem_snapshot_policy_id = each.value.snapshot_policy_id != null ? oci_file_storage_filesystem_snapshot_policy.these[each.value.snapshot_policy_id].id : null
+    kms_key_id          = each.value.kms_key_id != null ? (length(regexall("^ocid1.*$", each.value.kms_key_id)) > 0 ? each.value.kms_key_id : var.kms_dependency[each.value.kms_key_id].id) : var.storage_configuration.default_kms_key_id != null ? (length(regexall("^ocid1.*$", var.storage_configuration.default_kms_key_id)) > 0 ? var.storage_configuration.default_kms_key_id : var.kms_dependency[var.storage_configuration.default_kms_key_id].id) : null
+    filesystem_snapshot_policy_id = each.value.snapshot_policy_id != null ? oci_file_storage_filesystem_snapshot_policy.these[each.value.snapshot_policy_id].id : oci_file_storage_filesystem_snapshot_policy.defaults[each.key].id
     defined_tags        = each.value.defined_tags != null ? each.value.defined_tags : var.storage_configuration.default_defined_tags
     freeform_tags       = merge(local.cislz_module_tag, each.value.freeform_tags != null ? each.value.freeform_tags : var.storage_configuration.default_freeform_tags)
 }
@@ -47,7 +48,7 @@ resource "oci_file_storage_export_set" "these" {
 
 locals {
   exports = flatten([
-    for mt_key, mt in (var.storage_configuration["file_storage"] != null ? (var.storage_configuration["file_storage"]["mount_targets"] != null ? var.storage_configuration["file_storage"]["mount_targets"] : {}) : {}): [
+    for mt_key, mt in (var.storage_configuration != null ? (var.storage_configuration["file_storage"] != null ? (var.storage_configuration["file_storage"]["mount_targets"] != null ? var.storage_configuration["file_storage"]["mount_targets"] : {}) : {}) : {}): [
       for exp_key, exp in (mt["exports"] != null ? mt["exports"] : {}) : {
         mt_key  = mt_key
         exp_key = exp_key
@@ -97,8 +98,14 @@ resource "oci_file_storage_replication" "these" {
     freeform_tags        = merge(local.cislz_module_tag, each.value.freeform_tags != null ? each.value.freeform_tags : var.storage_configuration.default_freeform_tags)
 }
 
+data "oci_identity_availability_domains" "snapshot_ads" {
+  for_each = var.storage_configuration != null ? (var.storage_configuration["file_storage"] != null ? (var.storage_configuration["file_storage"]["snapshot_policies"] != null ? var.storage_configuration["file_storage"]["snapshot_policies"] : {}) : {}) : {}
+    compartment_id = each.value.compartment_id != null ? (length(regexall("^ocid1.*$", each.value.compartment_id)) > 0 ? each.value.compartment_id : var.compartments_dependency[each.value.compartment_id].id) : (length(regexall("^ocid1.*$", var.storage_configuration.default_compartment_id)) > 0 ? var.storage_configuration.default_compartment_id : var.compartments_dependency[var.storage_configuration.default_compartment_id].id)
+}
+
 resource "oci_file_storage_filesystem_snapshot_policy" "these" {
   for_each = var.storage_configuration != null ? (var.storage_configuration["file_storage"] != null ? (var.storage_configuration["file_storage"]["snapshot_policies"] != null ? var.storage_configuration["file_storage"]["snapshot_policies"] : {}) : {}) : {}
+  #for_each = local.snapshot_policies
     compartment_id       = each.value.compartment_id != null ? (length(regexall("^ocid1.*$", each.value.compartment_id)) > 0 ? each.value.compartment_id : var.compartments_dependency[each.value.compartment_id].id) : (length(regexall("^ocid1.*$", var.storage_configuration.default_compartment_id)) > 0 ? var.storage_configuration.default_compartment_id : var.compartments_dependency[var.storage_configuration.default_compartment_id].id)
     availability_domain  = data.oci_identity_availability_domains.snapshot_ads[each.key].availability_domains[each.value.availability_domain - 1].name
     display_name         = each.value.name
@@ -120,4 +127,30 @@ resource "oci_file_storage_filesystem_snapshot_policy" "these" {
     }
     defined_tags  = each.value.defined_tags != null ? each.value.defined_tags : var.storage_configuration.default_defined_tags
     freeform_tags = merge(local.cislz_module_tag, each.value.freeform_tags != null ? each.value.freeform_tags : var.storage_configuration.default_freeform_tags)
+}
+
+locals {
+  file_systems_without_snapshot_policy = {for k, v in (var.storage_configuration != null ? (var.storage_configuration["file_storage"] != null ? var.storage_configuration["file_storage"]["file_systems"] : {}) : {}) : k => v if v.snapshot_policy_id == null}
+}
+
+# Default snapshot policies are created for all file systems without a snapshot policy. The policy is created in the same compartment and same availability domain as the file system itself. 
+resource "oci_file_storage_filesystem_snapshot_policy" "defaults" {
+  for_each = local.file_systems_without_snapshot_policy
+    availability_domain = data.oci_identity_availability_domains.fs_ads[each.key].availability_domains[each.value.availability_domain - 1].name
+    compartment_id      = each.value.compartment_id != null ? (length(regexall("^ocid1.*$", each.value.compartment_id)) > 0 ? each.value.compartment_id : var.compartments_dependency[each.value.compartment_id].id) : (length(regexall("^ocid1.*$", var.storage_configuration.default_compartment_id)) > 0 ? var.storage_configuration.default_compartment_id : var.compartments_dependency[var.storage_configuration.default_compartment_id].id)
+    display_name        = "${each.value.file_system_name}-snapshot-policy"
+    policy_prefix       = each.value.file_system_name
+    schedules {
+      schedule_prefix = "weekly"
+      period = "WEEKLY"
+      time_zone = "UTC"
+      hour_of_day = 23
+      day_of_week = "SUNDAY"
+      day_of_month = null
+      month = null
+      retention_duration_in_seconds = null
+      time_schedule_start = null
+    }
+    defined_tags  = null
+    freeform_tags = null
 }

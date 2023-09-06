@@ -19,7 +19,6 @@ fingerprint          = "ec:5e:dd:5a:4c:75:b7:00:e5:ee:44:f9:05:47:4f:fe" #tenant
 private_key_path     = "../../private_key_ateamocidev.pem"
 private_key_password = ""
 region               = "sa-saopaulo-1"
-#region               = "us-ashburn-1"
 
 #---------------------------------------
 # Input variable
@@ -28,7 +27,7 @@ region               = "sa-saopaulo-1"
 storage_configuration = {
   default_compartment_id = "ocid1.compartment.oc1..aaaaaaaaovqe55pzmkdoek2namqm7xq6c356ukh7ye55ctzzzxkdnqm6cdaa" #cis_landing_zone/allztst-appdev-cmp
   file_storage = {
-    file_system = {
+    file_systems = {
       FS-1 = {
         file_system_name = "file-system-1"
         availability_domain = 1
