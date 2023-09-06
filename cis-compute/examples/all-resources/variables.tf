@@ -41,9 +41,10 @@ variable "instances_configuration" {
       boot_volume = optional(object({ # boot volume settings
         size = optional(number,50) # boot volume size. Default is 50GB (minimum allowed by OCI).
         preserve_on_instance_deletion = optional(bool,true) # whether to preserve boot volume after deletion. Default is true.
+        backup_policy = optional(string,"bronze") # the Oracle managed backup policy. Valid values: "gold", "silver", "bronze". Default is "bronze".
       }))
       attached_storage = optional(object({ # storage settings. Attributes required by the cloud init script to attach block volumes.
-        device_disk_mappings = optional(string) # device mappings to mount block volumes.
+        device_disk_mappings = optional(string) # device mappings to mount block volumes. If providing multiple mapping, separate the mappings with a blank space.
         attachment_type = optional(string) # the type of attachment for block volumes.
       }))
       networking = optional(object({ # networking settings
@@ -70,16 +71,15 @@ variable "instances_configuration" {
 variable "storage_configuration" {
   description = "Storage configuration attributes."
   type = object({
-
     default_compartment_id   = optional(string),      # the default compartment where all resources are defined. It's overriden by the compartment_id attribute within each object.
     default_kms_key_id       = optional(string),      # the default KMS key to assign as the master encryption key. It's overriden by the kms_key_id attribute within each object.
     default_subnet_id        = optional(string),      # the default subnet used for all file system mount targets. It's overriden by the subnet_id attribute within each mount_target object.
-    default_cis_level        = optional(string)       # The CIS OCI Benchmark profile level. Level "1" is be practical and prudent. Level "2" is intended for environments where security is more critical than manageability and usability. Default is "1".
+    default_cis_level        = optional(string,"1"),  # The CIS OCI Benchmark profile level. Level "1" is be practical and prudent. Level "2" is intended for environments where security is more critical than manageability and usability. Default is "1".
     default_defined_tags     = optional(map(string)), # the default defined tags. It's overriden by the defined_tags attribute within each object.
     default_freeform_tags    = optional(map(string)), # the default freeform tags. It's overriden by the frreform_tags attribute within each object.
 
     block_volumes = optional(map(object({    # the block volumes to manage in this configuration.
-      cis_level           = optional(string)
+      cis_level           = optional(string,"1")
       compartment_id      = optional(string) # the compartment where the block volume is created. default_compartment_id is used if this is not defined.
       display_name        = string           # the name of the block volume.
       availability_domain = optional(number,1)  # the availability domain where to create the block volume.     
@@ -96,14 +96,14 @@ variable "storage_configuration" {
       replication = optional(object({ # replication settings
         availability_domain = number # the availability domain (AD) to replicate the volume. The AD is picked from the region specified by 'block_volumes_replication_region' variable if defined. Otherwise picked from the region specified by 'region' variable.
       }))
-      backup_policy = optional(string)      # the Oracle managed backup policy. Valid values: "gold", "silver", "bronze". Case insensitive.
-      defined_tags  = optional(map(string)) # block volume defined_tags. default_defined_tags is used if this is not defined.
-      freeform_tags = optional(map(string)) # block volume freeform_tags. default_freeform_tags is used if this is not defined.
+      backup_policy = optional(string,"bronze") # the Oracle managed backup policy. Valid values: "gold", "silver", "bronze". Default is "bronze".
+      defined_tags  = optional(map(string))     # block volume defined_tags. default_defined_tags is used if this is not defined.
+      freeform_tags = optional(map(string))     # block volume freeform_tags. default_freeform_tags is used if this is not defined.
     }))),
 
     file_storage = optional(object({ # file storage settings.
       file_systems = map(object({     # the file systems.
-        cis_level           = optional(string)
+        cis_level           = optional(string,"1")
         compartment_id      = optional(string) # the file system compartment. default_compartment_id is used if this is not defined.
         file_system_name    = string           # the file_system name.
         availability_domain = optional(number,1)  # the file system availability domain..   
@@ -111,12 +111,12 @@ variable "storage_configuration" {
         replication         = optional(object({ # replication settings
           file_system_target_id = string  # the file system replication target. It must be an existing unexported file system, in the same or in a different region than the source file system.
           interval_in_minutes = optional(number,60) # time interval (in minutes) between replication snapshots. Default is 60 minutes.
-        }))
-        snapshot_policy_id = optional(string) # the snapshot policy 
+        })) 
+        snapshot_policy_id = optional(string) # the snapshot policy. A default snapshot policy is associated with file systems without a snapshot policy.
         defined_tags  = optional(map(string)) # file system defined_tags. default_defined_tags is used if this is not defined.
         freeform_tags = optional(map(string)) # file system freeform_tags. default_freeform_tags is used if this is not defined.
       }))
-      mount_targets = map(object({ # the mount targets.
+      mount_targets = optional(map(object({ # the mount targets.
         compartment_id      = optional(string) # the mount target compartment. default_compartment_id is used if this is not defined.
         mount_target_name   = string           # the mount target and export set name.
         availability_domain = optional(number,1) # the mount target availability domain.  
@@ -131,7 +131,7 @@ variable "storage_configuration" {
             use_port = optional(bool, true)   # If true, accessing the file system through this export must connect from a privileged source port.
           })))
         })))
-      }))
+      })))
       snapshot_policies = optional(map(object({
         name = string
         compartment_id = optional(string)
