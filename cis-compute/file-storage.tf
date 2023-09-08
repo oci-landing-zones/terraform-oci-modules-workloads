@@ -31,12 +31,16 @@ data "oci_identity_availability_domains" "mt_ads" {
 
 resource "oci_file_storage_mount_target" "these" {
   for_each = var.storage_configuration != null ? (var.storage_configuration["file_storage"] != null ? (var.storage_configuration["file_storage"]["mount_targets"] != null ? var.storage_configuration["file_storage"]["mount_targets"] : {}) : {}) : {}
-    compartment_id = each.value.compartment_id != null ? (length(regexall("^ocid1.*$", each.value.compartment_id)) > 0 ? each.value.compartment_id : var.compartments_dependency[each.value.compartment_id].id) : (length(regexall("^ocid1.*$", var.storage_configuration.default_compartment_id)) > 0 ? var.storage_configuration.default_compartment_id : var.compartments_dependency[var.storage_configuration.default_compartment_id].id)
+    lifecycle {
+      precondition {
+        condition = each.value.subnet_id != null || var.storage_configuration.file_storage.default_subnet_id != null
+        error_message = "VALIDATION FAILURE in file system mount target ${each.key}: no subnet found for mount target. Either subnet_id or file_storage.default_subnet_id must be provided."
+      }
+    }
+    compartment_id      = each.value.compartment_id != null ? (length(regexall("^ocid1.*$", each.value.compartment_id)) > 0 ? each.value.compartment_id : var.compartments_dependency[each.value.compartment_id].id) : (length(regexall("^ocid1.*$", var.storage_configuration.default_compartment_id)) > 0 ? var.storage_configuration.default_compartment_id : var.compartments_dependency[var.storage_configuration.default_compartment_id].id)
     availability_domain = data.oci_identity_availability_domains.mt_ads[each.key].availability_domains[each.value.availability_domain - 1].name
     display_name        = each.value.mount_target_name
-    #compartment_id      = each.value.compartment_ocid != null ? each.value.compartment_ocid : var.storage_configuration.default_compartment_ocid
-    #subnet_id           = each.value.subnet_ocid != null ? each.value.subnet_ocid : var.storage_configuration.default_subnet_ocid
-    subnet_id           = each.value.subnet_id != null ? (length(regexall("^ocid1.*$", each.value.subnet_id)) > 0 ? each.value.subnet_id : var.network_dependency[each.value.subnet_id].id) : (length(regexall("^ocid1.*$", var.storage_configuration.default_subnet_id)) > 0 ? var.storage_configuration.default_subnet_id : var.network_dependency[var.storage_configuration.default_subnet_id].id)
+    subnet_id           = each.value.subnet_id != null ? (length(regexall("^ocid1.*$", each.value.subnet_id)) > 0 ? each.value.subnet_id : var.network_dependency[each.value.subnet_id].id) : (length(regexall("^ocid1.*$", var.storage_configuration.file_storage.default_subnet_id)) > 0 ? var.storage_configuration.file_storage.default_subnet_id : var.network_dependency[var.storage_configuration.file_storage.default_subnet_id].id)
 }
 
 

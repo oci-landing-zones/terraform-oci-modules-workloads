@@ -1,8 +1,8 @@
-# Oracle Cloud Infrastructure (OCI) Terraform CIS Compute Module
+# Oracle Cloud Infrastructure (OCI) Terraform CIS Compute & Storage (Block Volumes and File System) Module
 
 ![Landing Zone logo](../landing_zone_300.png)
 
-This module manages the creation and configuration of Compute instances and Block/File Storage in Oracle Cloud Infrastructure (OCI). The module automates the provisioning and configuration of Compute instances, handles App Catalog subscriptions, Block Volume and File Storage creation and attachment.
+This module manages Compute instances, Block Storage and File System Storage in Oracle Cloud Infrastructure (OCI). These resources and their associated resources can be deployed together in the same configuration or separately. The module enforces CIS Benchmark recommendations and provides features for strong cyber resilience posture, including storage backups and replication. Additionally, the module supports bringing in external dependencies that managed resources depend on, including compartments, subnets, encryption keys, and others.
 
 Check [module specification](./SPEC.md) for a full description of module requirements, supported variables, managed resources and outputs.
 
@@ -10,6 +10,11 @@ Check the [examples](./examples/) folder for actual module usage.
 
 - [Requirements](#requirements)
 - [Module Functioning](#functioning)
+  - [Compute](#compute)
+  - [Block Storage](#block-storage)
+  - [File Storage](#file-storage)
+  - [External Dependencies](#ext-dep)
+- [Related Documentation](#related)
 - [Known Issues](#issues)
 
 ## <a name="requirements">Requirements</a>
@@ -17,113 +22,172 @@ Check the [examples](./examples/) folder for actual module usage.
 
 This module requires the following OCI IAM permissions in the compartments where instances, block volumes, and file systems are defined. 
 
-For deploying instances:
+For deploying Compute instances:
 ```
-Allow group <group> to manage instance-family in compartment <instance-compartment-name>
+Allow group <GROUP-NAME> to manage instance-family in compartment <INSTANCE-COMPARTMENT-NAME>
+Allow group <GROUP-NAME> to read virtual-network-family in compartment <NETWORK-COMPARTMENT-NAME> ??
+Allow group <GROUP-NAME> to use subnets in compartment <NETWORK-COMPARTMENT-NAME>
+Allow group <GROUP-NAME> to use network-security-groups in compartment <NETWORK-COMPARTMENT-NAME>
+Allow group <GROUP-NAME> to use vnics in compartment <NETWORK-COMPARTMENT-NAME>
+Allow group <GROUP-NAME> to manage private-ips in compartment <NETWORK-COMPARTMENT-NAME>
+Allow group <GROUP-NAME> to read keys in compartment <ENCRYPTION-KEYS-COMPARTMENT-NAME>
+Allow group <GROUP-NAME> to use key-delegate in compartment <ENCRYPTION-KEYS-COMPARTMENT-NAME>
+```
 
+For deploying Block Storage volumes:
+```
+Allow group <GROUP-NAME> to manage volume-family in compartment <BLOCK-VOLUME-COMPARTMENT-NAME>
+Allow group <GROUP-NAME> to read keys in compartment <ENCRYPTION-KEYS-COMPARTMENT-NAME>
+Allow group <GROUP-NAME> to use key-delegate in compartment <ENCRYPTION-KEYS-COMPARTMENT-NAME>
 ```
 
-For deploying block volumes:
+For deploying File Storage file systems:
 ```
-Allow group <group> to manage volume-family in compartment <compartment-name>
+Allow group <GROUP-NAME> to manage file-family in compartment <FILE-SYSTEM-COMPARTMENT-NAME>
+Allow group <GROUP-NAME> to read virtual-network-family in compartment <NETWORK-COMPARTMENT-NAME> ??
+Allow group <GROUP-NAME> to use subnets in compartment <NETWORK-COMPARTMENT-NAME>
+Allow group <GROUP-NAME> to use network-security-groups in compartment <NETWORK-COMPARTMENT-NAME>
+Allow group <GROUP-NAME> to use vnics in compartment <NETWORK-COMPARTMENT-NAME>
+Allow group <GROUP-NAME> to manage private-ips in compartment <NETWORK-COMPARTMENT-NAME>
+Allow group <GROUP-NAME> to read keys in compartment <ENCRYPTION-KEYS-COMPARTMENT-NAME>
+Allow group <GROUP-NAME> to use key-delegate in compartment <ENCRYPTION-KEYS-COMPARTMENT-NAME>
 ```
 
-For deploying file systems:
-```
-Allow group <group> to manage file-family in compartment <compartment-name>
-```
+### Terraform Version > 1.3.x
+
+This module relies on [Terraform Optional Object Type Attributes feature](https://developer.hashicorp.com/terraform/language/expressions/type-constraints#optional-object-type-attributes), which has been promoted and no longer experimental in versions greater than 1.3.x. The feature shortens the amount of input values in complex object types, by having Terraform automatically inserting a default value for any missing optional attributes.
 
 ## <a name="functioning">Module Functioning</a>
 
-In this module, alarms are defined using the *alarms_configuration* object, that supports the following attributes:
-- **default_compartment_ocid**: the default compartment for all resources managed by this module. It can be overriden by *compartment_ocid* attribute in each resource.
-- **default_defined_tags**: the default defined tags that are applied to all resources managed by this module. It can be overriden by *defined_tags* attribute in each resource.
-- **default_freeform_tags**: the default freeform tags that are applied to all resources managed by this module. It can be overriden by *freeform_tags* attribute in each resource.
-- **instances**: define the instances. 
-- **block_volumes**: define the block volumes. 
-- **file_storage**: define the file storage resources.
-- **file_system**: define the file system inside **file_storage**.
-- **mount_target**: define the mount target inside **file_storage**.
-- **export**: define the export inside **file_storage**.
+The module defines two top level attributes used to manage instances and storage: 
+- **instances_configuration**: for managing Compute instances.
+- **storage_configuration**: for managing storage, including Block Storage and File System Storage.
 
-**Note**: Each instance, block volume, file system, mount target and export are defined as an object whose key must be unique and must not be changed once defined. As a convention, use uppercase strings for the keys.
+### <a name="compute">Compute</a>
 
-## Defining the Instances
+Compute instances are managed using the **instances_configuration** object. It contains a set of attributes starting with the prefix **default_** and one attribute named **instances**. The **default_** attribute values are applied to all instances within **instances**, unless overriden at the instance level.
 
-- **availability_domain**: Use the *availability_domain* attribute to specify the Availability Domain where your instance will be hosted. Example: `availability_domain = 1`.
-- **shape**: Use the *shape* attribute to specify the template that determines the number of CPUs, amount of memory, and other resources allocated to a newly created instance. Example: `shape = "VM.Standard2.4"`.
-- **memory**: Use the *memory* attribute to specify the amount of memory for the instance when using a flexible shape. Example: `memory = 8`.
-- **ocpus**: Use the *ocpus* attribute to specify the number of CPUs for the instance when using a flexible shape. Example: `ocpus = 1`.
-- **hostname**: Use the *hostname* attribute to specify the name of the instance. Example: `hostname = "COMPUTE-INSTANCE"`.
-- **boot_volume_size**: Use the *boot_volume_size* attribute to specify the size of the boot volume in GBs. Example: `boot_volume_size = 120`.
-- **preserve_boot_volume**: Use the *preserve_boot_volume* attribute to choose whether the boot volume is preserved when the instance is terminated. Example: `preserve_boot_volume = true`.
-- **assign_public_ip**: Use the *assign_public_ip* attribute to decide if a public IP should be assigned to the instance. Example: `assign_public_ip = true`.
-- **kms_key_id**: Use the *kms_key_id* attribute to provide the OCID of the Key Management to be used for boot volume encryption. Example: `kms_key_id = "ocid1.key.oc1.eu-frankfurt-1..."`.
-- **compartment_ocid**: Use the *compartment_ocid* attribute to specify the OCID of the compartment. If not specified, the instance is created in the *default_compartment_ocid*. Example: `compartment_ocid = null`.
-- **subnet_ocid**: Use the *subnet_ocid* attribute to provide the OCID of the subnet within which the instance is to be created. Example: `subnet_ocid = "ocid1.subnet.oc1.eu-frankfurt-1..."`.
-- **ssh_public_key**: Use the *ssh_public_key* attribute to specify the path of the SSH public key.If not specified, the instance will use the key from *default_ssh_public_key_path*. Example: `ssh_public_key = "~/.ssh/id_rsa.pub"`.
-- **defined_tags**: Use the *defined_tags* attribute to specify defined tags for the instance.
-- **freeform_tags**: Use the *freeform_tags* attribute to specify freeform tags for the instance. 
-- **attached_storage**: Use the *attached_storage* attribute to specify additional storage attached to the instance. Example:
-`
-attached_storage = {
-device_disk_mappings = "/u01:/dev/oracleoci/oraclevdb"
-block_volume_attachment_type = "paravirtualized"
-}
-`
-- **encrypt_in_transit**: Use the *encrypt_in_transit* attribute to enable encryption for data in transit. Example: `encrypt_in_transit = false`.
-- **fault_domain**: Use the *fault_domain* attribute to specify the fault domain in which to launch the instance. Example: `fault_domain = 1`.
-- **network_security_groups**: Use the *network_security_groups* attribute to specify the network security groups to associate with the instance. Example: `network_security_groups = [ocid...]`.
-- **image_ocid**: Use the *image_ocid* attribute to specify the OCID of the image used to boot the instance. If not specified, you must provide the image details. Example: `image_ocid = ocid.image...`.
-- **image**: Use the *image* attribute to provide details of the image used to boot the instance. Example:
-`
-image = {
-  image_name     = "Image name"
-  publisher_name = "Publisher"
-}
-`
+The *default_* attributes are the following:
+- **default_compartment_id**: the default compartment for all instances. It can be overriden by *compartment_id* attribute in each instance.
+- **default_subnet_id**: the default subnet for all instances. It can be overriden by *subnet_id* attribute in each instance.
+- **default_ssh_public_key_path**: the default SSH public key path used to access all instances. It can be overriden by the *ssh_public_key* attribute in each instance.
+- **default_kms_key_id**: the default encryption key for all instances. It can be overriden by *kms_key_id* attribute in each instance.
+- **default_cis_level**: the default CIS OCI Benchmark profile level for all instances. Level "2" enforces usage of customer managed keys for boot volume encryption. Default is "1". It can be overriden by *cis_level* attribute in each instance.
+- **default_defined_tags**: the default defined tags for all instances. It can be overriden by *defined_tags* attribute in each instance.
+- **default_freeform_tags**: the default freeform tags for all instances. It can be overriden by *freeform_tags* attribute in each instance.
 
-## Defining the Block Volumes
-- **compartment_ocid**: Use the *compartment_ocid* attribute to specify the OCID of the compartment. If not specified, the instance is created in the *default_compartment_ocid*. Example: `compartment_ocid = null`.
-- **block_volume_name**: Use the *block_volume_name* attribute to specify the name of the block volume. Example: `block_volume_name = "BLOCK_VOLUME_1"`.
-- **availability_domain**: Use the *availability_domain* attribute to specify the Availability Domain where your block volume will be hosted. Example: `availability_domain = 1`.
-- **block_volume_size**: Use the *block_volume_size* attribute to specify the size of the block volume in GBs. Example: `block_volume_size = 50`.
-- **vpus_per_gb**: Use the *vpus_per_gb* attribute to specify the number of Volume Performance Units (VPUs) that should be allocated per GB. Example: `vpus_per_gb = 10`.
-- **encrypt_in_transit**: Use the *encrypt_in_transit* attribute to enable encryption for data in transit. Example: `encrypt_in_transit = false`.
-- **kms_key_id**: Use the *kms_key_id* attribute to provide the OCID of the Key Management key to be used for volume encryption. Example: `kms_key_id = "ocid1.key..."`.
-- **attach_to_instance**: Use the *attach_to_instance* attribute to specify details for attaching this volume to an instance. Example:
-`
-attach_to_instance = {
-instance_key = "COMPUTE-INSTANCE"
-device_name = "/dev/oracleoci/oraclevdb"
-}
-`
-- **defined_tags**: Use the *defined_tags* attribute to specify defined tags for the block volume.
-- **freeform_tags**: Use the *freeform_tags* attribute to specify freeform tags for the block volume. 
+The instances themselves are defined within the **instances** attribute, In Terraform terms, it is a map of objects. where each object is referred by an identifying key. The supported attributes are listed below. For better usability, most attributes are grouped in logical blocks. They are properly indented in the list.
+- **compartment_id**: the instance compartment. *default_compartment_id* is used if undefined.
+- **cis_level**: the CIS OCI Benchmark profile level to apply. *default_cis_level* is used if undefined.
+- **shape**: the instance shape.
+- **name**: the instance name.
+- **ssh_public_key_path**: the SSH public key path used to access the instance. *default_ssh_public_key_path* is used if undefined.
+- **defined_tags**: the instance defined tags. *default_defined_tags* is used if undefined.
+- **freeform_tags**: the instance freeform tags. *default_freeform_tags* is used if undefined.
+- **image**: the instance base image. You must provider either the id or (name and publisher name). See section [Obtaining Compute Images Information from OCI Marketplace](#marketplace-images) below about how to get Marketplace images.
+  - **id**: the image id for the instance. It takes precedence over name and publisher.
+  - **name**: the image name to search for in OCI Marketplace. 
+  - **publisher**: the image's publisher name.
+- **placement**: instance placement settings.
+  - **availability_domain**: the instance availability domain. Default is 1.
+  - **fault_domain**: the instance fault domain. Default is 1.
+- **boot_volume**: boot volume settings.
+  - **type**: boot volume emulation type. Valid values: "PARAVIRTUALIZED", "SCSI", "ISCSI", "IDE", "VFIO". Default is "PARAVIRTUALIZED".
+  - **firmware**: firmware used to boot the VM. Valid options: "BIOS" (compatible with both 32 bit and 64 bit operating systems that boot using MBR style bootloaders), "UEFI_64" (default for platform images).
+  - **size**: boot volume size. Default is 50 (in GB, the minimum allowed by OCI).
+  - **preserve_on_instance_deletion**: whether to preserve boot volume after deletion. Default is true.
+  - **backup_policy**: the Oracle managed backup policy for the boot volume. Valid values: "gold", "silver", "bronze". Default is "bronze".
+- **device_mounting**: # device mounting settings. See section [Device Mounting](#device-mounting) below for details.
+  - **disk_mappings**: device disk mappings to storage volumes. If providing multiple mappings, separate the mappings with a blank space.
+  - **emulation_type**: emulation type for attached storage volumes. Valid values: "PARAVIRTUALIZED" (default), "SCSI", "ISCSI", "IDE", "VFIO". Module supported values for automated attachment: "PARAVIRTUALIZED", "ISCSI".
+- **networking**: # networking settings. 
+  - **type**: emulation type for the physical network interface card (NIC). Valid values: "PARAVIRTUALIZED" (default), "VFIO" (SR-IOV networking), "E1000" (compatible with Linux e1000 driver).
+  - **hostname**: the instance hostname.
+  - **assign_public_ip**: whether to assign the instance a public IP. Default is false.
+  - **subnet_id**: the subnet where the instance is created. *default_subnet_id* is used if undefined.
+  - **network_security_groups**: list of network security groups the instance should be placed into.
+- **encryption**: encryption settings. See section [In Transit Encryption](#in-transit-encryption) for important information.
+  - **kms_key_id**: the encryption key for boot volume encryption. *default_kms_key_id* is used if undefined. Required if *cis_level* or *default_cis_level* is "2".
+  - **encrypt_in_transit_at_instance_creation**: whether to enable in-transit encryption for the data volume's paravirtualized attachment. Default is true. Applicable during instance **creation** time only.
+  - **encrypt_in_transit_at_instance_update**: whether to enable in-transit encryption for the data volume's paravirtualized attachment. Default is true. Applicable during instance **update** time only.
+- **flex_shape_settings**: flex shape settings.
+  - **memory**: the instance memory for Flex shapes. Default is 16 (in GB).
+  - **ocpus**: the number of OCPUs for Flex shapes. Default is 1.
 
-## Defining the File Storage
+#### <a name="marketplace-images">Obtaining Compute Images Information from OCI Marketplace</a>
+Helper module [marketplace-images](../marketplace-images/) aids in finding Compute instances in OCI Marketplace based on a search string. See [this example](../marketplace-images/examples/marketplace-images/) for finding images containing "CIS" in their names. It outputs information like:
+```
+Publisher: Center for Internet Security
+Image name: CIS CentOS Linux 6 Benchmark - Level 1
+Listing resource id: ocid1.image.oc1..aaaaaaaasxmjh33hefbbfbstzr6xmtfxfi4vkqeq5xg5kpghdxw3msnn4ycq
+Resource version: 2.0.2.13
 
-### Defining the file system
-- **file_system_name**: Use the *file_system_name* attribute to specify the name of the file system. Example: `file_system_name = "FILE_SYSTEM_1"`.
-- **availability_domain**: Use the *availability_domain* attribute to specify the Availability Domain where your file system will be hosted. Example: `availability_domain = 1`.
-- **compartment_ocid**: Use the *compartment_ocid* attribute to specify the OCID of the compartment.  If not specified, the instance is created in the *default_compartment_ocid*. Example: `compartment_ocid = null`.
-- **kms_key_id**: Use the *kms_key_id* attribute to provide the OCID of the Key Management to be used for encryption of the file system. If not specified, the service managed key for the account will be used. Example: `kms_key_id = null`.
+Publisher: Center for Internet Security
+Image name: CIS CentOS Linux 7 Benchmark - Level 1
+Listing resource id: ocid1.image.oc1..aaaaaaaaxmhng6g2j5vi7o4wb5sopjz73zhsiswrvpgq4b3rnemlqupuq3pa
+Resource version: 3.1.2.6
+...
+```
+Use the *Listing resource id* or *Image name and Publisher* to seed image.id or image.name and image.publisher attributes.
 
-### Defining the Mount Target
-- **mount_target_name**: Use the *mount_target_name* attribute to specify the name of the mount target. Example: `mount_target_name = "MOUNT_TARGET_1"`.
-- **availability_domain**: Use the *availability_domain* attribute to specify the Availability Domain where your mount target will be hosted. Example: `availability_domain = 1`.
-- **compartment_ocid**: Use the *compartment_ocid* attribute to specify the OCID of the compartment.  If not specified, the instance is created in the *default_compartment_ocid*. Example: `compartment_ocid = null`.
-- **subnet_ocid**: Use the *subnet_ocid* attribute to provide the OCID of the subnet in which the mount target is to be created. If not specified, the mount target is created in the *default_subnet_ocid*. Example: `subnet_ocid = null`.
+#### <a name="device-mounting">Device Mounting</a>
 
-### Defining the Export
-- **filesystem_key**: Use the *filesystem_key* attribute to specify the key of the file system to be exported. Example: `filesystem_key = "FILE_SYSTEM_1"`.
-- **mount_target_key**: Use the *mount_target_key* attribute to specify the key of the mount target for the export. Example: `mount_target_key = "MOUNT_TARGET_1"`.
-- **path**: Use the *path* attribute to specify the path for the export. Example: `path = "/"`.
-- **export_options**: Use the *export_options* attribute to specify a list of export options. This attribute is a list of maps, where each map describes a particular export option. Each map contains the following keys:
-  - **source**: IP address or CIDR block from which to allow mounts. Example: `source = "1.1.1.1/24"`.
-  - **access**: Type of access to grant to the file system. Valid options are: "READ_ONLY" or "READ_WRITE". Example: `access = "READ_WRITE"`.
-  - **identity**: UID and GID remapped to. valid values(case sensitive): ALL, ROOT, NONE. Example: `identity = "ROOT"`.
-  - **use_port**: A boolean value indicating whether to use the port or not. Example: `use_port = true`.
+#### <a name="in-transit-encryption">In Transit Encryption</a>
+As stated in https://docs.oracle.com/en-us/iaas/Content/Block/Concepts/overview.htm#BlockVolumeEncryption:
+
+*"In-transit encryption for boot and block volumes is only available for virtual machine (VM) instances launched from platform images, along with bare metal instances that use the following shapes: BM.Standard.E3.128, BM.Standard.E4.128, BM.DenseIO.E4.128. It is not supported on other bare metal instances. To confirm support for certain Linux-based custom images and for more information, contact Oracle support."*
+
+Additionally, in-transit encryption is only available to paravirtualized volumes (boot and block volumes).
+
+### <a name="storage">Storage</a>
+
+Storage is managed using the **storage_configuration** object. It contains a set of attributes starting with the prefix **default_** and two attribute named **block_volumes** and **file_storage**. The **default_** attribute values are applied to all storage units within **block_volumes** and **file_storage**, unless overriden at the storage unit level.
+
+The *default_* attributes are the following:
+- **default_compartment_id**: the default compartment for all storage units. It can be overriden by *compartment_id* attribute in each unit.
+- **default_subnet_id**: the default subnet for all file system mount targets. It can be overriden by *subnet_id* attribute in each mount target.
+- **default_kms_key_id**: the default encryption key for all storage units. It can be overriden by *kms_key_id* attribute in each unit.
+- **default_cis_level**: the default CIS OCI Benchmark profile level for all storage units. Level "2" enforces usage of customer managed keys for storage encryption. Default is "1". It can be overriden by *cis_level* attribute in each unit.
+- **default_defined_tags**: the default defined tags for all storage units. It can be overriden by *defined_tags* attribute in each unit.
+- **default_freeform_tags**: the default freeform tags for all storage units. It can be overriden by *freeform_tags* attribute in each unit.
+
+#### <a name="block-volumes">Block Volumes</a>
+Block volumes are defined using the **block_volumes** attribute. In Terraform terms, it is a map of objects, where each object is referred by an identifying key. The following attributes are supported:
+- **compartment_id**: the volume compartment. *default_compartment_id* is used if undefined.
+- **cis_level**: the CIS OCI Benchmark profile level to apply. *default_cis_level* is used if undefined.
+- **display_name**: the volume display name.
+- **availability_domain**: the volume availability domain. Default is 1.
+- **volume_size**: the volume size. Default is 50 (GB).
+- **vpus_per_gb**: the number of VPUs per GB of volume. Values are 0(LOW), 10(BALANCE), 20(HIGH), 30-120(ULTRA HIGH). Default is 0.
+- **defined_tags**: the volume defined tags. *default_defined_tags* is used if undefined.
+- **freeform_tags**: the volume freeform tags. *default_freeform_tags* is used if undefined.
+- **attach_to_instance**: 
+  - **instance_id**: the instance that the volume attaches to. It must be one of the identifying keys in the *instances* map or in the *instances_dependency* object.
+  - **device_name**: the device name where to mount the block volume. It must be one of the *disk_mappings* value in the *instances* map or in the *instances_dependency* object.
+- **encryption**: encryption settings
+  - **kms_key_id**: the encryption key for volume encryption. *default_kms_key_id* is used if undefined. Required if *cis_level* or *default_cis_level* is "2".
+  - **encrypt_in_transit**: whether traffic encryption should be enabled for the volume. It only works if the device emulation type is paravirtualized.
+- **replication**: replication settings
+  - **availability_domain**: the availability domain (AD) to replicate the volume. The AD is picked from the region set by the module client to *block_volumes_replication_region* provider alias. Check [here](./examples/storage-only/) for an example with cross-region replication.
+- **backup_policy**: the Oracle managed backup policy for the volume. Valid values: "gold", "silver", "bronze". Default is "bronze".
+
+#### <a name="file-storage">File Storage</a>
+The **file_storage** attribute defines the file systems, mount targets and snapshot policies for OCI File Storage service. 
+<<<TO COMPLETE>>>
+
+### <a name="ext-dep">External Dependencies</a>
+An optional feature, external dependencies are resources managed elsewhere that resources managed by this module may depend on. The following dependencies are supported:
+- **compartments_dependency**: A map of objects containing the externally managed compartments this module may depend on. All map objects must have the same type and must contain at least an *id* attribute with the compartment OCID.
+- **network_dependency**: A map of objects containing the externally managed network resources (including subnets) this module may depend on. All map objects must have the same type and must contain at least an *id* attribute with the subnet OCID.
+- **kms_dependency**: A map of objects containing the externally managed encryption keys this module may depend on. All map objects must have the same type and must contain at least an *id* attribute with the encryption key OCID.
+- **instances_dependency**: A map of objects containing the externally managed instances this module may depend on. All map objects must have the same type and must contain at least the following attributes:
+  - an *id* attribute with the instance OCID.
+  - a *remote_data_volume_type* attribute with the emulation type.
+  - a *is_pv_encryption_in_transit_enabled* attribute informing whether the instance supports in-transit encryption.
+- **file_system_dependency**: A map of objects containing the externally managed file systems this module may depend on. All map objects must have the same type and must contain at least an *id* attribute with the file system OCID.
+
+## <a name="related">Related Documentation</a>
+<<<TO COMPLETE>>>
 
 ## <a name="issues">Known Issues</a>
 None.

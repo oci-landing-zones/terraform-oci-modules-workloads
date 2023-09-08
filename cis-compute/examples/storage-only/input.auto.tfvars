@@ -39,7 +39,6 @@ block_volumes_replication_region = "sa-saopaulo-1"
 
 storage_configuration = {
   default_compartment_id = "ocid1.compartment.oc1..aaaaaaaasmzo3tz65cnhnkyi3pnj77q7jftby2uwiqauuhbvppz7edqn67xq" #cis_landing_zone/cislztf-appdev-cmp
-  default_subnet_id = "ocid1.subnet.oc1.iad.aaaaaaaax7tes37ulxp62pk6w5iigt2z5hc4rqdtui676espctwrhrexge7a" #cis_landing_zone/cislztf-network-cmp/vcn1/vcn1-app-subnet
   block_volumes = {
     BV-1 = {
       display_name = "block-volume-1"
@@ -56,6 +55,7 @@ storage_configuration = {
   }
 
    file_storage = {
+    default_subnet_id = "ocid1.subnet.oc1.iad.aaaaaaaax7tes37ulxp62pk6w5iigt2z5hc4rqdtui676espctwrhrexge7a" #cis_landing_zone/cislztf-network-cmp/vcn1/vcn1-app-subnet
     file_systems = {
       FS-1 = {
         file_system_name = "file-system-1"

@@ -22,7 +22,7 @@ variable "instances_configuration" {
     default_kms_key_id          = optional(string),      # the default KMS key to assign as the master encryption key. It's overriden by the kms_key_id attribute within each object.
     default_cis_level           = optional(string)       # The CIS OCI Benchmark profile level. Level "1" is be practical and prudent. Level "2" is intended for environments where security is more critical than manageability and usability. Default is "1".
     default_defined_tags        = optional(map(string)), # the default defined tags. It's overriden by the defined_tags attribute within each object.
-    default_freeform_tags       = optional(map(string)), # the default freeform tags. It's overriden by the frreform_tags attribute within each object.
+    default_freeform_tags       = optional(map(string)), # the default freeform tags. It's overriden by the freeform_tags attribute within each object.
 
     instances = map(object({ # the instances to manage in this configuration.
       cis_level        = optional(string)
@@ -45,8 +45,8 @@ variable "instances_configuration" {
         preserve_on_instance_deletion = optional(bool,true) # whether to preserve boot volume after deletion. Default is true.
         backup_policy = optional(string,"bronze") # the Oracle managed backup policy. Valid values: "gold", "silver", "bronze". Default is "bronze".
       }))
-      attached_storage = optional(object({ # storage settings. Attributes required by the cloud init script to attach block volumes.
-        device_disk_mappings = string # device mappings to mount block volumes. If providing multiple mapping, separate the mappings with a blank space.
+      device_mounting = optional(object({ # storage settings. Attributes required by the cloud init script to attach block volumes.
+        disk_mappings  = string # device mappings to mount block volumes. If providing multiple mapping, separate the mappings with a blank space.
         emulation_type = optional(string,"PARAVIRTUALIZED") # Emulation type for attached storage volumes. Valid values: "PARAVIRTUALIZED" (default for platform images), "SCSI", "ISCSI", "IDE", "VFIO". Module supported values for automated attachment: "PARAVIRTUALIZED", "SCSI".
       }))
       networking = optional(object({ # networking settings
@@ -57,16 +57,17 @@ variable "instances_configuration" {
         network_security_groups = optional(list(string))  # list of network security groups the instance should be placed into.
       }))
       encryption = optional(object({ # encryption settings
-        kms_key_id         = optional(string) # the KMS key to assign as the master encryption key. default_kms_key_id is used if this is not defined.
-        encrypt_in_transit = optional(bool,true)   # if the boot volume should encrypt in transit traffic. Default is true.
+        kms_key_id = optional(string) # the KMS key to assign as the master encryption key. default_kms_key_id is used if this is not defined.
+        encrypt_in_transit_at_instance_creation = optional(bool,false) # whether to enable in-transit encryption for the data volume's paravirtualized attachment. Default is false. Applicable at instance creation time only.
+        encrypt_in_transit_at_instance_update   = optional(bool,false) # whether to enable in-transit encryption for the data volume's paravirtualized attachment. Default is false. Applicable at instance update time only.
       }))
       flex_shape_settings = optional(object({ # flex shape settings
         memory = optional(number,16) # the instance memory for Flex shapes. Default is 16GB.
         ocpus  = optional(number,1)  # the instance ocpus number for Flex shapes. Default is 1.
       }))
-      ssh_public_key = optional(string) # the SSH public key used to access the instance.
-      defined_tags  = optional(map(string)) # instances defined_tags. default_defined_tags is used if this is not defined.
-      freeform_tags = optional(map(string)) # instances freeform_tags. default_freeform_tags is used if this is not defined.
+      ssh_public_key_path = optional(string) # the SSH public key path used to access the instance.
+      defined_tags        = optional(map(string)) # instances defined_tags. default_defined_tags is used if this is not defined.
+      freeform_tags       = optional(map(string)) # instances freeform_tags. default_freeform_tags is used if this is not defined.
     }))
   })
   default = null
@@ -77,7 +78,6 @@ variable "storage_configuration" {
   type = object({
     default_compartment_id   = optional(string),      # the default compartment where all resources are defined. It's overriden by the compartment_id attribute within each object.
     default_kms_key_id       = optional(string),      # the default KMS key to assign as the master encryption key. It's overriden by the kms_key_id attribute within each object.
-    default_subnet_id        = optional(string),      # the default subnet used for all file system mount targets. It's overriden by the subnet_id attribute within each mount_target object.
     default_cis_level        = optional(string,"1"),  # The CIS OCI Benchmark profile level. Level "1" is be practical and prudent. Level "2" is intended for environments where security is more critical than manageability and usability. Default is "1".
     default_defined_tags     = optional(map(string)), # the default defined tags. It's overriden by the defined_tags attribute within each object.
     default_freeform_tags    = optional(map(string)), # the default freeform tags. It's overriden by the frreform_tags attribute within each object.
@@ -106,6 +106,7 @@ variable "storage_configuration" {
     }))),
 
     file_storage = optional(object({ # file storage settings.
+      default_subnet_id = optional(string), # the default subnet used for all file system mount targets. It's overriden by the subnet_id attribute within each mount_target object.
       file_systems = map(object({     # the file systems.
         cis_level           = optional(string,"1")
         compartment_id      = optional(string) # the file system compartment. default_compartment_id is used if this is not defined.

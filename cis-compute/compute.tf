@@ -64,6 +64,10 @@ resource "oci_core_instance" "these" {
         condition = each.value.image.id != null || (each.value.image.name != null && each.value.image.publisher_name != null) 
         error_message = "VALIDATION FAILURE in instance ${each.key}: Either image.id or (image.name and image.publisher_name) must be provided. image.id takes precedence over the pair image.name/image.publisher_name."
       }
+      precondition {
+        condition = each.value.encryption != null ? (each.value.boot_volume != null ? (upper(each.value.boot_volume.type) != "PARAVIRTUALIZED" ? each.value.encryption.encrypt_in_transit_at_instance_creation == false && each.value.encryption.encrypt_in_transit_at_instance_update == false : true) : true) : true 
+        error_message = "VALIDATION FAILURE in instance ${each.key}: In transit encryption (during instance creation and instance update) is only available to instances with PARAVIRTUALIZED boot volume."
+      }
     }  
     compartment_id       = each.value.compartment_id != null ? (length(regexall("^ocid1.*$", each.value.compartment_id)) > 0 ? each.value.compartment_id : var.compartments_dependency[each.value.compartment_id].id) : (length(regexall("^ocid1.*$", var.instances_configuration.default_compartment_id)) > 0 ? var.instances_configuration.default_compartment_id : var.compartments_dependency[var.instances_configuration.default_compartment_id].id)
     availability_domain  = data.oci_identity_availability_domains.ads[each.key].availability_domains[(each.value.placement != null ? each.value.placement.availability_domain : 1) - 1].name
@@ -74,7 +78,7 @@ resource "oci_core_instance" "these" {
     defined_tags         = each.value.defined_tags != null ? each.value.defined_tags : var.instances_configuration.default_defined_tags
     freeform_tags        = merge(local.cislz_module_tag, each.value.freeform_tags != null ? each.value.freeform_tags : var.instances_configuration.default_freeform_tags)
     # some images don't allow encrypt in transit
-    is_pv_encryption_in_transit_enabled = each.value.encryption != null ? each.value.encryption.encrypt_in_transit : true
+    is_pv_encryption_in_transit_enabled = each.value.encryption != null ? each.value.encryption.encrypt_in_transit_at_instance_creation : false
     create_vnic_details {
       assign_public_ip = each.value.networking != null ? coalesce(each.value.networking.assign_public_ip,false) : false
       subnet_id        = each.value.networking != null ? (each.value.networking.subnet_id != null ? (length(regexall("^ocid1.*$", each.value.networking.subnet_id)) > 0 ? each.value.networking.subnet_id : var.network_dependency[each.value.networking.subnet_id].id) : (length(regexall("^ocid1.*$", var.instances_configuration.default_subnet_id)) > 0 ? var.instances_configuration.default_subnet_id : var.network_dependency[var.instances_configuration.default_subnet_id].id)) : (length(regexall("^ocid1.*$", var.instances_configuration.default_subnet_id)) > 0 ? var.instances_configuration.default_subnet_id : var.network_dependency[var.instances_configuration.default_subnet_id].id)
@@ -91,7 +95,8 @@ resource "oci_core_instance" "these" {
       boot_volume_type = each.value.boot_volume != null ? upper(each.value.boot_volume.type) : "PARAVIRTUALIZED"
       firmware = each.value.boot_volume != null ? (each.value.boot_volume.firmware != null ? upper(each.value.boot_volume.firmware) : null) : null
       network_type = each.value.networking != null ? upper(each.value.networking.type) : "PARAVIRTUALIZED"
-      remote_data_volume_type = each.value.attached_storage != null ? upper(each.value.attached_storage.emulation_type) : "PARAVIRTUALIZED"
+      remote_data_volume_type = each.value.device_mounting != null ? upper(each.value.device_mounting.emulation_type) : "PARAVIRTUALIZED"
+      is_pv_encryption_in_transit_enabled = each.value.encryption != null ? each.value.encryption.encrypt_in_transit_at_instance_update : false
     }
     dynamic "shape_config" {
       for_each = length(regexall("Flex", each.value.shape)) > 0 ? [each.value.shape] : []
@@ -101,7 +106,7 @@ resource "oci_core_instance" "these" {
       }
     }
     metadata = {
-      ssh_authorized_keys = each.value.ssh_public_key != null ? file(each.value.ssh_public_key) : file(var.instances_configuration.default_ssh_public_key_path)
+      ssh_authorized_keys = each.value.ssh_public_key_path != null ? file(each.value.ssh_public_key_path) : file(var.instances_configuration.default_ssh_public_key_path)
       user_data           = contains(keys(data.template_cloudinit_config.config),each.key) ? data.template_cloudinit_config.config[each.key].rendered : null
     }
 }
@@ -118,17 +123,17 @@ resource "oci_core_volume_backup_policy_assignment" "these_boot_volumes" {
 } */
 
 data "template_file" "block_volumes_templates" {
-  for_each = var.instances_configuration != null ? {for k, v in var.instances_configuration["instances"] : k => v if v.attached_storage != null} : {}
+  for_each = var.instances_configuration != null ? {for k, v in var.instances_configuration["instances"] : k => v if v.device_mounting != null} : {}
     template = file("${path.module}/userdata/linux_mount.sh")
     vars = {
-      length               = (length(split(" ", each.value.attached_storage.device_disk_mappings)) - 1)
-      device_disk_mappings = each.value.attached_storage.device_disk_mappings
-      block_vol_att_type   = each.value.attached_storage.emulation_type != null ? lower(each.value.attached_storage.emulation_type) : "paravirtualized"
+      length               = (length(split(" ", each.value.device_mounting.disk_mappings)) - 1)
+      disk_mappings = each.value.device_mounting.disk_mappings
+      block_vol_att_type   = each.value.device_mounting.emulation_type != null ? lower(each.value.device_mounting.emulation_type) : "paravirtualized"
     }
 }
 
 data "template_cloudinit_config" "config" {
-  for_each      = var.instances_configuration != null ? {for k, v in var.instances_configuration["instances"] : k => v if v.attached_storage != null} : {}
+  for_each      = var.instances_configuration != null ? {for k, v in var.instances_configuration["instances"] : k => v if v.device_mounting != null} : {}
     gzip          = false
     base64_encode = true
 

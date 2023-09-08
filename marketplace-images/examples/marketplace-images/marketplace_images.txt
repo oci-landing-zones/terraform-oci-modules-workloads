@@ -64,6 +64,11 @@ Listing resource id: ocid1.image.oc1..aaaaaaaaaacuhppfhjkw6h7jta2wrpf3shzibzdj33
 Resource version: 1.0.1.6
 
 Publisher: Center for Internet Security
+Image name: CIS Oracle Linux 9 Benchmark - Level 1
+Listing resource id: ocid1.image.oc1..aaaaaaaaa4ahchvbwimfdqdxxxro5e7rp27gxtzgiyijfsigd3d3j7vvmzda
+Resource version: 1.0.0.0
+
+Publisher: Center for Internet Security
 Image name: CIS Ubuntu Linux 20.04 LTS Benchmark - Level 1
 Listing resource id: ocid1.image.oc1..aaaaaaaajbjvplazdhplk6jqxiyzdbjx2aysivtcd4sgsap3dfd2254e7hkq
 Resource version: 1.1.0.6

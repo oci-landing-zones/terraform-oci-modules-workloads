@@ -56,11 +56,11 @@ instances_configuration = {
         size = 120
         preserve_on_instance_deletion = true
       }
-      attached_storage = {
-        device_disk_mappings = "/u01:/dev/oracleoci/oraclevdb /u02:/dev/oracleoci/oraclevdc /u03:/dev/oracleoci/oraclevdd /u04:/dev/oracleoci/oraclevde"
+      device_mounting = {
+        disk_mappings = "/u01:/dev/oracleoci/oraclevdb /u02:/dev/oracleoci/oraclevdc /u03:/dev/oracleoci/oraclevdd /u04:/dev/oracleoci/oraclevde"
       }
       encryption = {
-        encrypt_in_transit = false
+        encrypt_in_transit_at_instance_creation = false
         kms_key_id = "ocid1.key.oc1.iad.ejsppeqvaafyi.abuwcljrrhq3h3fyhcrhabscof6moevm4i3mgcwlwmpa7ihdtu5oyfs6ayna"
       }
       networking = {
@@ -86,7 +86,7 @@ instances_configuration = {
         preserve_on_instance_deletion = false
       }
       encryption = {
-        encrypt_in_transit = false
+        encrypt_in_transit_at_instance_creation = false
       }
       networking = {
         hostname  = "oracle-linux-7-stig-instance-2"
