@@ -7,3 +7,4 @@
 **/*.pem
 **/terraform_*.tfvars*
 **/*.pptx
+**/*.json

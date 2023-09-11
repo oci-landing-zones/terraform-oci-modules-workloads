@@ -15,3 +15,11 @@ output "file_systems" {
   description = "The file systems"
   value       = var.enable_output ? oci_file_storage_file_system.these : null
 }
+
+output "file_systems_mount_targets" {
+  value       = var.enable_output ? oci_file_storage_mount_target.these : null
+}
+
+output "file_systems_snapshot_policies" {
+  value       = var.enable_output ? oci_file_storage_filesystem_snapshot_policy.these : null
+}

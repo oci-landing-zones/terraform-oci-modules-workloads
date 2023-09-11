@@ -9,7 +9,7 @@ variable "private_key_path" { default = "" }
 variable "private_key_password" { default = "" }
 
 variable "block_volumes_replication_region" { 
-  description = "The replication region for block volumes and file systems. Leave unset if replication occurs within the same source region or you don't have block volume replication requirements."
+  description = "The replication region for block volumes. Leave unset if replication occurs to an availability domain within the block volume region."
   default = null
 }
 
@@ -54,7 +54,8 @@ variable "storage_configuration" {
         availability_domain = optional(number,1)  # the file system availability domain..   
         kms_key_id          = optional(string) # the KMS key to assign as the master encryption key. default_kms_key_id is used if this is not defined.
         replication         = optional(object({ # replication settings
-          file_system_target_id = string  # the file system replication target. It must be an existing unexported file system, in the same or in a different region than the source file system.
+          is_target         = optional(bool,false) # whether the file system is a replication target. Default is false
+          file_system_target_id = optional(string)  # the file system replication target. It must be an existing unexported file system, in the same or in a different region than the source file system.
           interval_in_minutes = optional(number,60) # time interval (in minutes) between replication snapshots. Default is 60 minutes.
         })) 
         snapshot_policy_id = optional(string) # the snapshot policy identifying key in the snapshots_policy map. A default snapshot policy is associated with file systems without a snapshot policy.
@@ -68,12 +69,12 @@ variable "storage_configuration" {
         subnet_id           = optional(string) # the mount target subnet. default_subnet_id is used if this is not defined.
         exports = optional(map(object({
           path = string
-          file_system_key = string
+          file_system_id = string
           options = optional(list(object({ # optional export options.
             source   = string # the source IP or CIDR allowed to access the mount target.
             access   = optional(string, "READ_ONLY") # type of access grants. Valid values (case sensitive): READ_WRITE, READ_ONLY.
             identity = optional(string, "NONE") # UID and GID remapped to. Valid values(case sensitive): ALL, ROOT, NONE.
-            use_port = optional(bool, true)   # If true, accessing the file system through this export must connect from a privileged source port.
+            use_privileged_source_port = optional(bool, true)   # If true, accessing the file system through this export must connect from a privileged source port.
           })))
         })))
       })))

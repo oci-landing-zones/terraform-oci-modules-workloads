@@ -31,6 +31,10 @@ storage_configuration = {
       FS-1 = {
         file_system_name = "file-system-1"
         availability_domain = 1
+        replication = {
+          is_target = true
+          file_system_target_id = "ocid1.filesystem.oc1.sa_saopaulo_1.aaaaaaaaaaeot2zcm5zhkllqojxwiottmewxgylpobqxk3dpfuys2ylefuyqaaaa"
+        }
       }
     }
   } 

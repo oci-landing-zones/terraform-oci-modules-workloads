@@ -54,7 +54,7 @@ resource "oci_core_volume_attachment" "these" {
       }
     }
     #attachment_type                     = lower(var.instances_configuration["instances"][each.value.attach_to_instance.instance_id].device_mounting.emulation_type)
-    attachment_type                     = contains(keys(oci_core_instance.these),each.value.attach_to_instance.instance_id) ? oci_core_instance.these[each.value.attach_to_instance.instance_id].launch_options[0].remote_data_volume_type : (contains(keys(var.instances_dependency),each.value.attach_to_instance.instance_id) ? var.instances_dependency[each.value.attach_to_instance.instance_id].launch_options[0].remote_data_volume_type : null)
+    attachment_type                     = contains(keys(oci_core_instance.these),each.value.attach_to_instance.instance_id) ? oci_core_instance.these[each.value.attach_to_instance.instance_id].launch_options[0].remote_data_volume_type : (contains(keys(var.instances_dependency),each.value.attach_to_instance.instance_id) ? var.instances_dependency[each.value.attach_to_instance.instance_id].remote_data_volume_type : null)
     instance_id                         = contains(keys(oci_core_instance.these),each.value.attach_to_instance.instance_id) ? oci_core_instance.these[each.value.attach_to_instance.instance_id].id : (contains(keys(var.instances_dependency),each.value.attach_to_instance.instance_id) ? var.instances_dependency[each.value.attach_to_instance.instance_id].id : null)
     volume_id                           = oci_core_volume.these[each.key].id
     device                              = each.value.attach_to_instance.device_name

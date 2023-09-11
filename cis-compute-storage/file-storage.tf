@@ -18,7 +18,7 @@ resource "oci_file_storage_file_system" "these" {
     compartment_id      = each.value.compartment_id != null ? (length(regexall("^ocid1.*$", each.value.compartment_id)) > 0 ? each.value.compartment_id : var.compartments_dependency[each.value.compartment_id].id) : (length(regexall("^ocid1.*$", var.storage_configuration.default_compartment_id)) > 0 ? var.storage_configuration.default_compartment_id : var.compartments_dependency[var.storage_configuration.default_compartment_id].id)
     display_name        = each.value.file_system_name
     kms_key_id          = each.value.kms_key_id != null ? (length(regexall("^ocid1.*$", each.value.kms_key_id)) > 0 ? each.value.kms_key_id : var.kms_dependency[each.value.kms_key_id].id) : var.storage_configuration.default_kms_key_id != null ? (length(regexall("^ocid1.*$", var.storage_configuration.default_kms_key_id)) > 0 ? var.storage_configuration.default_kms_key_id : var.kms_dependency[var.storage_configuration.default_kms_key_id].id) : null
-    filesystem_snapshot_policy_id = each.value.snapshot_policy_id != null ? oci_file_storage_filesystem_snapshot_policy.these[each.value.snapshot_policy_id].id : oci_file_storage_filesystem_snapshot_policy.defaults[each.key].id
+    filesystem_snapshot_policy_id = each.value.snapshot_policy_id != null ? oci_file_storage_filesystem_snapshot_policy.these[each.value.snapshot_policy_id].id : (contains(keys(oci_file_storage_filesystem_snapshot_policy.defaults),each.key) ? oci_file_storage_filesystem_snapshot_policy.defaults[each.key].id : null)
     defined_tags        = each.value.defined_tags != null ? each.value.defined_tags : var.storage_configuration.default_defined_tags
     freeform_tags       = merge(local.cislz_module_tag, each.value.freeform_tags != null ? each.value.freeform_tags : var.storage_configuration.default_freeform_tags)
 }
@@ -57,7 +57,7 @@ locals {
         mt_key  = mt_key
         exp_key = exp_key
         path    = exp.path
-        file_system_id = exp.file_system_key
+        file_system_id = exp.file_system_id
         options = exp.options
       } 
     ]
@@ -83,16 +83,23 @@ resource "oci_file_storage_export" "these" {
         source                         = option.value.source
         access                         = option.value.access
         identity_squash                = option.value.identity
-        require_privileged_source_port = option.value.use_port
+        require_privileged_source_port = option.value.use_privilege_source_port
       }
     }
 }
 
 locals {
-  replicated_file_systems = {for k,v in (var.storage_configuration != null ? (var.storage_configuration["file_storage"] != null ? (var.storage_configuration["file_storage"]["file_systems"] != null ? var.storage_configuration["file_storage"]["file_systems"] : {}) : {}) : {}) : k => v if v.replication != null}
+  replicated_file_systems = {for k,v in (var.storage_configuration != null ? (var.storage_configuration["file_storage"] != null ? (var.storage_configuration["file_storage"]["file_systems"] != null ? var.storage_configuration["file_storage"]["file_systems"] : {}) : {}) : {}) : k => v if (v.replication != null ? (v.replication.file_system_target_id != null ? true : false): false)}
+
 }
 resource "oci_file_storage_replication" "these" {
   for_each = local.replicated_file_systems
+    lifecycle {
+      precondition {
+        condition = each.value.replication.is_target == false
+        error_message = "VALIDATION FAILURE in file system \"${each.key}\": a file system cannot be replication source and target at the same time. Either set \"file_system_target_id\" with the file system target replica id to make it a source, or set \"is_target\" to true to make it a target."
+      }
+    }
     compartment_id       = each.value.compartment_id != null ? (length(regexall("^ocid1.*$", each.value.compartment_id)) > 0 ? each.value.compartment_id : var.compartments_dependency[each.value.compartment_id].id) : (length(regexall("^ocid1.*$", var.storage_configuration.default_compartment_id)) > 0 ? var.storage_configuration.default_compartment_id : var.compartments_dependency[var.storage_configuration.default_compartment_id].id)
     display_name         = "${each.value.file_system_name}-replication"
     source_id            = oci_file_storage_file_system.these[each.key].id
@@ -135,11 +142,12 @@ resource "oci_file_storage_filesystem_snapshot_policy" "these" {
 
 locals {
   file_systems_without_snapshot_policy = {for k, v in (var.storage_configuration != null ? (var.storage_configuration["file_storage"] != null ? var.storage_configuration["file_storage"]["file_systems"] : {}) : {}) : k => v if v.snapshot_policy_id == null}
+  non_replica_file_systems = {for k, v in local.file_systems_without_snapshot_policy : k => v if (v.replication != null ? (v.replication.is_target == true ? false : true) : true)}
 }
 
 # Default snapshot policies are created for all file systems without a snapshot policy. The policy is created in the same compartment and same availability domain as the file system itself. 
 resource "oci_file_storage_filesystem_snapshot_policy" "defaults" {
-  for_each = local.file_systems_without_snapshot_policy
+  for_each = local.non_replica_file_systems
     availability_domain = data.oci_identity_availability_domains.fs_ads[each.key].availability_domains[each.value.availability_domain - 1].name
     compartment_id      = each.value.compartment_id != null ? (length(regexall("^ocid1.*$", each.value.compartment_id)) > 0 ? each.value.compartment_id : var.compartments_dependency[each.value.compartment_id].id) : (length(regexall("^ocid1.*$", var.storage_configuration.default_compartment_id)) > 0 ? var.storage_configuration.default_compartment_id : var.compartments_dependency[var.storage_configuration.default_compartment_id].id)
     display_name        = "${each.value.file_system_name}-snapshot-policy"

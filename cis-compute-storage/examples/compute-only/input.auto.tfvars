@@ -20,8 +20,6 @@ private_key_path     = "../../private_key_ateamocidev.pem"
 private_key_password = ""
 region               = "us-ashburn-1"
 
-block_volumes_replication_region = "sa-saopaulo-1"
-
 #tenancy_ocid         = "ocid1.tenancy.oc1..aaaaaaaa3pbmdv223ttwv4wjvmn4jvcw4gxc3skym74itutnnoisg5zrbnuq" 
 #user_ocid            = "ocid1.user.oc1..aaaaaaaaw3evukcrc5a72revdr6gj4bfay6ilsyuwu75fmbx3t6xw2qxa5pa" #stack-compute-admin-user
 #fingerprint          = "ec:12:aa:28:1f:47:99:c2:1d:86:74:f6:d7:b3:c8:cf"  

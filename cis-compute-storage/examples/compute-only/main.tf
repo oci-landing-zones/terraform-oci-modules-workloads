@@ -2,11 +2,11 @@
 # Copyright (c) 2023 Oracle and/or its affiliates.
 # Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
-module "replica_fs" {
+module "compute" {
   source = "../.."
   providers = {
     oci = oci
-    oci.block_volumes_replication_region = oci.block_volumes_replication_region
+    oci.block_volumes_replication_region = oci
   }
-  storage_configuration = var.storage_configuration
+  instances_configuration = var.instances_configuration
 }

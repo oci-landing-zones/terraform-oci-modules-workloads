@@ -1,5 +1,17 @@
-# Copyright (c) 2023, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2023 Oracle and/or its affiliates.
 # Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
+
+variable "tenancy_ocid" {}
+variable "region" { description = "Your tenancy region" }
+variable "user_ocid" { default = "" }
+variable "fingerprint" { default = "" }
+variable "private_key_path" { default = "" }
+variable "private_key_password" { default = "" }
+
+variable "block_volumes_replication_region" { 
+  description = "The replication region for block volumes. Leave unset if replication occurs to an availability domain within the block volume region."
+  default = null
+}
 
 variable "instances_configuration" {
   description = "Compute instances configuration attributes."
@@ -35,7 +47,7 @@ variable "instances_configuration" {
       }))
       device_mounting = optional(object({ # storage settings. Attributes required by the cloud init script to attach block volumes.
         disk_mappings  = string # device mappings to mount block volumes. If providing multiple mapping, separate the mappings with a blank space.
-        emulation_type = optional(string,"PARAVIRTUALIZED") # Emulation type for attached storage volumes. Valid values: "PARAVIRTUALIZED" (default for platform images), "SCSI", "ISCSI", "IDE", "VFIO". Module supported values for automated attachment: "PARAVIRTUALIZED", "ISCSI".
+        emulation_type = optional(string,"PARAVIRTUALIZED") # Emulation type for attached storage volumes. Valid values: "PARAVIRTUALIZED" (default for platform images), "SCSI", "ISCSI", "IDE", "VFIO". Module supported values for automated attachment: "PARAVIRTUALIZED", "SCSI".
       }))
       networking = optional(object({ # networking settings
         type                    = optional(string,"PARAVIRTUALIZED") # emulation type for the physical network interface card (NIC). Valid values: "PARAVIRTUALIZED" (default), "E1000", "VFIO".
@@ -102,7 +114,8 @@ variable "storage_configuration" {
         availability_domain = optional(number,1)  # the file system availability domain..   
         kms_key_id          = optional(string) # the KMS key to assign as the master encryption key. default_kms_key_id is used if this is not defined.
         replication         = optional(object({ # replication settings
-          file_system_target_id = string  # the file system replication target. It must be an existing unexported file system, in the same or in a different region than the source file system.
+          is_target         = optional(bool,false) # whether the file system is a replication target. Default is false.
+          file_system_target_id = optional(string)  # the file system replication target. It must be an existing unexported file system, in the same or in a different region than the source file system.
           interval_in_minutes = optional(number,60) # time interval (in minutes) between replication snapshots. Default is 60 minutes.
         })) 
         snapshot_policy_id = optional(string) # the snapshot policy identifying key in the snapshots_policy map. A default snapshot policy is associated with file systems without a snapshot policy.
@@ -116,12 +129,12 @@ variable "storage_configuration" {
         subnet_id           = optional(string) # the mount target subnet. default_subnet_id is used if this is not defined.
         exports = optional(map(object({
           path = string
-          file_system_key = string
+          file_system_id = string
           options = optional(list(object({ # optional export options.
             source   = string # the source IP or CIDR allowed to access the mount target.
             access   = optional(string, "READ_ONLY") # type of access grants. Valid values (case sensitive): READ_WRITE, READ_ONLY.
             identity = optional(string, "NONE") # UID and GID remapped to. Valid values(case sensitive): ALL, ROOT, NONE.
-            use_port = optional(bool, true)   # If true, accessing the file system through this export must connect from a privileged source port.
+            use_privileged_source_port = optional(bool, true)   # If true, accessing the file system through this export must connect from a privileged source port.
           })))
         })))
       })))
@@ -149,46 +162,34 @@ variable "storage_configuration" {
   default = null
 }
 
-variable "enable_output" {
-  description = "Whether Terraform should enable the module output."
-  type        = bool
-  default     = true
-}
-
-variable "module_name" {
-  description = "The module name."
-  type        = string
-  default     = "cis-compute"
-}
-
-variable compartments_dependency {
-  description = "A map of objects containing the externally managed compartments this module may depend on. All map objects must have the same type and must contain at least an 'id' attribute (representing the compartment OCID) of string type." 
-  type = map(any)
+variable "oci_compartments_dependency" {
+  type = object({
+    bucket = string
+    object = string 
+  })
   default = null
 }
 
-variable network_dependency {
-  description = "A map of objects containing the externally managed network resources this module may depend on. All map objects must have the same type and must contain at least an 'id' attribute (representing the network resource OCID) of string type." 
-  type = map(any)
+variable "oci_network_dependency" {
+  type = object({
+    bucket = string
+    object = string 
+  })
   default = null
 }
 
-variable kms_dependency {
-  description = "A map of objects containing the externally managed encryption keys this module may depend on. All map objects must have the same type and must contain at least an 'id' attribute (representing the key OCID) of string type." 
-  type = map(any)
+variable "oci_kms_dependency" {
+  type = object({
+    bucket = string
+    object = string 
+  })
   default = null
 }
 
-variable instances_dependency {
-  description = "A map of objects containing the externally managed Compute instances this module may depend on. All map objects must have the same type and must contain at least an 'id' attribute (representing the instance OCID) of string type." 
-  type = map(any)
+variable "oci_compute_dependency" {
+  type = object({
+    bucket = string
+    object = string 
+  })
   default = null
 }
-
-variable file_system_dependency {
-  description = "A map of objects containing the externally managed file storage resources this module may depend on. This is used when setting file system replication using target file systems managed in another Terraform configuration. All map objects must have the same type and must contain at least an 'id' attribute (representing the file system OCID) of string type." 
-  type = map(any)
-  default = null
-}
-
-
