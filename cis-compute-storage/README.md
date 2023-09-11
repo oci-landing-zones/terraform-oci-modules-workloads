@@ -13,6 +13,9 @@ Check the [examples](./examples/) folder for actual module usage.
   - [Compute](#compute)
   - [Block Volumes](#block-volumes)
   - [File Storage](#file-storage)
+    - [File Systems](#file-systems)
+    - [Mount Targets](#mount-targets)
+    - [Snapshot Policies](#snapshot-policies)
   - [External Dependencies](#ext-dep)
 - [Related Documentation](#related)
 - [Known Issues](#issues)
@@ -175,6 +178,7 @@ Block volumes are defined using the **block_volumes** attribute. In Terraform te
 #### <a name="file-storage">File Storage</a>
 The **file_storage** attribute defines the file systems, mount targets and snapshot policies for OCI File Storage service. The attribute **default_subnet_id** applies to all mount targets, unless overriden by **subnet_id** attribute in each mount target. Attribute **subnet_id** is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *network_dependency* variable. See [External Dependencies](#ext-dep) for details.
 
+##### <a name="file-systems">File Systems</a>
 File systems are defined using the attribute **file_systems**. In Terraform terms, it is a map of objects, where each object is referred by an identifying key. The following attributes are supported:
 - **compartment_id**: the file system compartment. *storage_configuration*'s *default_compartment_id* is used if undefined. This attribute is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *compartments_dependency* variable. See [External Dependencies](#ext-dep) for details.
 - **cis_level**: the CIS OCI Benchmark profile level to apply. *storage_configuration*'s *default_cis_level* is used if undefined.
@@ -189,6 +193,7 @@ File systems are defined using the attribute **file_systems**. In Terraform term
 - **defined_tags**: file system defined_tags. *storage_configuration*'s *default_defined_tags* is used if undefined.
 - **freeform_tags**: file system freeform_tags. *storage_configuration*'s *default_freeform_tags* is used if undefined.
 
+##### <a name="mount-targets">Mount Targets</a>
 Mount targets are defined using the attribute **mount_targets**. In Terraform terms, it is a map of objects, where each object is referred by an identifying key. The following attributes are supported:
 - **compartment_id**: the mount target compartment. *storage_configuration*'s *default_compartment_id* is used if undefined. This attribute is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *compartments_dependency* variable. See [External Dependencies](#ext-dep) for details.
 - **mount_target_name**: the mount target and export set name.
@@ -203,6 +208,7 @@ Mount targets are defined using the attribute **mount_targets**. In Terraform te
     - **identity**: UID and GID remapped to. Valid values(case sensitive): ALL, ROOT, NONE. Default is "NONE".
     - **use_port**: Whether file system access is only allowed from a privileged source port. Default is true.
 
+##### <a name="snapshot-policies">Snapshot Policies</a>
 Snapshot policies are defined using the attribute **snapshot_policies**. In Terraform terms, it is a map of objects, where each object is referred by an identifying key. The following attributes are supported:
 - **name**: the snapshot policy name.
 - **compartment_id**: the snapshot policy compartment. *storage_configuration*'s *default_compartment_id* is used if undefined. This attribute is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *compartments_dependency* variable. See [External Dependencies](#ext-dep) for details.
