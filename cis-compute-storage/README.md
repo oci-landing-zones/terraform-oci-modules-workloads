@@ -34,7 +34,7 @@ Allow group <GROUP-NAME> to read keys in compartment <ENCRYPTION-KEYS-COMPARTMEN
 Allow group <GROUP-NAME> to use key-delegate in compartment <ENCRYPTION-KEYS-COMPARTMENT-NAME>
 ```
 
-For deploying Block Storage volumes:
+For deploying Block volumes:
 ```
 Allow group <GROUP-NAME> to manage volume-family in compartment <BLOCK-VOLUME-COMPARTMENT-NAME>
 Allow group <GROUP-NAME> to read keys in compartment <ENCRYPTION-KEYS-COMPARTMENT-NAME>
@@ -61,7 +61,7 @@ This module relies on [Terraform Optional Object Type Attributes feature](https:
 
 The module defines two top level attributes used to manage instances and storage: 
 - **instances_configuration**: for managing Compute instances.
-- **storage_configuration**: for managing storage, including Block Storage and File System Storage.
+- **storage_configuration**: for managing storage, including Block Volumes and File System Storage.
 
 ### <a name="compute">Compute</a>
 
