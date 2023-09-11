@@ -11,7 +11,7 @@ Check the [examples](./examples/) folder for actual module usage.
 - [Requirements](#requirements)
 - [Module Functioning](#functioning)
   - [Compute](#compute)
-  - [Block Storage](#block-storage)
+  - [Block Volumes](#block-volumes)
   - [File Storage](#file-storage)
   - [External Dependencies](#ext-dep)
 - [Related Documentation](#related)
@@ -131,6 +131,7 @@ Resource version: 3.1.2.6
 Use the *Listing resource id* or *Image name and Publisher* to seed image.id or image.name and image.publisher attributes.
 
 #### <a name="device-mounting">Device Mounting</a>
+-------------> TO DO
 
 #### <a name="in-transit-encryption">In Transit Encryption</a>
 As stated in https://docs.oracle.com/en-us/iaas/Content/Block/Concepts/overview.htm#BlockVolumeEncryption:
