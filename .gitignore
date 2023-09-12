@@ -6,5 +6,6 @@
 **/crash.log
 **/*.pem
 **/terraform_*.tfvars*
+**/*.auto.tfvars
 **/*.pptx
 **/*.json
