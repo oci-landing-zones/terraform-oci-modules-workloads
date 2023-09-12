@@ -10,12 +10,3 @@ resource "local_file" "marketplace_images" {
   filename = "./marketplace_images.txt"
 }
 
-output "image_shapes" {
-  value = module.marketplace_images.image_shapes
-}
-
-resource "local_file" "image_shapes" {
-  content  = jsonencode(module.marketplace_images.image_shapes)
-  filename = "./image_shapes.txt"
-}
-
