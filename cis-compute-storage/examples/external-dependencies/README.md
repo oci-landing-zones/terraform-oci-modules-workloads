@@ -70,13 +70,13 @@ The OCI Object Storage objects with external dependencies are expected to have s
 }
 ```
 
-Note the identifying references like *APP-CMP* and *APP-SUBNET*, *APP-NSG*, *APP-KEY* and *INSTANCE-2*. These are the values that should be used when replacing *\<REPLACE-BY-*-REFERENCE\>* placeholders.
+Note the identifying references like *APP-CMP*, *APP-SUBNET*, *APP-NSG*, *APP-KEY* and *INSTANCE-2*. These are the values that should be used when replacing *\<REPLACE-BY-\*-REFERENCE\>* placeholders.
 
 ## Using this example
 1. Rename *input.auto.tfvars.template* to *\<project-name\>.auto.tfvars*, where *\<project-name\>* is any name of your choice.
 
 2. Within *\<project-name\>.auto.tfvars*, provide tenancy connectivity information and adjust the input variables, by making the appropriate substitutions:
-   - Replace \<REPLACE-BY-\*\> placeholders with appropriate values. 
+   - Replace *\<REPLACE-BY-\*\>* placeholders with appropriate values. 
    
 Refer to [cis-compute-storage module README.md](../../README.md) for overall attributes usage.
 
