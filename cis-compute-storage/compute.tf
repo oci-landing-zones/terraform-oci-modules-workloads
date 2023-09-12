@@ -35,16 +35,13 @@ locals {
 
 resource "oci_core_app_catalog_listing_resource_version_agreement" "these" {
   for_each = local.accept_app_catalog
-  #for_each                 = var.instances_configuration["instances"]
     listing_id               = [for i in local.versions : i.listing_id if i.publisher == each.value.image.publisher_name && i.display_name == each.value.image.name][0]
     listing_resource_version = [for i in local.versions : i.resource_version if i.publisher == each.value.image.publisher_name && i.display_name == each.value.image.name][0]
 }
 
 resource "oci_core_app_catalog_subscription" "these" {
   for_each = local.accept_app_catalog
-  #for_each                 = var.instances_configuration["instances"]
     compartment_id           = each.value.compartment_id != null ? (length(regexall("^ocid1.*$", each.value.compartment_id)) > 0 ? each.value.compartment_id : var.compartments_dependency[each.value.compartment_id].id) : (length(regexall("^ocid1.*$", var.instances_configuration.default_compartment_id)) > 0 ? var.instances_configuration.default_compartment_id : var.compartments_dependency[var.instances_configuration.default_compartment_id].id)
-    #compartment_id           = each.value.compartment_ocid != null ? each.value.compartment_ocid : var.instances_configuration.default_compartment_ocid
     eula_link                = oci_core_app_catalog_listing_resource_version_agreement.these[each.key].eula_link
     listing_id               = oci_core_app_catalog_listing_resource_version_agreement.these[each.key].listing_id
     listing_resource_version = oci_core_app_catalog_listing_resource_version_agreement.these[each.key].listing_resource_version

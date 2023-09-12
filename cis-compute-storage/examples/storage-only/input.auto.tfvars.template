@@ -4,9 +4,7 @@
 #--------------------------------------------------------------------------------------------------------------------------------------
 # 1. Rename this file to <project-name>.auto.tfvars, where <project-name> is a name of your choice.
 # 2. Provide values for "Tenancy Connectivity Variables".
-# 3. Replace <REPLACE-BY-COMPARTMENT-OCID>, <REPLACE-BY-METRIC-COMPARTMENT-OCID>, <REPLACE-BY-TOPIC-OCID> placeholders 
-#    by appropriate compartment and topic OCIDs.
-# 4. Replace email.address@example.com by actual email addresses.
+# 3. Replace <REPLACE-BY-*> placeholders with appropriate values.
 #--------------------------------------------------------------------------------------------------------------------------------------
 
 #---------------------------------------
@@ -15,21 +13,23 @@
 
 tenancy_ocid         = "<tenancy OCID>"            # Get this from OCI Console (after logging in, go to top-right-most menu item and click option "Tenancy: <your tenancy name>").
 user_ocid            = "<user OCID>"               # Get this from OCI Console (after logging in, go to top-right-most menu item and click option "My profile").
-fingerprint          = "<PEM key fingerprint>"     # The fingerprint can be gathered from your user account. In the "My profile page, click "API keys" on the menu in left hand side).
+fingerprint          = "<PEM key fingerprint>"     # The fingerprint can be gathered from your user account. In the "My profile page, click "API keys" on the menu in left hand side.
 private_key_path     = "<path to the private key>" # This is the full path on your local system to the API signing private key.
 private_key_password = ""                          # This is the password that protects the private key, if any.
-region               = "<your tenancy region>"     # This is your region, where all other events are created. It can be the same as home_region.
+region               = "<your tenancy region>"     # The region name.
 
 #---------------------------------------
 # Input variable
 #---------------------------------------
 
+block_volumes_replication_region = "<REPLACE-BY-REPLICATION-REGION-NAME>"
+
 storage_configuration = {
-  default_compartment_id = "ocid1.compartment.oc1..aaaaaaaasmzo3tz65cnhnkyi3pnj77q7jftby2uwiqauuhbvppz7edqn67xq" #cis_landing_zone/cislztf-appdev-cmp
-  default_subnet_id = "ocid1.subnet.oc1.iad.aaaaaaaax7tes37ulxp62pk6w5iigt2z5hc4rqdtui676espctwrhrexge7a" #cis_landing_zone/cislztf-network-cmp/vcn1/vcn1-app-subnet
+  default_compartment_id = "<REPLACE-BY-COMPARTMENT-OCID>" 
+  default_subnet_id = "<REPLACE-BY-SUBNET-OCID>"
   block_volumes = {
     BV-1 = {
-      display_name = "block-volume-1"
+      display_name = "<REPLACE-BY-BLOCK-VOLUME-NAME>"
       availability_domain = 1   
       encryption = {
         encrypt_in_transit = false
@@ -44,24 +44,24 @@ storage_configuration = {
    file_storage = {
     file_systems = {
       FS-1 = {
-        file_system_name = "file-system-1"
+        file_system_name = "<REPLACE-BY-FILE-SYSTEM-NAME>"
         availability_domain = 1
         replication = {
-          file_system_target_id = "ocid1.filesystem.oc1.sa_saopaulo_1.aaaaaaaaaaeot2zcm5zhkllqojxwiottmewxgylpobqxk3dpfuys2ylefuyqaaaa"
+          file_system_target_id = "<REPLACE-BY-TARGET-FILE-SYSTEM-OCID>"
         }
         snapshot_policy_id = "SNAPSHOT-POLICY-1"
       }
     }
     mount_targets = {
       MT-1 = {
-        mount_target_name = "mount-target-1"
+        mount_target_name = "<REPLACE-BY-MOUNT-TARGET-NAME>"
         exports = {
           EXP-1 = {
-            path = "/andre"
-            file_system_key = "FS-1"
+            path = "/my_export_path"
+            file_system_id = "FS-1"
             options = [
-              {source = "0.0.0.0/0", access = "READ_ONLY", identity = "NONE", use_port = true}, 
-              {source = "160.34.115.85/32", access = "READ_WRITE", identity = "ROOT", use_port = true}
+              {source = "0.0.0.0/0", access = "READ_ONLY", identity = "NONE", use_privileged_source_port = true}, 
+              {source = "160.34.115.85/32", access = "READ_WRITE", identity = "ROOT", use_privileged_source_port = true}
             ]
           }
         }
@@ -69,7 +69,7 @@ storage_configuration = {
     }
     snapshot_policies = {
       SNAPSHOT-POLICY-1 = {
-        name = "snapshot-policy-1"
+        name = "<REPLACE-BY-SNAPSHOT-POLICY-NAME>"
         schedules = [
           {period = "DAILY", prefix = "daily"}
         ]

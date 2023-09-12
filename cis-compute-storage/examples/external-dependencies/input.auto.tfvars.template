@@ -13,7 +13,7 @@
 
 tenancy_ocid         = "<tenancy OCID>"            # Get this from OCI Console (after logging in, go to top-right-most menu item and click option "Tenancy: <your tenancy name>").
 user_ocid            = "<user OCID>"               # Get this from OCI Console (after logging in, go to top-right-most menu item and click option "My profile").
-fingerprint          = "<PEM key fingerprint>"     # The fingerprint can be gathered from your user account. In the "My profile page, click "API keys" on the menu in left hand side).
+fingerprint          = "<PEM key fingerprint>"     # The fingerprint can be gathered from your user account. In the "My profile page, click "API keys" on the menu in left hand side.
 private_key_path     = "<path to the private key>" # This is the full path on your local system to the API signing private key.
 private_key_password = ""                          # This is the password that protects the private key, if any.
 region               = "<your tenancy region>"     # The region name.
@@ -25,9 +25,9 @@ region               = "<your tenancy region>"     # The region name.
 block_volumes_replication_region = "<REPLACE-BY-REPLICATION-REGION-NAME>"
 
 instances_configuration = {
-  default_compartment_id = "<REPLACE-BY-COMPARTMENT-KEY>" # obtained from oci_compartments_dependency.
-  default_subnet_id = "<REPLACE-BY-SUBNET-KEY>" # obtained from oci_network_dependency.
-  default_kms_key_id = "<REPLACE-BY-ENCRYPTION-KEY-KEY>" # obtained from oci_kms_dependency.
+  default_compartment_id = "<REPLACE-BY-COMPARTMENT-REFERENCE>" # obtained from oci_compartments_dependency.
+  default_subnet_id = "<REPLACE-BY-SUBNET-REFERENCE>" # obtained from oci_network_dependency.
+  default_kms_key_id = "<REPLACE-BY-ENCRYPTION-KEY-REFERENCE>" # obtained from oci_kms_dependency.
   default_ssh_public_key_path = "~/.ssh/id_rsa.pub"
   instances = {
     INSTANCE-1 = {
@@ -50,7 +50,7 @@ instances_configuration = {
       }
       networking = {
         hostname  = "<REPLACE-BY-INSTANCE-HOSTNAME>"
-        network_security_groups = ["REPLACE-BY-NETWORK-SECURITY-GROUP-KEY"] # obtained from oci_network_dependency.
+        network_security_groups = ["REPLACE-BY-NETWORK-SECURITY-GROUP-REFERENCE"] # obtained from oci_network_dependency.
       }
       image = {
         name = "<REPLACE-BY-IMAGE-NAME>"
@@ -61,7 +61,7 @@ instances_configuration = {
 }
 
 storage_configuration = {
-  default_compartment_id = "<REPLACE-BY-COMPARTMENT-KEY>" # obtained from oci_compartments_dependency.
+  default_compartment_id = "<REPLACE-BY-COMPARTMENT-REFERENCE>" # obtained from oci_compartments_dependency.
   block_volumes = {
     BV-1 = {
       display_name = "<REPLACE-BY-BLOCK-VOLUME-NAME>"
@@ -82,11 +82,11 @@ storage_configuration = {
       display_name = "<REPLACE-BY-BLOCK-VOLUME-NAME>"
       availability_domain = 1   
       attach_to_instance = { 
-        instance_id = "<REPLACE-BY-INSTANCE-KEY>" # obtained from oci_compute_dependency.      
+        instance_id = "<REPLACE-BY-INSTANCE-REFERENCE>" # obtained from oci_compute_dependency.      
         device_name  = "/dev/oracleoci/oraclevdb"
       }
       encryption = {
-        kms_key_id = "<REPLACE-BY-ENCRYPTION-KEY-KEY>" # obtained from oci_kms_dependency.
+        kms_key_id = "<REPLACE-BY-ENCRYPTION-KEY-REFERENCE>" # obtained from oci_kms_dependency.
         encrypt_in_transit = false
       }
       backup_policy = "gold"
@@ -113,7 +113,7 @@ oci_kms_dependency = {
 }
 
 oci_compute_dependency = {
-  bucket = "<REPLACE-BY-BUCKET-NAME>" # use the bucket name containing the instances.json external dependencies.
+  bucket = "<REPLACE-BY-BUCKET-NAME>" # use the bucket name containing the instances.json external dependency.
   object = "instances.json"
 }
 

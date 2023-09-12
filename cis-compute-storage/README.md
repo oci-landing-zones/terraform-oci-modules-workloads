@@ -82,7 +82,7 @@ The *default_* attributes are the following:
 The instances themselves are defined within the **instances** attribute, In Terraform terms, it is a map of objects. where each object is referred by an identifying key. The supported attributes are listed below. For better usability, most attributes are grouped in logical blocks. They are properly indented in the list.
 - **compartment_id**: the instance compartment. *default_compartment_id* is used if undefined. This attribute is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *compartments_dependency* variable. See [External Dependencies](#ext-dep) for details.
 - **cis_level**: the CIS OCI Benchmark profile level to apply. *default_cis_level* is used if undefined.
-- **shape**: the instance shape.
+- **shape**: the instance shape. See [Compute Shapes](https://docs.oracle.com/en-us/iaas/Content/Compute/References/computeshapes.htm) for OCI Compute shapes.
 - **name**: the instance name.
 - **ssh_public_key_path**: the SSH public key path used to access the instance. *default_ssh_public_key_path* is used if undefined.
 - **defined_tags**: the instance defined tags. *default_defined_tags* is used if undefined.
@@ -237,7 +237,7 @@ Example:
 ```
 {
 	"APP-CMP": {
-		"id": "ocid1.compartment.oc1..aaaaaaaasmzo3tz65whateverpnj77q7jftby2ufoobarhbvppz7edqn67xq"
+		"id": "ocid1.compartment.oc1..aaaaaaaa...7xq"
 	}
 }
 ```
@@ -249,10 +249,10 @@ Example:
 ```
 {
     "APP-SUBNET" : {
-        "id" : "ocid1.subnet.oc1.iad.aaaaaaaax7tes37whatever6w5iigt2z5hc4rqdtufoobarpctwrhrexge7a"
+        "id" : "ocid1.subnet.oc1.iad.aaaaaaaax...e7a"
     }, 
     "APP-NSG" : {
-        "id" : "ocid1.networksecuritygroup.oc1.iad.aaaaaaaahyxwhateverekgzqrtu5e4awfoobar7yzlg5snliatdomepraxlq"
+        "id" : "ocid1.networksecuritygroup.oc1.iad.aaaaaaaa...xlq"
     }
 } 
 ```  
@@ -262,7 +262,7 @@ Example:
 ```
 {
 	"APP-KEY": {
-		"id": "ocid1.key.oc1.iad.ejsppeqvaafyi.abuwcljwhateveryhcrhabscof6moevm4i3mgcfoobar7ihdtu5oyfs6ayna"
+		"id": "ocid1.key.oc1.iad.ejsppeqvaafyi.abuwcl...yna"
 	}
 }
 ```
@@ -275,7 +275,7 @@ Example:
 ```
 {
 	"INSTANCE-2": {
-		"id": "ocid1.instance.oc1.iad.anuwcljrlwjjtaicwhatevergzjaee67dxyiamu6syzfuwxc4foobarouftq",
+		"id": "ocid1.instance.oc1.iad.anuwc...ftq",
         "remote_data_volume_type": "PARAVIRTUALIZED",
         "is_pv_encryption_in_transit_enabled" : false
 	}
@@ -287,7 +287,7 @@ Example:
 ```
 {
 	"FILE-SYSTEM-2": {
-		"id": "ocid1.filesystem.oc1.iad.aaaaaaaaaaejjacqnfwhateverwiotjmfoobarefuyqaaaa"
+		"id": "ocid1.filesystem.oc1.iad.aaaaaaaaaae...aaa"
 	}
 }
 ```

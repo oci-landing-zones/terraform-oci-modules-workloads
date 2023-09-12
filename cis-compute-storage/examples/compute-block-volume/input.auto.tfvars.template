@@ -4,7 +4,7 @@
 #--------------------------------------------------------------------------------------------------------------------------------------
 # 1. Rename this file to <project-name>.auto.tfvars, where <project-name> is a name of your choice.
 # 2. Provide values for "Tenancy Connectivity Variables".
-# 3. Replace <REPLACE-BY-*> placeholders with appropriate values
+# 3. Replace <REPLACE-BY-*> placeholders with appropriate values.
 #--------------------------------------------------------------------------------------------------------------------------------------
 
 #---------------------------------------
@@ -13,7 +13,7 @@
 
 tenancy_ocid         = "<tenancy OCID>"            # Get this from OCI Console (after logging in, go to top-right-most menu item and click option "Tenancy: <your tenancy name>").
 user_ocid            = "<user OCID>"               # Get this from OCI Console (after logging in, go to top-right-most menu item and click option "My profile").
-fingerprint          = "<PEM key fingerprint>"     # The fingerprint can be gathered from your user account. In the "My profile page, click "API keys" on the menu in left hand side).
+fingerprint          = "<PEM key fingerprint>"     # The fingerprint can be gathered from your user account. In the "My profile page, click "API keys" on the menu in left hand side.
 private_key_path     = "<path to the private key>" # This is the full path on your local system to the API signing private key.
 private_key_password = ""                          # This is the password that protects the private key, if any.
 region               = "<your tenancy region>"     # The region name.
@@ -61,7 +61,7 @@ instances_configuration = {
 }
 
 storage_configuration = {
-  default_compartment_id = "ocid1.compartment.oc1..aaaaaaaasmzo3tz65cnhnkyi3pnj77q7jftby2uwiqauuhbvppz7edqn67xq" #cis_landing_zone/cislztf-appdev-cmp
+  default_compartment_id = "<REPLACE-BY-COMPARTMENT-OCID>"
   block_volumes = {
     BV-1 = {
       display_name = "<REPLACE-BY-INSTANCE-NAME>"
@@ -88,9 +88,9 @@ storage_configuration = {
 #block_volumes_replication_region = "sa-saopaulo-1"
 
 #instances_configuration = {
-#  default_compartment_id = "ocid1.compartment.oc1..aaaaaaaasmzo3tz65cnhnkynotarealocinotarealociduhbvppz7edqn67xq"
-#  default_subnet_id = "ocid1.subnet.oc1.iad.aaaaaaaax7tes37ulxp62pk6wnotarealocinotarealocidspctwrhrexge7a" 
-#  default_kms_key_id = "ocid1.key.oc1.iad.ejsppeqvaafyi.abuwcljrrhq3notarealocinotarealocidm4i3mgcwlwmpa7ihdtu5oyfs6ayna"
+#  default_compartment_id = "ocid1.compartment.oc1..aaaaaaaa...7xq"
+#  default_subnet_id = "ocid1.subnet.oc1.iad.aaaaaaaa...e7a" 
+#  default_kms_key_id = "ocid1.key.oc1.iad.ejsppeqva...yna"
 #  default_ssh_public_key_path = "~/.ssh/id_rsa.pub"
 #  instances = {
 #    INSTANCE-1 = {
@@ -113,7 +113,7 @@ storage_configuration = {
 #      }
 #      networking = {
 #        hostname  = "oracle-linux-7-stig-instance-1-all-resources"
-#        network_security_groups = ["ocid1.networksecuritygroup.oc1.iad.aaaaaaaahyxcvo5punmenotarealocinotarealocid5snliatdomepraxlq"]
+#        network_security_groups = ["ocid1.networksecuritygroup.oc1.iad.aaaaaaaa...xlq"]
 #      }
 #      image = {
 #        name = "Oracle Linux 7 STIG"
@@ -124,7 +124,7 @@ storage_configuration = {
 #}
 #
 #storage_configuration = {
-#  default_compartment_id = "ocid1.compartment.oc1..aaaaaaaasmzo3tz65cnhnkyi3pnnotarealocinotarealocidz7edqn67xq"
+#  default_compartment_id = "ocid1.compartment.oc1..aaaaaaaa...7xq"
 #  block_volumes = {
 #    BV-1 = {
 #      display_name = "block-volume-1"

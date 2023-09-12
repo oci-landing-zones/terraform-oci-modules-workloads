@@ -4,8 +4,7 @@
 #--------------------------------------------------------------------------------------------------------------------------------------
 # 1. Rename this file to <project-name>.auto.tfvars, where <project-name> is a name of your choice.
 # 2. Provide values for "Tenancy Connectivity Variables".
-# 3. Replace <REPLACE-BY-COMPARTMENT-OCID> placeholder by appropriate compartment and topic OCIDs.
-# 3. Replace <REPLACE-BY-FILE-SYSTEM-REPLICA-REGION-NAME> placeholder by appropriate region name.
+# 3. Replace <REPLACE-BY-*> placeholders with appropriate values.
 #--------------------------------------------------------------------------------------------------------------------------------------
 
 #---------------------------------------
@@ -28,7 +27,7 @@ storage_configuration = {
   file_storage = {
     file_systems = {
       FS-1 = {
-        file_system_name = "file-system-1"
+        file_system_name = "<REPLACE-BY-FILE-SYSTEM-NAME>"
         availability_domain = 1
       }
     }

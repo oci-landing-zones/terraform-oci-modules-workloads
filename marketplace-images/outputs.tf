@@ -5,3 +5,7 @@ output "marketplace_images" {
   value = var.word_to_search_for_in_image_name != null || length(trimspace(var.word_to_search_for_in_image_name)) > 0 ? local.filtered_images : local.list_images
 }
 
+output "image_shapes" {
+  value = data.oci_core_image_shapes.these
+}
+
