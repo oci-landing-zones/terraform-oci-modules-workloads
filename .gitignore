@@ -9,3 +9,4 @@
 **/*.auto.tfvars
 **/*.pptx
 **/*.json
+**/*.txt
