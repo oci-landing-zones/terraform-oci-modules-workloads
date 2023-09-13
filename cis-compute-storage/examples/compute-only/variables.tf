@@ -40,10 +40,7 @@ variable "instances_configuration" {
         preserve_on_instance_deletion = optional(bool,true) # whether to preserve boot volume after deletion. Default is true.
         backup_policy = optional(string,"bronze") # the Oracle managed backup policy. Valid values: "gold", "silver", "bronze". Default is "bronze".
       }))
-      device_mounting = optional(object({ # storage settings. Attributes required by the cloud init script to attach block volumes.
-        disk_mappings  = string # device mappings to mount block volumes. If providing multiple mapping, separate the mappings with a blank space.
-        emulation_type = optional(string,"PARAVIRTUALIZED") # Emulation type for attached storage volumes. Valid values: "PARAVIRTUALIZED" (default for platform images), "SCSI", "ISCSI", "IDE", "VFIO". Module supported values for automated attachment: "PARAVIRTUALIZED", "ISCSI".
-      }))
+      volumes_emulation_type = optional(string,"PARAVIRTUALIZED") # Emulation type for attached storage volumes. Valid values: "PARAVIRTUALIZED" (default for platform images), "SCSI", "ISCSI", "IDE", "VFIO". Module supported values for automated attachment: "PARAVIRTUALIZED", "ISCSI".
       networking = optional(object({ # networking settings
         type                    = optional(string,"PARAVIRTUALIZED") # emulation type for the physical network interface card (NIC). Valid values: "PARAVIRTUALIZED" (default), "E1000", "VFIO".
         hostname                = optional(string) # the instance hostname.

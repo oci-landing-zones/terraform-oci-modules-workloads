@@ -29,6 +29,9 @@ storage_configuration = {
       FS-1 = {
         file_system_name = "<REPLACE-BY-FILE-SYSTEM-NAME>"
         availability_domain = 1
+        replication = {
+          is_target = true
+        }
       }
     }
   } 

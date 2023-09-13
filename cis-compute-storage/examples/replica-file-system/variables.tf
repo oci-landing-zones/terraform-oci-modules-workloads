@@ -25,8 +25,9 @@ variable "storage_configuration" {
       volume_size         = optional(number,50) # the size of the block volume.
       vpus_per_gb         = optional(number,0)  # the number of vpus per gb. Values are 0(LOW), 10(BALANCE), 20(HIGH), 30-120(ULTRA HIGH)
       attach_to_instance = optional(object({ # map to where to attach the block volume.
-        instance_id = string                # the instance that this volume will be attached to.
-        device_name = optional(string)      # where to mount the block volume. Should be one of the values from disk_mappings in the instance_configuration.
+        instance_id = string      # the instance that this volume will be attached to.
+        device_name = string      # where to mount the block volume. Should be one of the values from disk_mappings in the instance_configuration.
+        attachment_type = optional(string,"PARAVIRTUALIZED") # the block volume attachment type. Valid values: "PARAVIRTUALIZED" (default), "ISCSI".
       }))
       encryption = optional(object({ # encryption settings
         kms_key_id              = optional(string) # the KMS key to assign as the master encryption key. default_kms_key_id is used if this is not defined.

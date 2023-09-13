@@ -39,9 +39,6 @@ instances_configuration = {
         size = 120
         preserve_on_instance_deletion = true
       }
-      device_mounting = {
-        disk_mappings = "/u01:/dev/oracleoci/oraclevdb"
-      }
       encryption = {
         encrypt_in_transit_at_instance_creation = false
         kms_key_id = "<REPLACE-BY-KEY-OCID>"

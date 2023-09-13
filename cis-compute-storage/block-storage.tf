@@ -25,7 +25,11 @@ resource "oci_core_volume" "these" {
   lifecycle {
       precondition {
         condition = coalesce(each.value.cis_level,var.storage_configuration.default_cis_level,"1") == "2" ? (each.value.encryption != null ? (each.value.encryption.kms_key_id != null || var.storage_configuration.default_kms_key_id != null) : var.storage_configuration.default_kms_key_id != null) : true
-        error_message = "VALIDATION FAILURE (CIS Storage 4.1.2) in block volume ${each.key}: A customer managed key is required when CIS level is set to 2. Either encryption.kms_key_id or default_kms_key_id must be provided."
+        error_message = "VALIDATION FAILURE (CIS Storage 4.1.2) in block volume \"${each.key}\": A customer managed key is required when CIS level is set to 2. Either \"encryption.kms_key_id\" or \"default_kms_key_id\" must be provided."
+      }
+      precondition {
+        condition = each.value.encryption != null ? (each.value.encryption.kms_key_id != null || var.storage_configuration.default_kms_key_id != null ? (each.value.replication != null ? split("-AD",split(":",data.oci_identity_availability_domains.bv_ads[each.key].availability_domains[each.value.availability_domain - 1].name)[1])[0] == split("-AD",split(":",data.oci_identity_availability_domains.bv_ads_replicas[each.key].availability_domains[each.value.replication.availability_domain - 1].name)[1])[0] : true) : true) : true
+        error_message = "VALIDATION FAILURE in block volume \"${each.key}\": cross-region replication not possible for volumes encrypted with a customer managed key. Either unset \"encryption.kms_key_id\"/\"default_kms_key_id\" or disable cross-region replication."
       }
     }
     availability_domain = data.oci_identity_availability_domains.bv_ads[each.key].availability_domains[each.value.availability_domain - 1].name
@@ -54,7 +58,7 @@ resource "oci_core_volume_attachment" "these" {
       }
     }
     #attachment_type                     = lower(var.instances_configuration["instances"][each.value.attach_to_instance.instance_id].device_mounting.emulation_type)
-    attachment_type                     = contains(keys(oci_core_instance.these),each.value.attach_to_instance.instance_id) ? oci_core_instance.these[each.value.attach_to_instance.instance_id].launch_options[0].remote_data_volume_type : (contains(keys(var.instances_dependency),each.value.attach_to_instance.instance_id) ? var.instances_dependency[each.value.attach_to_instance.instance_id].remote_data_volume_type : null)
+    attachment_type                     = each.value.attach_to_instance.attachment_type
     instance_id                         = contains(keys(oci_core_instance.these),each.value.attach_to_instance.instance_id) ? oci_core_instance.these[each.value.attach_to_instance.instance_id].id : (contains(keys(var.instances_dependency),each.value.attach_to_instance.instance_id) ? var.instances_dependency[each.value.attach_to_instance.instance_id].id : null)
     volume_id                           = oci_core_volume.these[each.key].id
     device                              = each.value.attach_to_instance.device_name

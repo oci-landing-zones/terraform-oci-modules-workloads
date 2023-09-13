@@ -100,9 +100,7 @@ The instances themselves are defined within the **instances** attribute, In Terr
   - **size**: boot volume size. Default is 50 (in GB, the minimum allowed by OCI).
   - **preserve_on_instance_deletion**: whether to preserve boot volume after deletion. Default is true.
   - **backup_policy**: the Oracle managed backup policy for the boot volume. Valid values: "gold", "silver", "bronze". Default is "bronze".
-- **device_mounting**: device mounting settings. See section [Device Mounting](#device-mounting) below for details.
-  - **disk_mappings**: device disk mappings to storage volumes. If providing multiple mappings, separate the mappings with a blank space.
-  - **emulation_type**: emulation type for attached storage volumes. Valid values: "PARAVIRTUALIZED" (default), "SCSI", "ISCSI", "IDE", "VFIO". Module supported values for automated attachment: "PARAVIRTUALIZED", "ISCSI".
+- **volumes_emulation_type**: emulation type for attached storage volumes. Valid values: "PARAVIRTUALIZED" (default), "SCSI", "ISCSI", "IDE", "VFIO". 
 - **networking**: # networking settings. 
   - **type**: emulation type for the physical network interface card (NIC). Valid values: "PARAVIRTUALIZED" (default), "VFIO" (SR-IOV networking), "E1000" (compatible with Linux e1000 driver).
   - **hostname**: the instance hostname.
@@ -133,9 +131,6 @@ Resource version: 3.1.2.6
 ```
 Use the *Listing resource id* or *Image name and Publisher* to seed image.id or image.name and image.publisher attributes.
 
-#### <a name="device-mounting">Device Mounting</a>
--------------> TO DO
-
 #### <a name="in-transit-encryption">In Transit Encryption</a>
 As stated in https://docs.oracle.com/en-us/iaas/Content/Block/Concepts/overview.htm#BlockVolumeEncryption:
 
@@ -165,15 +160,21 @@ Block volumes are defined using the **block_volumes** attribute. In Terraform te
 - **vpus_per_gb**: the number of VPUs per GB of volume. Values are 0(LOW), 10(BALANCE), 20(HIGH), 30-120(ULTRA HIGH). Default is 0.
 - **defined_tags**: the volume defined tags. *default_defined_tags* is used if undefined.
 - **freeform_tags**: the volume freeform tags. *default_freeform_tags* is used if undefined.
-- **attach_to_instance**: 
+- **attach_to_instance**: settings for block volume attachment. Note that the module does **not** mount the block volume in the instance. For instructions how to mount block volumes, please section [Mounting Block Volumes](#mounting-block-volumes).
   - **instance_id**: the instance that the volume attaches to. It must be one of the identifying keys in the *instances* map or in the *instances_dependency* variable. See [External Dependencies](#ext-dep) for details.
   - **device_name**: the device name where to mount the block volume. It must be one of the *disk_mappings* value in the *instances* map or in the *instances_dependency* object.
+  - **attachment_type**: the block volume attachment type. Valid values: "PARAVIRTUALIZED" (default), "ISCSI".
 - **encryption**: encryption settings
   - **kms_key_id**: the encryption key for volume encryption. *default_kms_key_id* is used if undefined. Required if *cis_level* or *default_cis_level* is "2". This attribute is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *kms_dependency* variable. See [External Dependencies](#ext-dep) for details.
   - **encrypt_in_transit**: whether traffic encryption should be enabled for the volume. It only works if the device emulation type is paravirtualized.
 - **replication**: replication settings
   - **availability_domain**: the availability domain (AD) to replicate the volume. The AD is picked from the region set by the module client to *block_volumes_replication_region* provider alias. Check [here](./examples/storage-only/) for an example with cross-region replication.
 - **backup_policy**: the Oracle managed backup policy for the volume. Valid values: "gold", "silver", "bronze". Default is "bronze".
+
+##### <a name="mounting-block-volumes">Mounting Block Volumes</a>
+As stated in https://docs.oracle.com/en-us/iaas/Content/Block/Tasks/attachingavolume.htm:
+
+*"On Linux-based instances, if you want to automatically mount volumes when the instance starts, you need to set some specific options in the /etc/fstab file, or the instance might fail to start. This applies to both iSCSI and paravirtualized attachment types. For volumes that use consistent device paths, see [fstab Options for Block Volumes Using Consistent Device Paths](https://docs.oracle.com/en-us/iaas/Content/Block/References/fstaboptionsconsistentdevicepaths.htm#fstab_Options_for_Block_Volumes_Using_Consistent_Device_Paths). For all other volumes, see [Traditional fstab Options](https://docs.oracle.com/en-us/iaas/Content/Block/References/fstaboptions.htm#Traditional_fstab_Options)."*
 
 #### <a name="file-storage">File Storage</a>
 The **file_storage** attribute defines the file systems, mount targets and snapshot policies for OCI File Storage service. The attribute **default_subnet_id** applies to all mount targets, unless overriden by **subnet_id** attribute in each mount target. Attribute **subnet_id** is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *network_dependency* variable. See [External Dependencies](#ext-dep) for details.
@@ -268,7 +269,6 @@ Example:
 ```
 - **instances_dependency**: A map of objects containing the externally managed instances this module may depend on. All map objects must have the same type and should contain at least the following attributes:
   - an *id* attribute with the instance OCID.
-  - a *remote_data_volume_type* attribute with the instance supported emulation type.
   - a *is_pv_encryption_in_transit_enabled* attribute informing whether the instance supports in-transit encryption.
 
 Example:
@@ -302,4 +302,7 @@ Example:
 
 
 ## <a name="issues">Known Issues</a>
-None.
+
+### Block Volumes
+1. The module currently supports only one Block volume replica (within or across regions).
+2. Terraform does not destroy replicated Block volumes. It is first necessary to disable replication (you can use OCI Console) before running *terraform destroy*.

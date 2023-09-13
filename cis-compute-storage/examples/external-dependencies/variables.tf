@@ -45,10 +45,7 @@ variable "instances_configuration" {
         preserve_on_instance_deletion = optional(bool,true) # whether to preserve boot volume after deletion. Default is true.
         backup_policy = optional(string,"bronze") # the Oracle managed backup policy. Valid values: "gold", "silver", "bronze". Default is "bronze".
       }))
-      device_mounting = optional(object({ # storage settings. Attributes required by the cloud init script to attach block volumes.
-        disk_mappings  = string # device mappings to mount block volumes. If providing multiple mapping, separate the mappings with a blank space.
-        emulation_type = optional(string,"PARAVIRTUALIZED") # Emulation type for attached storage volumes. Valid values: "PARAVIRTUALIZED" (default for platform images), "SCSI", "ISCSI", "IDE", "VFIO". Module supported values for automated attachment: "PARAVIRTUALIZED", "SCSI".
-      }))
+      volumes_emulation_type = optional(string,"PARAVIRTUALIZED") # Emulation type for attached storage volumes. Valid values: "PARAVIRTUALIZED" (default for platform images), "SCSI", "ISCSI", "IDE", "VFIO". Module supported values for automated attachment: "PARAVIRTUALIZED", "ISCSI".
       networking = optional(object({ # networking settings
         type                    = optional(string,"PARAVIRTUALIZED") # emulation type for the physical network interface card (NIC). Valid values: "PARAVIRTUALIZED" (default), "E1000", "VFIO".
         hostname                = optional(string) # the instance hostname.
@@ -90,8 +87,9 @@ variable "storage_configuration" {
       volume_size         = optional(number,50) # the size of the block volume.
       vpus_per_gb         = optional(number,0)  # the number of vpus per gb. Values are 0(LOW), 10(BALANCE), 20(HIGH), 30-120(ULTRA HIGH)
       attach_to_instance = optional(object({ # map to where to attach the block volume.
-        instance_id = string                # the instance that this volume will be attached to.
-        device_name = optional(string)      # where to mount the block volume. Should be one of the values from disk_mappings in the instance_configuration.
+        instance_id = string      # the instance that this volume will be attached to.
+        device_name = string      # where to mount the block volume. Should be one of the values from disk_mappings in the instance_configuration.
+        attachment_type = optional(string,"PARAVIRTUALIZED") # the block volume attachment type. Valid values: "PARAVIRTUALIZED" (default), "ISCSI".
       }))
       encryption = optional(object({ # encryption settings
         kms_key_id              = optional(string) # the KMS key to assign as the master encryption key. default_kms_key_id is used if this is not defined.

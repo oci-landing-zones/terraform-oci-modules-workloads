@@ -83,7 +83,7 @@ resource "oci_file_storage_export" "these" {
         source                         = option.value.source
         access                         = option.value.access
         identity_squash                = option.value.identity
-        require_privileged_source_port = option.value.use_privilege_source_port
+        require_privileged_source_port = option.value.use_privileged_source_port
       }
     }
 }
@@ -146,11 +146,12 @@ locals {
 }
 
 # Default snapshot policies are created for all file systems without a snapshot policy. The policy is created in the same compartment and same availability domain as the file system itself. 
+# No policy is created for file systems that are replica targets, as per above non_replica_file_systems variable.
 resource "oci_file_storage_filesystem_snapshot_policy" "defaults" {
   for_each = local.non_replica_file_systems
     availability_domain = data.oci_identity_availability_domains.fs_ads[each.key].availability_domains[each.value.availability_domain - 1].name
     compartment_id      = each.value.compartment_id != null ? (length(regexall("^ocid1.*$", each.value.compartment_id)) > 0 ? each.value.compartment_id : var.compartments_dependency[each.value.compartment_id].id) : (length(regexall("^ocid1.*$", var.storage_configuration.default_compartment_id)) > 0 ? var.storage_configuration.default_compartment_id : var.compartments_dependency[var.storage_configuration.default_compartment_id].id)
-    display_name        = "${each.value.file_system_name}-snapshot-policy"
+    display_name        = "${each.value.file_system_name}-default-snapshot-policy"
     policy_prefix       = each.value.file_system_name
     schedules {
       schedule_prefix = "weekly"

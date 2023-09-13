@@ -41,10 +41,7 @@ instances_configuration = {
         size = 120
         preserve_on_instance_deletion = false
       }
-      device_mounting = {
-        disk_mappings = "/u01:/dev/oracleoci/oraclevdb"
-        emulation_type = "paravirtualized"
-      }
+      volumes_emulation_type = "PARAVIRTUALIZED"
       encryption = {
         encrypt_in_transit_at_instance_creation = false
       }
@@ -90,9 +87,6 @@ storage_configuration = {
         encrypt_in_transit = false
       }
       backup_policy = "gold"
-      replication = {
-        availability_domain = 1
-      }
     }
   }
 }

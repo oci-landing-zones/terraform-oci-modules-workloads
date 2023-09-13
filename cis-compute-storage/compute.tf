@@ -92,7 +92,7 @@ resource "oci_core_instance" "these" {
       boot_volume_type = each.value.boot_volume != null ? upper(each.value.boot_volume.type) : "PARAVIRTUALIZED"
       firmware = each.value.boot_volume != null ? (each.value.boot_volume.firmware != null ? upper(each.value.boot_volume.firmware) : null) : null
       network_type = each.value.networking != null ? upper(each.value.networking.type) : "PARAVIRTUALIZED"
-      remote_data_volume_type = each.value.device_mounting != null ? upper(each.value.device_mounting.emulation_type) : "PARAVIRTUALIZED"
+      remote_data_volume_type = upper(each.value.volumes_emulation_type)
       is_pv_encryption_in_transit_enabled = each.value.encryption != null ? each.value.encryption.encrypt_in_transit_at_instance_update : false
     }
     dynamic "shape_config" {
@@ -104,7 +104,7 @@ resource "oci_core_instance" "these" {
     }
     metadata = {
       ssh_authorized_keys = each.value.ssh_public_key_path != null ? file(each.value.ssh_public_key_path) : file(var.instances_configuration.default_ssh_public_key_path)
-      user_data           = contains(keys(data.template_cloudinit_config.config),each.key) ? data.template_cloudinit_config.config[each.key].rendered : null
+    #  user_data           = contains(keys(data.template_cloudinit_config.config),each.key) ? data.template_cloudinit_config.config[each.key].rendered : null
     }
 }
 
@@ -114,18 +114,13 @@ resource "oci_core_volume_backup_policy_assignment" "these_boot_volumes" {
     policy_id = local.oracle_backup_policies[lower(each.value.boot_volume != null ? each.value.boot_volume.backup_policy : "bronze")]
 }
 
-/* locals {
-  linux_boot_volumes  = [for instance in var.instances_configuration["instances"] : instance.boot_volume_size >= 50 ? null : file(format("\n\nERROR: The boot volume size for linux instance %s is less than 50GB which is not permitted. Please add a boot volume size of 50GB or more", instance.hostname))]
-  linux_block_volumes = var.storage_configuration != null ? (var.storage_configuration["block_volumes"] != null ? [for block in var.storage_configuration["block_volumes"] : block.block_volume_size >= 50 && block.block_volume_size <= 32768 ? null : file(format("\n\nERROR: Block volume size %s for block volume %s should be between 50GB and 32768GB", block.block_volume_size, block.display_name))] : null) : null
-} */
-
-data "template_file" "block_volumes_templates" {
+/* data "template_file" "block_volumes_templates" {
   for_each = var.instances_configuration != null ? {for k, v in var.instances_configuration["instances"] : k => v if v.device_mounting != null} : {}
     template = file("${path.module}/userdata/linux_mount.sh")
     vars = {
-      length               = (length(split(" ", each.value.device_mounting.disk_mappings)) - 1)
+      length        = (length(split(" ", each.value.device_mounting.disk_mappings)) - 1)
       disk_mappings = each.value.device_mounting.disk_mappings
-      block_vol_att_type   = each.value.device_mounting.emulation_type != null ? lower(each.value.device_mounting.emulation_type) : "paravirtualized"
+      block_vol_att_type = each.value.device_mounting.emulation_type != null ? lower(each.value.device_mounting.emulation_type) : "paravirtualized"
     }
 }
 
@@ -140,4 +135,4 @@ data "template_cloudinit_config" "config" {
       content_type = "text/x-shellscript"
       content      = data.template_file.block_volumes_templates[each.key].rendered
     }
-  }
+  } */

@@ -23,7 +23,7 @@ The example deploys one Compute instance and two Block volumes with the followin
 - Block volume "BV-2" is attached to and mounted on the externally managed instance "INSTANCE-2". The instance is brought over via *oci_compute_dependency* variable.
 - Block volume "BV-2" is encrypted with customer managed key, specified by *kms_key_id* variable. The encryption key is brought over via *oci_kms_dependency* variable.
 - Block volume "BV-2" is set to be backed up per Oracle-managed *gold* backup policy.
-- Block volume "BV-2" is replicated to another region, specified by *block_volume_replication_region* variable. Notice that the replicated block volumes are not destroyed upon *terraform destroy*. In order to destroy replicated block volumes, it is first necessary to manually terminate the replication.
+- Block volume "BV-2" is not replicated to another region, as block volumes encrypted with a customer-managed key cannot be cross-region replicated.
 
 See [input.auto.tfvars.template](./input.auto.tfvars.template) for the variables configuration.
 
@@ -43,12 +43,12 @@ The OCI Object Storage objects with external dependencies are expected to have s
 - **oci_network_dependency**
 ```
 {
-    "APP-SUBNET" : {
-        "id" : "ocid1.subnet.oc1.iad.aaaaaaaax...e7a"
-    }, 
-    "APP-NSG" : {
-        "id" : "ocid1.networksecuritygroup.oc1.iad.aaaaaaaa...xlq"
-    }
+  "APP-SUBNET" : {
+   "id" : "ocid1.subnet.oc1.iad.aaaaaaaax...e7a"
+  }, 
+  "APP-NSG" : {
+   "id" : "ocid1.networksecuritygroup.oc1.iad.aaaaaaaa...xlq"
+  }
 } 
 ```  
 - **oci_kms_dependency**
@@ -64,8 +64,7 @@ The OCI Object Storage objects with external dependencies are expected to have s
 {
 	"INSTANCE-2": {
 		"id": "ocid1.instance.oc1.iad.anuwc...ftq",
-      "remote_data_volume_type": "PARAVIRTUALIZED",
-      "is_pv_encryption_in_transit_enabled" : false
+    "is_pv_encryption_in_transit_enabled" : false
 	}
 }
 ```

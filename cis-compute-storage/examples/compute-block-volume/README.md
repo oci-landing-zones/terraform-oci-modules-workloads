@@ -5,9 +5,10 @@
 This example shows how to deploy Compute instances and Block volumes in OCI using the [cis-compute-storage module](../../). It deploys one Compute instance and one Block volume with the following characteristics:
 - The instance boot volume is encrypted with a customer managed key referred by *default_kms_key* attribute.
 - The instance boot volume is set to be backed up per Oracle-managed *bronze* backup policy (enforced by the module by default).
-- The Block volume is attached to and mounted on the instance.
+- The Block volume is attached to the instance (but not mounted).
+- The Block volume is encrypted with an Oracle-managed key (per OCI default).
 - The Block volume is set to be backed up per Oracle-managed *bronze* backup policy.
-- The Block volume is replicated to another region, specified by *block_volume_replication_region* variable. Notice that the replicated block volumes are not de destroyed upon *terraform destroy*. In order to destroy replicated block volumes, it is first necessary to manually terminate the replication. 
+- The Block volume is replicated to another region, specified by *block_volume_replication_region* variable. Notice that the replicated block volumes are not destroyed upon *terraform destroy*. In order to destroy replicated block volumes, it is first necessary to manually terminate the replication. 
 
 See [input.auto.tfvars.template](./input.auto.tfvars.template) for the variables configuration.
 

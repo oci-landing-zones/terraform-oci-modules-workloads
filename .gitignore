@@ -9,4 +9,6 @@
 **/*.auto.tfvars
 **/*.pptx
 **/*.json
-**/*.txt
+marketplace-images/**/*.txt
+userdata
+mounting-block-volumes.txt
