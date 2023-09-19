@@ -87,7 +87,7 @@ The instances themselves are defined within the **instances** attribute, In Terr
 - **ssh_public_key_path**: the SSH public key path used to access the instance. *default_ssh_public_key_path* is used if undefined.
 - **defined_tags**: the instance defined tags. *default_defined_tags* is used if undefined.
 - **freeform_tags**: the instance freeform tags. *default_freeform_tags* is used if undefined.
-- **image**: the instance base image. You must provider either the id or (name and publisher name). See section [Obtaining Compute Images Information from OCI Marketplace](#marketplace-images) below about how to get Marketplace images.
+- **image**: the instance base image. You must provider either the id or (name and publisher name). See section [Obtaining OCI Platform Images Information](#platform-images) for how to get OCI Platform images and section [Obtaining OCI Marketplace Images Information](#marketplace-images) for how to get OCI Marketplace images.
   - **id**: the image id for the instance. It takes precedence over name and publisher.
   - **name**: the image name to search for in OCI Marketplace. 
   - **publisher**: the image's publisher name.
@@ -101,7 +101,7 @@ The instances themselves are defined within the **instances** attribute, In Terr
   - **preserve_on_instance_deletion**: whether to preserve boot volume after deletion. Default is true.
   - **backup_policy**: the Oracle managed backup policy for the boot volume. Valid values: "gold", "silver", "bronze". Default is "bronze".
 - **volumes_emulation_type**: emulation type for attached storage volumes. Valid values: "PARAVIRTUALIZED" (default), "SCSI", "ISCSI", "IDE", "VFIO". 
-- **networking**: # networking settings. 
+- **networking**: networking settings. 
   - **type**: emulation type for the physical network interface card (NIC). Valid values: "PARAVIRTUALIZED" (default), "VFIO" (SR-IOV networking), "E1000" (compatible with Linux e1000 driver).
   - **hostname**: the instance hostname.
   - **assign_public_ip**: whether to assign the instance a public IP. Default is false.
@@ -115,8 +115,30 @@ The instances themselves are defined within the **instances** attribute, In Terr
   - **memory**: the instance memory for Flex shapes. Default is 16 (in GB).
   - **ocpus**: the number of OCPUs for Flex shapes. Default is 1.
 
-#### <a name="marketplace-images">Obtaining Compute Images Information from OCI Marketplace</a>
-Helper module [marketplace-images](../marketplace-images/) aids in finding Compute instances in OCI Marketplace based on a search string. See [this example](../marketplace-images/examples/marketplace-images/) for finding images containing "CIS" in their names. It outputs information like:
+#### <a name="platform-images">Obtaining OCI Platform Images Information</a>
+Helper module [platform-images](../platform-images/) aids in finding OCI Platform instances based on a search string. See [this example](../platform-images/examples/platform-images/) for finding images containing "Linux-8" in their names. It outputs information like:
+```
+Display Name: Oracle-Linux-8.8-aarch64-2023.08.31-0
+Publisher Name: Oracle
+Id: ocid1.image.oc1.iad.aaaaaaaamwu6pamu2qv33dcmsta5jp77fkmqjg5nb6zhigk3chlmeoqvt3wa
+Operating System: Oracle Linux
+Operating System Version: 8
+Is encryption in transit enabled? true
+State: AVAILABLE
+
+Display Name: Oracle-Linux-8.8-aarch64-2023.08.16-0
+Publisher Name: Oracle
+Id: ocid1.image.oc1.iad.aaaaaaaa27fywhfx24qbtw7dedepm6wgbgrwshptjihbhidazcfzwyg3eiqa
+Operating System: Oracle Linux
+Operating System Version: 8
+Is encryption in transit enabled? true
+State: AVAILABLE
+...
+```
+Use *Id* value to seed image.id attribute.
+
+#### <a name="marketplace-images">Obtaining OCI Marketplace Images Information</a>
+Helper module [marketplace-images](../marketplace-images/) aids in finding Compute images in OCI Marketplace based on a search string. See [this example](../marketplace-images/examples/marketplace-images/) for finding images containing "CIS" in their names. It outputs information like:
 ```
 Publisher: Center for Internet Security
 Image name: CIS CentOS Linux 6 Benchmark - Level 1
