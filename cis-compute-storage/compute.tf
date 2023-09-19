@@ -17,11 +17,11 @@ locals {
     for i in local.listings :
     format("%s: %s", i[0].publisher_name, i[0].display_name) => i[0].listing_id
   }
-
   versions = {
     for key, value in data.oci_core_app_catalog_listing_resource_versions.existing :
     key => { "publisher" : split(":", key)[0], "display_name" : split(": ", key)[1], "listing_id" : value.app_catalog_listing_resource_versions[0].listing_id, "listing_resource_id" : value.app_catalog_listing_resource_versions[0].listing_resource_id, "resource_version" : value.app_catalog_listing_resource_versions[0].listing_resource_version } if length(value.app_catalog_listing_resource_versions) != 0
   }
+  platform_types = ["AMD_MILAN_BM", "AMD_MILAN_BM_GPU", "AMD_ROME_BM", "AMD_ROME_BM_GPU", "AMD_VM", "GENERIC_BM", "INTEL_ICELAKE_BM", "INTEL_SKYLAKE_BM", "INTEL_VM"]
 }
 
 data "oci_core_app_catalog_listing_resource_versions" "existing" {
@@ -55,15 +55,23 @@ resource "oci_core_instance" "these" {
     lifecycle {
       precondition {
         condition = coalesce(each.value.cis_level,var.instances_configuration.default_cis_level,"1") == "2" ? (each.value.encryption != null ? (each.value.encryption.kms_key_id != null || var.instances_configuration.default_kms_key_id != null) : var.instances_configuration.default_kms_key_id != null) : true # false triggers this.
-        error_message = "VALIDATION FAILURE (CIS Storage 4.1.2) in instance ${each.key}: A customer managed key is required when CIS level is set to 2. Either encryption.kms_key_id or default_kms_key_id must be provided."
+        error_message = "VALIDATION FAILURE (CIS Storage 4.1.2) in instance \"${each.key}\": a customer managed key is required when CIS level is set to 2. Either encryption.kms_key_id or default_kms_key_id must be provided."
       }
       precondition {
         condition = each.value.image.id != null || (each.value.image.name != null && each.value.image.publisher_name != null) 
-        error_message = "VALIDATION FAILURE in instance ${each.key}: Either image.id or (image.name and image.publisher_name) must be provided. image.id takes precedence over the pair image.name/image.publisher_name."
+        error_message = "VALIDATION FAILURE in instance \"${each.key}\": either image.id or (image.name and image.publisher_name) must be provided. image.id takes precedence over the pair image.name/image.publisher_name."
       }
       precondition {
         condition = each.value.encryption != null ? (each.value.boot_volume != null ? (upper(each.value.boot_volume.type) != "PARAVIRTUALIZED" ? each.value.encryption.encrypt_in_transit_at_instance_creation == false && each.value.encryption.encrypt_in_transit_at_instance_update == false : true) : true) : true 
-        error_message = "VALIDATION FAILURE in instance ${each.key}: In transit encryption (during instance creation and instance update) is only available to instances with PARAVIRTUALIZED boot volume."
+        error_message = "VALIDATION FAILURE in instance \"${each.key}\": in-transit encryption (during instance creation and instance update) is only available to instances with PARAVIRTUALIZED boot volume."
+      }
+      precondition {
+        condition = each.value.platform_type != null ? (each.value.encryption != null ? (each.value.encryption.encrypt_data_in_use == true ? (each.value.boot_volume != null ? each.value.boot_volume.secure_boot == false && each.value.boot_volume.measured_boot == false : true) : true) : true) : true
+        error_message = "VALIDATION FAILURE in instance \"${each.key}\": confidential computing and shielded instances are mutually exclusive. Either set encryption.encrypt_data_in_use to false or set both boot_volume.secure_boot and boot_volume.measured_boot to false."
+      }
+      precondition {
+        condition = each.value.platform_type != null ? contains(local.platform_types, each.value.platform_type) : true
+        error_message = "VALIDATION FAILURE in instance \"${each.key}\": invalid value for platform_type attribute. Valid values are ${join(",",local.platform_types)}."
       }
     }  
     compartment_id       = each.value.compartment_id != null ? (length(regexall("^ocid1.*$", each.value.compartment_id)) > 0 ? each.value.compartment_id : var.compartments_dependency[each.value.compartment_id].id) : (length(regexall("^ocid1.*$", var.instances_configuration.default_compartment_id)) > 0 ? var.instances_configuration.default_compartment_id : var.compartments_dependency[var.instances_configuration.default_compartment_id].id)
@@ -95,6 +103,16 @@ resource "oci_core_instance" "these" {
       remote_data_volume_type = upper(each.value.volumes_emulation_type)
       is_pv_encryption_in_transit_enabled = each.value.encryption != null ? each.value.encryption.encrypt_in_transit_on_instance_update : false
     }
+    dynamic "platform_config" {
+      for_each = each.value.platform_type != null ? [1] : []
+      content {
+        type = each.value.platform_type
+        is_secure_boot_enabled = each.value.boot_volume != null ? (split(".",each.value.shape)[0] == "VM" && each.value.boot_volume.measured_boot == true ? each.value.boot_volume.measured_boot : each.value.boot_volume.secure_boot) : false
+        is_measured_boot_enabled = each.value.boot_volume != null ? each.value.boot_volume.measured_boot : false
+        is_trusted_platform_module_enabled = each.value.boot_volume != null ? (split(".",each.value.shape)[0] == "VM" && each.value.boot_volume.measured_boot == true ? each.value.boot_volume.measured_boot : each.value.boot_volume.trusted_platform_module) : false
+        is_memory_encryption_enabled = each.value.encryption != null ? each.value.encryption.encrypt_data_in_use : false
+      }
+    }  
     dynamic "shape_config" {
       for_each = length(regexall("Flex", each.value.shape)) > 0 ? [each.value.shape] : []
       content {

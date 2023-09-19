@@ -2,7 +2,30 @@
 
 ![Landing Zone logo](../landing_zone_300.png)
 
-This module manages Compute instances, Block Volume and File System Storage in Oracle Cloud Infrastructure (OCI). These resources and their associated resources can be deployed together in the same configuration or separately. The module enforces Center for Internet Security (CIS) Benchmark recommendations and provides features for strong cyber resilience posture, including storage backups and replication. Additionally, the module supports bringing in external dependencies that managed resources depend on, including compartments, subnets, network security groups, encryption keys, and others.
+This module manages Compute instances, Block Volume and File System Storage in Oracle Cloud Infrastructure (OCI). These resources and their associated resources can be deployed together in the same configuration or separately. The module enforces Center for Internet Security (CIS) Benchmark recommendations for all supported resource types and provides features for strong cyber resilience posture, including cross-region replication and storage backups. Additionally, the module supports bringing in external dependencies that managed resources depend on, including compartments, subnets, network security groups, encryption keys, and others. 
+
+The following features are available:
+
+### Compute
+- CIS profile level drives data at rest encryption configuration.
+- Boot volumes encryption with customer managed keys from OCI Vault service.
+- In-transit encryption for boot volumes and attached block volumes.
+- Data in-use encryption for platform images ([Confidential computing](https://docs.oracle.com/en-us/iaas/Content/Compute/References/confidential_compute.htm)).
+- [Shielded Compute instances](https://docs.oracle.com/en-us/iaas/Content/Compute/References/shielded-instances.htm).
+- Boot volumes backup with Oracle managed policies.
+
+### Block Volumes
+- CIS profile level drives data at rest encryption configuration.
+- Data at rest encryption with customer managed keys from OCI Vault service.
+- In-transit encryption for attached Compute instances.
+- Cross-region replication for strong cyber resilience posture.
+- Backups with Oracle managed policies.
+
+### File Storage
+- CIS profile level drives data at rest encryption configuration.
+- Data at rest encryption with customer managed keys from OCI Vault service.
+- Cross-region replication for strong cyber resilience posture.
+- Backups with custom snapshot policies.
 
 Check [module specification](./SPEC.md) for a full description of module requirements, supported variables, managed resources and outputs.
 
@@ -86,10 +109,11 @@ The instances themselves are defined within the **instances** attribute, In Terr
 - **cis_level**: the CIS OCI Benchmark profile level to apply. *default_cis_level* is used if undefined.
 - **shape**: the instance shape. See [Compute Shapes](https://docs.oracle.com/en-us/iaas/Content/Compute/References/computeshapes.htm) for OCI Compute shapes.
 - **name**: the instance name.
+- **platform_type**: the platform type. Assigning this attribute enables important platform security features in the Compute service. See [Enabling Platform Features](#platform-features) for more information. Valid values: "AMD_MILAN_BM", "AMD_MILAN_BM_GPU", "AMD_ROME_BM", "AMD_ROME_BM_GPU", "AMD_VM", "GENERIC_BM", "INTEL_ICELAKE_BM", "INTEL_SKYLAKE_BM", "INTEL_VM". By default, no platform features are enabled.
 - **ssh_public_key_path**: the SSH public key path used to access the instance. *default_ssh_public_key_path* is used if undefined.
 - **defined_tags**: the instance defined tags. *default_defined_tags* is used if undefined.
 - **freeform_tags**: the instance freeform tags. *default_freeform_tags* is used if undefined.
-- **image**: the instance base image. You must provider either the id or (name and publisher name). See section [Obtaining OCI Platform Images Information](#platform-images) for how to get OCI Platform images and section [Obtaining OCI Marketplace Images Information](#marketplace-images) for how to get OCI Marketplace images.
+- **image**: the instance base image. You must provider either the id or (name and publisher name). See [Obtaining OCI Platform Images Information](#platform-images) for how to get OCI Platform images and [Obtaining OCI Marketplace Images Information](#marketplace-images) for how to get OCI Marketplace images.
   - **id**: the image id for the instance. It takes precedence over name and publisher.
   - **name**: the image name to search for in OCI Marketplace. 
   - **publisher**: the image's publisher name.
@@ -101,6 +125,9 @@ The instances themselves are defined within the **instances** attribute, In Terr
   - **firmware**: firmware used to boot the VM. Valid options: "BIOS" (compatible with both 32 bit and 64 bit operating systems that boot using MBR style bootloaders), "UEFI_64" (default for platform images).
   - **size**: boot volume size. Default is 50 (in GB, the minimum allowed by OCI).
   - **preserve_on_instance_deletion**: whether to preserve boot volume after deletion. Default is true.
+  - **secure_boot**: prevents unauthorized boot loaders and operating systems from booting. Default is false. Only applicable if *platform_type* is set.
+  - **measured_boot**: enhances boot security by taking and storing measurements of boot components, such as bootloaders, drivers, and operating systems. Bare metal instances do not support Measured Boot. Default is false. Only applicable if *platform_type* is set.
+  - **trusted_platform_module**: used to securely store boot measurements. Default is false. Only applicable if *platform_type* is set.
   - **backup_policy**: the Oracle managed backup policy for the boot volume. Valid values: "gold", "silver", "bronze". Default is "bronze".
 - **volumes_emulation_type**: emulation type for attached storage volumes. Valid values: "PARAVIRTUALIZED" (default), "SCSI", "ISCSI", "IDE", "VFIO". 
 - **networking**: networking settings. 
@@ -113,30 +140,38 @@ The instances themselves are defined within the **instances** attribute, In Terr
   - **kms_key_id**: the encryption key for boot volume encryption. *default_kms_key_id* is used if undefined. Required if *cis_level* or *default_cis_level* is "2".
   - **encrypt_in_transit_on_instance_create**: whether to enable in-transit encryption for the data volume's paravirtualized attachment. Default is false. Applicable during instance **creation** time only. Note that some platform images do not allow instances overriding the image configuration for in-transit encryption at instance creation time. In such cases, for enabling in-transit encryption, use *encrypt_in_transit_on_instance_update* attribute. First run terraform with it set to false, then run terraform again with it set to true.
   - **encrypt_in_transit_on_instance_update**: whether to enable in-transit encryption for the data volume's paravirtualized attachment. Default is false. Applicable during instance **update** time only.
+  - **encrypt_data_in_use**: whether the instance encrypts data in-use (in memory) while being processed. A.k.a confidential computing. Default is false. Only applicable if *platform_type* is set.
 - **flex_shape_settings**: flex shape settings.
   - **memory**: the instance memory for Flex shapes. Default is 16 (in GB).
   - **ocpus**: the number of OCPUs for Flex shapes. Default is 1.
+
+#### <a name="platform-features">Enabling Platform Features</a>
+The module currently supports [Confidential computing](https://docs.oracle.com/en-us/iaas/Content/Compute/References/confidential_compute.htm) and [Shielded instances](https://docs.oracle.com/en-us/iaas/Content/Compute/References/shielded-instances.htm), which cannot be enabled at the same time.
+- Confidential computing usage is controlled by *platform_type* and *encryption.encrypt_data_in_use* attributes. 
+- Confidential computing is only available for the shapes listed in [Compute Shapes that Support Confidential Computing](https://docs.oracle.com/en-us/iaas/Content/Compute/References/confidential_compute.htm#confidential_compute__coco_supported_shapes).
+- Shielded instances usage is controlled by *platform_type*, *boot_volume.secure_boot*, *boot_volume.measured_boot* and *boot_volume.trusted_platform_module* attributes. For supported VM shapes, *boot_volume.measured_boot* value is used to set both *boot_volume.secure_boot* and *boot_volume.trusted_platform_module* attributes. 
+- Shielded instances are only available for the shapes and images listed in [Supported Shapes and Images](https://docs.oracle.com/en-us/iaas/Content/Compute/References/shielded-instances.htm#supported-shapes).
 
 #### <a name="platform-images">Obtaining OCI Platform Images Information</a>
 Helper module [platform-images](../platform-images/) aids in finding OCI Platform instances based on a search string. See [this example](../platform-images/examples/platform-images/) for finding images containing "Linux-8" in their names. It outputs information as shown below. Note it also outputs the compatible shapes for each image. 
 ```
 Display Name: Oracle-Linux-8.8-2023.08.31-0
- Publisher Name: Oracle
- Id: ocid1.image.oc1.iad.aaaaaaaamf35m2qg5krijvq4alf6qmvdqiroq4i5zdwqqdijmstn4ryes36q
- Operating System: Oracle Linux
- Operating System Version: 8
- Is encryption in transit enabled? true
- State: AVAILABLE
- Compatible shapes: VM.DenseIO.E4.Flex, VM.DenseIO1.16, VM.DenseIO1.4, VM.DenseIO1.8, VM.DenseIO2.16, VM.DenseIO2.24, VM.DenseIO2.8, VM.GPU.A10.1, VM.GPU.A10.2, VM.GPU.GU1.1, VM.GPU.GU1.2, VM.GPU2.1, VM.GPU3.1, VM.GPU3.2, VM.GPU3.4, VM.Optimized3.Flex, VM.Standard.AMD.Generic, VM.Standard.B1.1, VM.Standard.B1.16, VM.Standard.B1.2, VM.Standard.B1.4, VM.Standard.B1.8, VM.Standard.E2.1, VM.Standard.E2.1.Micro, VM.Standard.E2.2, VM.Standard.E2.4, VM.Standard.E2.8, VM.Standard.E3.Flex, VM.Standard.E4.Flex, VM.Standard.E5.Flex, VM.Standard.Intel.Generic, VM.Standard.x86.Generic, VM.Standard1.1, VM.Standard1.16, VM.Standard1.2, VM.Standard1.4, VM.Standard1.8, VM.Standard2.1, VM.Standard2.16, VM.Standard2.2, VM.Standard2.24, VM.Standard2.4, VM.Standard2.8, VM.Standard2.Flex, VM.Standard3.Flex, BM.Standard.E2.64, BM.Standard.E3.128, BM.Standard.E4.128, BM.GPU.B4.8, BM.GPU.A100-v2.8, BM.DenseIO.E4.128, BM.DenseIO.E5.128, BM.Standard.E5.192, BM.Standard1.36, BM.HighIO1.36, BM.DenseIO1.36, BM.Standard.B1.44, BM.GPU2.2, BM.HPC2.36, BM.Standard2.52, BM.GPU3.8, BM.DenseIO2.52, BM.GPU.T1.2, BM.Optimized3.36, BM.Standard3.64, BM.GPU.A10.4
+Publisher Name: Oracle
+Id: ocid1.image.oc1.iad.aaaaaaaamf35m2qg5krijvq4alf6qmvdqiroq4i5zdwqqdijmstn4ryes36q
+Operating System: Oracle Linux
+Operating System Version: 8
+Is encryption in transit enabled? true
+State: AVAILABLE
+Compatible shapes: VM.DenseIO.E4.Flex, VM.DenseIO1.16, VM.DenseIO1.4, VM.DenseIO1.8, VM.DenseIO2.16, VM.DenseIO2.24, VM.DenseIO2.8, VM.GPU.A10.1, VM.GPU.A10.2, VM.GPU.GU1.1, VM.GPU.GU1.2, VM.GPU2.1, VM.GPU3.1, VM.GPU3.2, VM.GPU3.4, VM.Optimized3.Flex, VM.Standard.AMD.Generic, VM.Standard.B1.1, VM.Standard.B1.16, VM.Standard.B1.2, VM.Standard.B1.4, VM.Standard.B1.8, VM.Standard.E2.1, VM.Standard.E2.1.Micro, VM.Standard.E2.2, VM.Standard.E2.4, VM.Standard.E2.8, VM.Standard.E3.Flex, VM.Standard.E4.Flex, VM.Standard.E5.Flex, VM.Standard.Intel.Generic, VM.Standard.x86.Generic, VM.Standard1.1, VM.Standard1.16, VM.Standard1.2, VM.Standard1.4, VM.Standard1.8, VM.Standard2.1, VM.Standard2.16, VM.Standard2.2, VM.Standard2.24, VM.Standard2.4, VM.Standard2.8, VM.Standard2.Flex, VM.Standard3.Flex, BM.Standard.E2.64, BM.Standard.E3.128, BM.Standard.E4.128, BM.GPU.B4.8, BM.GPU.A100-v2.8, BM.DenseIO.E4.128, BM.DenseIO.E5.128, BM.Standard.E5.192, BM.Standard1.36, BM.HighIO1.36, BM.DenseIO1.36, BM.Standard.B1.44, BM.GPU2.2, BM.HPC2.36, BM.Standard2.52, BM.GPU3.8, BM.DenseIO2.52, BM.GPU.T1.2, BM.Optimized3.36, BM.Standard3.64, BM.GPU.A10.4
 
- Display Name: Oracle-Linux-8.8-2023.08.16-0
- Publisher Name: Oracle
- Id: ocid1.image.oc1.iad.aaaaaaaaj3fbxkn7ql2l4zvdio7atzczezg6dv5dncmz247wfoaqgfgyagaq
- Operating System: Oracle Linux
- Operating System Version: 8
- Is encryption in transit enabled? true
- State: AVAILABLE
- Compatible shapes: VM.DenseIO.E4.Flex, VM.DenseIO1.16, VM.DenseIO1.4, VM.DenseIO1.8, VM.DenseIO2.16, VM.DenseIO2.24, VM.DenseIO2.8, VM.GPU.A10.1, VM.GPU.A10.2, VM.GPU.GU1.1, VM.GPU.GU1.2, VM.GPU2.1, VM.GPU3.1, VM.GPU3.2, VM.GPU3.4, VM.Optimized3.Flex, VM.Standard.AMD.Generic, VM.Standard.B1.1, VM.Standard.B1.16, VM.Standard.B1.2, VM.Standard.B1.4, VM.Standard.B1.8, VM.Standard.E2.1, VM.Standard.E2.1.Micro, VM.Standard.E2.2, VM.Standard.E2.4, VM.Standard.E2.8, VM.Standard.E3.Flex, VM.Standard.E4.Flex, VM.Standard.E5.Flex, VM.Standard.Intel.Generic, VM.Standard.x86.Generic, VM.Standard1.1, VM.Standard1.16, VM.Standard1.2, VM.Standard1.4, VM.Standard1.8, VM.Standard2.1, VM.Standard2.16, VM.Standard2.2, VM.Standard2.24, VM.Standard2.4, VM.Standard2.8, VM.Standard2.Flex, VM.Standard3.Flex, BM.Standard.E2.64, BM.Standard.E3.128, BM.Standard.E4.128, BM.GPU.B4.8, BM.GPU.A100-v2.8, BM.DenseIO.E4.128, BM.Standard.E5.192, BM.Standard1.36, BM.HighIO1.36, BM.DenseIO1.36, BM.Standard.B1.44, BM.GPU2.2, BM.HPC2.36, BM.Standard2.52, BM.GPU3.8, BM.DenseIO2.52, BM.GPU.T1.2, BM.Optimized3.36, BM.Standard3.64, BM.GPU.A10.4
+Display Name: Oracle-Linux-8.8-2023.08.16-0
+Publisher Name: Oracle
+Id: ocid1.image.oc1.iad.aaaaaaaaj3fbxkn7ql2l4zvdio7atzczezg6dv5dncmz247wfoaqgfgyagaq
+Operating System: Oracle Linux
+Operating System Version: 8
+Is encryption in transit enabled? true
+State: AVAILABLE
+Compatible shapes: VM.DenseIO.E4.Flex, VM.DenseIO1.16, VM.DenseIO1.4, VM.DenseIO1.8, VM.DenseIO2.16, VM.DenseIO2.24, VM.DenseIO2.8, VM.GPU.A10.1, VM.GPU.A10.2, VM.GPU.GU1.1, VM.GPU.GU1.2, VM.GPU2.1, VM.GPU3.1, VM.GPU3.2, VM.GPU3.4, VM.Optimized3.Flex, VM.Standard.AMD.Generic, VM.Standard.B1.1, VM.Standard.B1.16, VM.Standard.B1.2, VM.Standard.B1.4, VM.Standard.B1.8, VM.Standard.E2.1, VM.Standard.E2.1.Micro, VM.Standard.E2.2, VM.Standard.E2.4, VM.Standard.E2.8, VM.Standard.E3.Flex, VM.Standard.E4.Flex, VM.Standard.E5.Flex, VM.Standard.Intel.Generic, VM.Standard.x86.Generic, VM.Standard1.1, VM.Standard1.16, VM.Standard1.2, VM.Standard1.4, VM.Standard1.8, VM.Standard2.1, VM.Standard2.16, VM.Standard2.2, VM.Standard2.24, VM.Standard2.4, VM.Standard2.8, VM.Standard2.Flex, VM.Standard3.Flex, BM.Standard.E2.64, BM.Standard.E3.128, BM.Standard.E4.128, BM.GPU.B4.8, BM.GPU.A100-v2.8, BM.DenseIO.E4.128, BM.Standard.E5.192, BM.Standard1.36, BM.HighIO1.36, BM.DenseIO1.36, BM.Standard.B1.44, BM.GPU2.2, BM.HPC2.36, BM.Standard2.52, BM.GPU3.8, BM.DenseIO2.52, BM.GPU.T1.2, BM.Optimized3.36, BM.Standard3.64, BM.GPU.A10.4
 
 ...
 ```

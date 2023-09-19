@@ -21,9 +21,10 @@ variable "instances_configuration" {
 
     instances = map(object({ # the instances to manage in this configuration.
       cis_level        = optional(string)
-      compartment_id   = optional(string)           # the compartment where the instance is created. default_compartment_ocid is used if this is not defined.
-      shape            = string                     # the instance shape.
-      name             = string                     # the instance display name.
+      compartment_id   = optional(string) # the compartment where the instance is created. default_compartment_ocid is used if this is not defined.
+      shape            = string           # the instance shape.
+      name             = string           # the instance display name.
+      platform_type    = optional(string) # the platform type. Assigning this variable enables various platform security features in the Compute service. Valid values: "AMD_MILAN_BM", "AMD_MILAN_BM_GPU", "AMD_ROME_BM", "AMD_ROME_BM_GPU", "AMD_VM", "GENERIC_BM", "INTEL_ICELAKE_BM", "INTEL_SKYLAKE_BM", "INTEL_VM".
       image = object({ # the base image. You must provider either the id or (name and publisher name).
         id = optional(string) # the base image id for creating the instance. It takes precedence over name and publisher_name.
         name = optional(string) # the image name to search for in marketplace.
@@ -38,6 +39,9 @@ variable "instances_configuration" {
         firmware = optional(string) # firmware used to boot the VM. Valid options: "BIOS" (compatible with both 32 bit and 64 bit operating systems that boot using MBR style bootloaders), "UEFI_64" (default for platform images).
         size = optional(number,50) # boot volume size. Default is 50GB (minimum allowed by OCI).
         preserve_on_instance_deletion = optional(bool,true) # whether to preserve boot volume after deletion. Default is true.
+        secure_boot = optional(bool, false) # prevents unauthorized boot loaders and operating systems from booting.
+        measured_boot = optional(bool, false) # enhances boot security by taking and storing measurements of boot components, such as bootloaders, drivers, and operating systems. Bare metal instances do not support Measured Boot.
+        trusted_platform_module = optional(bool, false) # used to securely store boot measurements.
         backup_policy = optional(string,"bronze") # the Oracle managed backup policy. Valid values: "gold", "silver", "bronze". Default is "bronze".
       }))
       volumes_emulation_type = optional(string,"PARAVIRTUALIZED") # Emulation type for attached storage volumes. Valid values: "PARAVIRTUALIZED" (default for platform images), "SCSI", "ISCSI", "IDE", "VFIO". Module supported values for automated attachment: "PARAVIRTUALIZED", "ISCSI".
@@ -52,6 +56,7 @@ variable "instances_configuration" {
         kms_key_id = optional(string) # the KMS key to assign as the master encryption key. default_kms_key_id is used if this is not defined.
         encrypt_in_transit_on_instance_create = optional(bool,false) # whether to enable in-transit encryption for the data volume's paravirtualized attachment. Default is false. Applicable at instance creation time only.
         encrypt_in_transit_on_instance_update = optional(bool,false) # whether to enable in-transit encryption for the data volume's paravirtualized attachment. Default is false. Applicable at instance update time only.
+        encrypt_data_in_use = optional(bool, false) # whether the instance encrypts data in-use (in memory) while being processed. A.k.a confidential computing.
       }))
       flex_shape_settings = optional(object({ # flex shape settings
         memory = optional(number,16) # the instance memory for Flex shapes. Default is 16GB.
