@@ -28,7 +28,9 @@ This module requires the following OCI IAM permissions in the compartments where
 For deploying Compute instances:
 ```
 Allow group <GROUP-NAME> to manage instance-family in compartment <INSTANCE-COMPARTMENT-NAME>
-Allow group <GROUP-NAME> to read virtual-network-family in compartment <NETWORK-COMPARTMENT-NAME> ??
+Allow group <GROUP-NAME> to read instance-agent-plugins in compartment <INSTANCE-COMPARTMENT-NAME>
+Allow group <GROUP-NAME> to read instance-images in compartment <IMAGE-COMPARTMENT-NAME> # if images are not in the same compartment as the instances themselves.
+Allow group <GROUP-NAME> to read virtual-network-family in compartment <NETWORK-COMPARTMENT-NAME>
 Allow group <GROUP-NAME> to use subnets in compartment <NETWORK-COMPARTMENT-NAME>
 Allow group <GROUP-NAME> to use network-security-groups in compartment <NETWORK-COMPARTMENT-NAME>
 Allow group <GROUP-NAME> to use vnics in compartment <NETWORK-COMPARTMENT-NAME>
@@ -47,7 +49,7 @@ Allow group <GROUP-NAME> to use key-delegate in compartment <ENCRYPTION-KEYS-COM
 For deploying File Storage file systems:
 ```
 Allow group <GROUP-NAME> to manage file-family in compartment <FILE-SYSTEM-COMPARTMENT-NAME>
-Allow group <GROUP-NAME> to read virtual-network-family in compartment <NETWORK-COMPARTMENT-NAME> ??
+Allow group <GROUP-NAME> to read virtual-network-family in compartment <NETWORK-COMPARTMENT-NAME>
 Allow group <GROUP-NAME> to use subnets in compartment <NETWORK-COMPARTMENT-NAME>
 Allow group <GROUP-NAME> to use network-security-groups in compartment <NETWORK-COMPARTMENT-NAME>
 Allow group <GROUP-NAME> to use vnics in compartment <NETWORK-COMPARTMENT-NAME>
@@ -116,26 +118,29 @@ The instances themselves are defined within the **instances** attribute, In Terr
   - **ocpus**: the number of OCPUs for Flex shapes. Default is 1.
 
 #### <a name="platform-images">Obtaining OCI Platform Images Information</a>
-Helper module [platform-images](../platform-images/) aids in finding OCI Platform instances based on a search string. See [this example](../platform-images/examples/platform-images/) for finding images containing "Linux-8" in their names. It outputs information like:
+Helper module [platform-images](../platform-images/) aids in finding OCI Platform instances based on a search string. See [this example](../platform-images/examples/platform-images/) for finding images containing "Linux-8" in their names. It outputs information as shown below. Note it also outputs the compatible shapes for each image. 
 ```
-Display Name: Oracle-Linux-8.8-aarch64-2023.08.31-0
-Publisher Name: Oracle
-Id: ocid1.image.oc1.iad.aaaaaaaamwu6pamu2qv33dcmsta5jp77fkmqjg5nb6zhigk3chlmeoqvt3wa
-Operating System: Oracle Linux
-Operating System Version: 8
-Is encryption in transit enabled? true
-State: AVAILABLE
+Display Name: Oracle-Linux-8.8-2023.08.31-0
+ Publisher Name: Oracle
+ Id: ocid1.image.oc1.iad.aaaaaaaamf35m2qg5krijvq4alf6qmvdqiroq4i5zdwqqdijmstn4ryes36q
+ Operating System: Oracle Linux
+ Operating System Version: 8
+ Is encryption in transit enabled? true
+ State: AVAILABLE
+ Compatible shapes: VM.DenseIO.E4.Flex, VM.DenseIO1.16, VM.DenseIO1.4, VM.DenseIO1.8, VM.DenseIO2.16, VM.DenseIO2.24, VM.DenseIO2.8, VM.GPU.A10.1, VM.GPU.A10.2, VM.GPU.GU1.1, VM.GPU.GU1.2, VM.GPU2.1, VM.GPU3.1, VM.GPU3.2, VM.GPU3.4, VM.Optimized3.Flex, VM.Standard.AMD.Generic, VM.Standard.B1.1, VM.Standard.B1.16, VM.Standard.B1.2, VM.Standard.B1.4, VM.Standard.B1.8, VM.Standard.E2.1, VM.Standard.E2.1.Micro, VM.Standard.E2.2, VM.Standard.E2.4, VM.Standard.E2.8, VM.Standard.E3.Flex, VM.Standard.E4.Flex, VM.Standard.E5.Flex, VM.Standard.Intel.Generic, VM.Standard.x86.Generic, VM.Standard1.1, VM.Standard1.16, VM.Standard1.2, VM.Standard1.4, VM.Standard1.8, VM.Standard2.1, VM.Standard2.16, VM.Standard2.2, VM.Standard2.24, VM.Standard2.4, VM.Standard2.8, VM.Standard2.Flex, VM.Standard3.Flex, BM.Standard.E2.64, BM.Standard.E3.128, BM.Standard.E4.128, BM.GPU.B4.8, BM.GPU.A100-v2.8, BM.DenseIO.E4.128, BM.DenseIO.E5.128, BM.Standard.E5.192, BM.Standard1.36, BM.HighIO1.36, BM.DenseIO1.36, BM.Standard.B1.44, BM.GPU2.2, BM.HPC2.36, BM.Standard2.52, BM.GPU3.8, BM.DenseIO2.52, BM.GPU.T1.2, BM.Optimized3.36, BM.Standard3.64, BM.GPU.A10.4
 
-Display Name: Oracle-Linux-8.8-aarch64-2023.08.16-0
-Publisher Name: Oracle
-Id: ocid1.image.oc1.iad.aaaaaaaa27fywhfx24qbtw7dedepm6wgbgrwshptjihbhidazcfzwyg3eiqa
-Operating System: Oracle Linux
-Operating System Version: 8
-Is encryption in transit enabled? true
-State: AVAILABLE
+ Display Name: Oracle-Linux-8.8-2023.08.16-0
+ Publisher Name: Oracle
+ Id: ocid1.image.oc1.iad.aaaaaaaaj3fbxkn7ql2l4zvdio7atzczezg6dv5dncmz247wfoaqgfgyagaq
+ Operating System: Oracle Linux
+ Operating System Version: 8
+ Is encryption in transit enabled? true
+ State: AVAILABLE
+ Compatible shapes: VM.DenseIO.E4.Flex, VM.DenseIO1.16, VM.DenseIO1.4, VM.DenseIO1.8, VM.DenseIO2.16, VM.DenseIO2.24, VM.DenseIO2.8, VM.GPU.A10.1, VM.GPU.A10.2, VM.GPU.GU1.1, VM.GPU.GU1.2, VM.GPU2.1, VM.GPU3.1, VM.GPU3.2, VM.GPU3.4, VM.Optimized3.Flex, VM.Standard.AMD.Generic, VM.Standard.B1.1, VM.Standard.B1.16, VM.Standard.B1.2, VM.Standard.B1.4, VM.Standard.B1.8, VM.Standard.E2.1, VM.Standard.E2.1.Micro, VM.Standard.E2.2, VM.Standard.E2.4, VM.Standard.E2.8, VM.Standard.E3.Flex, VM.Standard.E4.Flex, VM.Standard.E5.Flex, VM.Standard.Intel.Generic, VM.Standard.x86.Generic, VM.Standard1.1, VM.Standard1.16, VM.Standard1.2, VM.Standard1.4, VM.Standard1.8, VM.Standard2.1, VM.Standard2.16, VM.Standard2.2, VM.Standard2.24, VM.Standard2.4, VM.Standard2.8, VM.Standard2.Flex, VM.Standard3.Flex, BM.Standard.E2.64, BM.Standard.E3.128, BM.Standard.E4.128, BM.GPU.B4.8, BM.GPU.A100-v2.8, BM.DenseIO.E4.128, BM.Standard.E5.192, BM.Standard1.36, BM.HighIO1.36, BM.DenseIO1.36, BM.Standard.B1.44, BM.GPU2.2, BM.HPC2.36, BM.Standard2.52, BM.GPU3.8, BM.DenseIO2.52, BM.GPU.T1.2, BM.Optimized3.36, BM.Standard3.64, BM.GPU.A10.4
+
 ...
 ```
-Use *Id* value to seed image.id attribute.
+Use *Id* value to seed *image.id* attribute. Use one of the *Compatible shapes* value to seed *shape* attribute.
 
 #### <a name="marketplace-images">Obtaining OCI Marketplace Images Information</a>
 Helper module [marketplace-images](../marketplace-images/) aids in finding Compute images in OCI Marketplace based on a search string. See [this example](../marketplace-images/examples/marketplace-images/) for finding images containing "CIS" in their names. It outputs information like:
