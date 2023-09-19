@@ -41,9 +41,6 @@ instances_configuration = {
         size = 120
         preserve_on_instance_deletion = false
       }
-      encryption = {
-        encrypt_in_transit_at_instance_creation = false
-      }
       networking = {
         hostname  = "<REPLACE-BY-INSTANCE-HOSTNAME>"
         network_security_groups = ["REPLACE-BY-NETWORK-SECURITY-GROUP-OCID"]

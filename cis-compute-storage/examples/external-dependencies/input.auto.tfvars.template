@@ -42,9 +42,6 @@ instances_configuration = {
         preserve_on_instance_deletion = false
       }
       volumes_emulation_type = "PARAVIRTUALIZED"
-      encryption = {
-        encrypt_in_transit_at_instance_creation = false
-      }
       networking = {
         hostname  = "<REPLACE-BY-INSTANCE-HOSTNAME>"
         network_security_groups = ["REPLACE-BY-NETWORK-SECURITY-GROUP-REFERENCE"] # obtained from oci_network_dependency.

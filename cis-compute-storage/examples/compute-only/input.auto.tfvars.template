@@ -40,7 +40,6 @@ instances_configuration = {
         preserve_on_instance_deletion = true
       }
       encryption = {
-        encrypt_in_transit_at_instance_creation = false
         kms_key_id = "<REPLACE-BY-KEY-OCID>"
       }
       networking = {
@@ -61,9 +60,6 @@ instances_configuration = {
       boot_volume = {
         size = 120
         preserve_on_instance_deletion = false
-      }
-      encryption = {
-        encrypt_in_transit_at_instance_creation = false
       }
       networking = {
         hostname  = "<REPLACE-BY-INSTANCE-HOSTNAME>"

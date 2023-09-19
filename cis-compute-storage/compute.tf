@@ -75,7 +75,7 @@ resource "oci_core_instance" "these" {
     defined_tags         = each.value.defined_tags != null ? each.value.defined_tags : var.instances_configuration.default_defined_tags
     freeform_tags        = merge(local.cislz_module_tag, each.value.freeform_tags != null ? each.value.freeform_tags : var.instances_configuration.default_freeform_tags)
     # some images don't allow encrypt in transit
-    is_pv_encryption_in_transit_enabled = each.value.encryption != null ? each.value.encryption.encrypt_in_transit_at_instance_creation : false
+    is_pv_encryption_in_transit_enabled = each.value.encryption != null ? each.value.encryption.encrypt_in_transit_on_instance_create : false
     create_vnic_details {
       assign_public_ip = each.value.networking != null ? coalesce(each.value.networking.assign_public_ip,false) : false
       subnet_id        = each.value.networking != null ? (each.value.networking.subnet_id != null ? (length(regexall("^ocid1.*$", each.value.networking.subnet_id)) > 0 ? each.value.networking.subnet_id : var.network_dependency[each.value.networking.subnet_id].id) : (length(regexall("^ocid1.*$", var.instances_configuration.default_subnet_id)) > 0 ? var.instances_configuration.default_subnet_id : var.network_dependency[var.instances_configuration.default_subnet_id].id)) : (length(regexall("^ocid1.*$", var.instances_configuration.default_subnet_id)) > 0 ? var.instances_configuration.default_subnet_id : var.network_dependency[var.instances_configuration.default_subnet_id].id)
@@ -93,7 +93,7 @@ resource "oci_core_instance" "these" {
       firmware = each.value.boot_volume != null ? (each.value.boot_volume.firmware != null ? upper(each.value.boot_volume.firmware) : null) : null
       network_type = each.value.networking != null ? upper(each.value.networking.type) : "PARAVIRTUALIZED"
       remote_data_volume_type = upper(each.value.volumes_emulation_type)
-      is_pv_encryption_in_transit_enabled = each.value.encryption != null ? each.value.encryption.encrypt_in_transit_at_instance_update : false
+      is_pv_encryption_in_transit_enabled = each.value.encryption != null ? each.value.encryption.encrypt_in_transit_on_instance_update : false
     }
     dynamic "shape_config" {
       for_each = length(regexall("Flex", each.value.shape)) > 0 ? [each.value.shape] : []

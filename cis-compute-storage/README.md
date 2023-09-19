@@ -109,8 +109,8 @@ The instances themselves are defined within the **instances** attribute, In Terr
   - **network_security_groups**: list of network security groups the instance should be placed into. This attribute is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *network_dependency* variable. See [External Dependencies](#ext-dep) for details.
 - **encryption**: encryption settings. See section [In Transit Encryption](#in-transit-encryption) for important information.
   - **kms_key_id**: the encryption key for boot volume encryption. *default_kms_key_id* is used if undefined. Required if *cis_level* or *default_cis_level* is "2".
-  - **encrypt_in_transit_at_instance_creation**: whether to enable in-transit encryption for the data volume's paravirtualized attachment. Default is true. Applicable during instance **creation** time only.
-  - **encrypt_in_transit_at_instance_update**: whether to enable in-transit encryption for the data volume's paravirtualized attachment. Default is true. Applicable during instance **update** time only.
+  - **encrypt_in_transit_on_instance_create**: whether to enable in-transit encryption for the data volume's paravirtualized attachment. Default is false. Applicable during instance **creation** time only. Note that some platform images do not allow instances overriding the image configuration for in-transit encryption at instance creation time. In such cases, for enabling in-transit encryption, use *encrypt_in_transit_on_instance_update* attribute. First run terraform with it set to false, then run terraform again with it set to true.
+  - **encrypt_in_transit_on_instance_update**: whether to enable in-transit encryption for the data volume's paravirtualized attachment. Default is false. Applicable during instance **update** time only.
 - **flex_shape_settings**: flex shape settings.
   - **memory**: the instance memory for Flex shapes. Default is 16 (in GB).
   - **ocpus**: the number of OCPUs for Flex shapes. Default is 1.
@@ -137,6 +137,8 @@ As stated in https://docs.oracle.com/en-us/iaas/Content/Block/Concepts/overview.
 *"In-transit encryption for boot and block volumes is only available for virtual machine (VM) instances launched from platform images, along with bare metal instances that use the following shapes: BM.Standard.E3.128, BM.Standard.E4.128, BM.DenseIO.E4.128. It is not supported on other bare metal instances. To confirm support for certain Linux-based custom images and for more information, contact Oracle support."*
 
 Additionally, in-transit encryption is only available to paravirtualized volumes (boot and block volumes).
+
+**Note:** some platform images do not allow instances overriding the image configuration for in-transit encryption at instance creation time. In such cases, for enabling in-transit encryption, use *encrypt_in_transit_on_instance_update* attribute. First run terraform with it set to false, then run terraform again with it set to true.
 
 ### <a name="storage">Storage</a>
 
@@ -306,3 +308,34 @@ Example:
 ### Block Volumes
 1. The module currently supports only one Block volume replica (within or across regions).
 2. Terraform does not destroy replicated Block volumes. It is first necessary to disable replication (you can use OCI Console) before running *terraform destroy*.
+
+### Compute
+1. Some platform images do not allow instances overriding the image configuration for in-transit encryption at instance creation time. Terraform would typically error out with:
+```
+Error: 400-InvalidParameter, Overriding PvEncryptionInTransitEnabled in LaunchOptions is not supported
+│ Suggestion: Please update the parameter(s) in the Terraform config as per error message Overriding PvEncryptionInTransitEnabled in LaunchOptions is not supported
+│ Documentation: https://registry.terraform.io/providers/oracle/oci/latest/docs/resources/core_instance
+│ API Reference: https://docs.oracle.com/iaas/api/#/en/iaas/20160918/Instance/LaunchInstance
+│ Request Target: POST https://iaas.eu-frankfurt-1.oraclecloud.com/20160918/instances
+│ Provider version: 5.13.0, released on 2023-09-13.
+│ Service: Core Instance
+│ Operation Name: LaunchInstance
+│ OPC request ID: 48f751ec9cecd48aa847d726717bfb93/43BFEB13D6C2B12EDB7DD41700D49F55/B0823CBFC3380550DF3506C136D4D7C6
+```
+In such cases, **remove** *encrypt_in_transit_on_instance_create* attribute from any variable assignments. For enabling in-transit encryption, use *encrypt_in_transit_on_instance_update* attribute. First run terraform with it set to false, then run terraform again with it set to true.
+
+2. As stated in [OCI documentation](https://docs.oracle.com/en-us/iaas/Content/Block/Concepts/overview.htm#BlockVolumeEncryption), *"...In-transit encryption for boot and block volumes is only available for virtual machine (VM) instances launched from platform images, along with bare metal instances that use the following shapes: BM.Standard.E3.128, BM.Standard.E4.128, BM.DenseIO.E4.128. It is not supported on other bare metal instances. To confirm support for certain Linux-based custom images and for more information, contact Oracle support..."*
+
+Trying to enable in-transit encryption for a non-platform image will tyically make Terraform error out with:
+```
+Error: 400-InvalidParameter, Instance ocid1.instance.oc1.iad.anuwcl...34q does not support pv encryption in-transit.        
+│ Suggestion: Please update the parameter(s) in the Terraform config as per error message Instance ocid1.instance.oc1.iad.anuwcl...34q does not support pv encryption in-transit.
+│ Documentation: https://registry.terraform.io/providers/oracle/oci/latest/docs/resources/core_instance
+│ API Reference: https://docs.oracle.com/iaas/api/#/en/iaas/20160918/Instance/LaunchInstance
+│ Request Target: POST https://iaas.us-ashburn-1.oraclecloud.com/20160918/instances
+│ Provider version: 5.13.0, released on 2023-09-13.
+│ Service: Core Instance
+│ Operation Name: LaunchInstance
+│ OPC request ID: dd06c66b...08f529c0e1718fdcfc/2780B0B7DA...292AD3...E8FE2A/0E9E0694BF...A11E3AF7B2D4DF8
+```
+In such cases, either remove or set attributes *encrypt_in_transit_on_instance_create* and *encrypt_in_transit_on_instance_update* attributes to false. Or use a platform image.

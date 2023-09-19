@@ -50,8 +50,8 @@ variable "instances_configuration" {
       }))
       encryption = optional(object({ # encryption settings
         kms_key_id = optional(string) # the KMS key to assign as the master encryption key. default_kms_key_id is used if this is not defined.
-        encrypt_in_transit_at_instance_creation = optional(bool,false) # whether to enable in-transit encryption for the data volume's paravirtualized attachment. Default is false. Applicable at instance creation time only.
-        encrypt_in_transit_at_instance_update   = optional(bool,false) # whether to enable in-transit encryption for the data volume's paravirtualized attachment. Default is false. Applicable at instance update time only.
+        encrypt_in_transit_on_instance_create = optional(bool,false) # whether to enable in-transit encryption for the data volume's paravirtualized attachment. Default is false. Applicable at instance creation time only.
+        encrypt_in_transit_on_instance_update = optional(bool,false) # whether to enable in-transit encryption for the data volume's paravirtualized attachment. Default is false. Applicable at instance update time only.
       }))
       flex_shape_settings = optional(object({ # flex shape settings
         memory = optional(number,16) # the instance memory for Flex shapes. Default is 16GB.
