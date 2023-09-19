@@ -5,6 +5,10 @@ output "all_images" {
   value = data.oci_core_images.these
 }  
 
+output "all_image_shapes" {
+  value = data.oci_core_image_shapes.these
+}
+
 output "filtered_images" {
   value = local.filtered_images
 }

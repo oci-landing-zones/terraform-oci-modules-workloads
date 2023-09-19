@@ -18,4 +18,4 @@
 # private_key_password = ""                          # This is the password that protects the private key, if any.
 # region               = "<your tenancy region>"     # The region name.
 
-filter_string = "CIS"
+filter_string = "Linux-8"

@@ -7,6 +7,7 @@ List of platform images filtered by "Linux-8":
  Operating System Version: 8
  Is encryption in transit enabled? true
  State: AVAILABLE
+ Compatible shapes: VM.Standard.A1.Flex, VM.Standard.Ampere.Generic, BM.Standard.A1.160
 
  Display Name: Oracle-Linux-8.8-aarch64-2023.08.16-0
  Publisher Name: Oracle
@@ -15,6 +16,7 @@ List of platform images filtered by "Linux-8":
  Operating System Version: 8
  Is encryption in transit enabled? true
  State: AVAILABLE
+ Compatible shapes: VM.Standard.A1.Flex, VM.Standard.Ampere.Generic, BM.Standard.A1.160
 
  Display Name: Oracle-Linux-8.8-aarch64-2023.07.31-1
  Publisher Name: Oracle
@@ -23,6 +25,7 @@ List of platform images filtered by "Linux-8":
  Operating System Version: 8
  Is encryption in transit enabled? true
  State: AVAILABLE
+ Compatible shapes: VM.Standard.A1.Flex, VM.Standard.Ampere.Generic, BM.Standard.A1.160
 
  Display Name: Oracle-Linux-8.8-Gen2-GPU-2023.08.31-0
  Publisher Name: Oracle
@@ -31,6 +34,7 @@ List of platform images filtered by "Linux-8":
  Operating System Version: 8
  Is encryption in transit enabled? true
  State: AVAILABLE
+ Compatible shapes: VM.GPU.A10.1, VM.GPU.A10.2, VM.GPU.GU1.1, VM.GPU.GU1.2, VM.GPU2.1, VM.GPU3.1, VM.GPU3.2, VM.GPU3.4, BM.GPU4.8, BM.GPU.B4.8, BM.GPU.A100-v2.8, BM.GPU2.2, BM.GPU3.8, BM.GPU.T1.2, BM.GPU.A10.4, BM.GPU.T1-2.4
 
  Display Name: Oracle-Linux-8.8-Gen2-GPU-2023.08.16-0
  Publisher Name: Oracle
@@ -39,6 +43,7 @@ List of platform images filtered by "Linux-8":
  Operating System Version: 8
  Is encryption in transit enabled? true
  State: AVAILABLE
+ Compatible shapes: VM.GPU.A10.1, VM.GPU.A10.2, VM.GPU.GU1.1, VM.GPU.GU1.2, VM.GPU2.1, VM.GPU3.1, VM.GPU3.2, VM.GPU3.4, BM.GPU4.8, BM.GPU.B4.8, BM.GPU.A100-v2.8, BM.GPU2.2, BM.GPU3.8, BM.GPU.T1.2, BM.GPU.A10.4, BM.GPU.T1-2.4
 
  Display Name: Oracle-Linux-8.8-Gen2-GPU-2023.07.31-1
  Publisher Name: Oracle
@@ -47,6 +52,7 @@ List of platform images filtered by "Linux-8":
  Operating System Version: 8
  Is encryption in transit enabled? true
  State: AVAILABLE
+ Compatible shapes: VM.GPU.A10.1, VM.GPU.A10.2, VM.GPU.GU1.1, VM.GPU.GU1.2, VM.GPU2.1, VM.GPU3.1, VM.GPU3.2, VM.GPU3.4, BM.GPU4.8, BM.GPU.B4.8, BM.GPU.A100-v2.8, BM.GPU2.2, BM.GPU3.8, BM.GPU.T1.2, BM.GPU.A10.4, BM.GPU.T1-2.4
 
  Display Name: Oracle-Linux-8.8-2023.08.31-0
  Publisher Name: Oracle
@@ -55,6 +61,7 @@ List of platform images filtered by "Linux-8":
  Operating System Version: 8
  Is encryption in transit enabled? true
  State: AVAILABLE
+ Compatible shapes: VM.DenseIO.E4.Flex, VM.DenseIO1.16, VM.DenseIO1.4, VM.DenseIO1.8, VM.DenseIO2.16, VM.DenseIO2.24, VM.DenseIO2.8, VM.GPU.A10.1, VM.GPU.A10.2, VM.GPU.GU1.1, VM.GPU.GU1.2, VM.GPU2.1, VM.GPU3.1, VM.GPU3.2, VM.GPU3.4, VM.Optimized3.Flex, VM.Standard.AMD.Generic, VM.Standard.B1.1, VM.Standard.B1.16, VM.Standard.B1.2, VM.Standard.B1.4, VM.Standard.B1.8, VM.Standard.E2.1, VM.Standard.E2.1.Micro, VM.Standard.E2.2, VM.Standard.E2.4, VM.Standard.E2.8, VM.Standard.E3.Flex, VM.Standard.E4.Flex, VM.Standard.E5.Flex, VM.Standard.Intel.Generic, VM.Standard.x86.Generic, VM.Standard1.1, VM.Standard1.16, VM.Standard1.2, VM.Standard1.4, VM.Standard1.8, VM.Standard2.1, VM.Standard2.16, VM.Standard2.2, VM.Standard2.24, VM.Standard2.4, VM.Standard2.8, VM.Standard2.Flex, VM.Standard3.Flex, BM.Standard.E2.64, BM.Standard.E3.128, BM.Standard.E4.128, BM.GPU.B4.8, BM.GPU.A100-v2.8, BM.DenseIO.E4.128, BM.DenseIO.E5.128, BM.Standard.E5.192, BM.Standard1.36, BM.HighIO1.36, BM.DenseIO1.36, BM.Standard.B1.44, BM.GPU2.2, BM.HPC2.36, BM.Standard2.52, BM.GPU3.8, BM.DenseIO2.52, BM.GPU.T1.2, BM.Optimized3.36, BM.Standard3.64, BM.GPU.A10.4
 
  Display Name: Oracle-Linux-8.8-2023.08.16-0
  Publisher Name: Oracle
@@ -63,6 +70,7 @@ List of platform images filtered by "Linux-8":
  Operating System Version: 8
  Is encryption in transit enabled? true
  State: AVAILABLE
+ Compatible shapes: VM.DenseIO.E4.Flex, VM.DenseIO1.16, VM.DenseIO1.4, VM.DenseIO1.8, VM.DenseIO2.16, VM.DenseIO2.24, VM.DenseIO2.8, VM.GPU.A10.1, VM.GPU.A10.2, VM.GPU.GU1.1, VM.GPU.GU1.2, VM.GPU2.1, VM.GPU3.1, VM.GPU3.2, VM.GPU3.4, VM.Optimized3.Flex, VM.Standard.AMD.Generic, VM.Standard.B1.1, VM.Standard.B1.16, VM.Standard.B1.2, VM.Standard.B1.4, VM.Standard.B1.8, VM.Standard.E2.1, VM.Standard.E2.1.Micro, VM.Standard.E2.2, VM.Standard.E2.4, VM.Standard.E2.8, VM.Standard.E3.Flex, VM.Standard.E4.Flex, VM.Standard.E5.Flex, VM.Standard.Intel.Generic, VM.Standard.x86.Generic, VM.Standard1.1, VM.Standard1.16, VM.Standard1.2, VM.Standard1.4, VM.Standard1.8, VM.Standard2.1, VM.Standard2.16, VM.Standard2.2, VM.Standard2.24, VM.Standard2.4, VM.Standard2.8, VM.Standard2.Flex, VM.Standard3.Flex, BM.Standard.E2.64, BM.Standard.E3.128, BM.Standard.E4.128, BM.GPU.B4.8, BM.GPU.A100-v2.8, BM.DenseIO.E4.128, BM.Standard.E5.192, BM.Standard1.36, BM.HighIO1.36, BM.DenseIO1.36, BM.Standard.B1.44, BM.GPU2.2, BM.HPC2.36, BM.Standard2.52, BM.GPU3.8, BM.DenseIO2.52, BM.GPU.T1.2, BM.Optimized3.36, BM.Standard3.64, BM.GPU.A10.4
 
  Display Name: Oracle-Linux-8.8-2023.07.31-1
  Publisher Name: Oracle
@@ -71,6 +79,7 @@ List of platform images filtered by "Linux-8":
  Operating System Version: 8
  Is encryption in transit enabled? true
  State: AVAILABLE
+ Compatible shapes: VM.DenseIO.E4.Flex, VM.DenseIO1.16, VM.DenseIO1.4, VM.DenseIO1.8, VM.DenseIO2.16, VM.DenseIO2.24, VM.DenseIO2.8, VM.GPU.A10.1, VM.GPU.A10.2, VM.GPU.GU1.1, VM.GPU.GU1.2, VM.GPU2.1, VM.GPU3.1, VM.GPU3.2, VM.GPU3.4, VM.Optimized3.Flex, VM.Standard.AMD.Generic, VM.Standard.B1.1, VM.Standard.B1.16, VM.Standard.B1.2, VM.Standard.B1.4, VM.Standard.B1.8, VM.Standard.E2.1, VM.Standard.E2.1.Micro, VM.Standard.E2.2, VM.Standard.E2.4, VM.Standard.E2.8, VM.Standard.E3.Flex, VM.Standard.E4.Flex, VM.Standard.E5.Flex, VM.Standard.Intel.Generic, VM.Standard.x86.Generic, VM.Standard1.1, VM.Standard1.16, VM.Standard1.2, VM.Standard1.4, VM.Standard1.8, VM.Standard2.1, VM.Standard2.16, VM.Standard2.2, VM.Standard2.24, VM.Standard2.4, VM.Standard2.8, VM.Standard2.Flex, VM.Standard3.Flex, BM.Standard.E2.64, BM.Standard.E3.128, BM.Standard.E4.128, BM.GPU.B4.8, BM.GPU.A100-v2.8, BM.DenseIO.E4.128, BM.Standard.E5.192, BM.Standard1.36, BM.HighIO1.36, BM.DenseIO1.36, BM.Standard.B1.44, BM.GPU2.2, BM.HPC2.36, BM.Standard2.52, BM.GPU3.8, BM.DenseIO2.52, BM.GPU.T1.2, BM.Optimized3.36, BM.Standard3.64, BM.GPU.A10.4
 
  Display Name: Oracle-Autonomous-Linux-8.8-2023.08.31-0
  Publisher Name: Oracle
@@ -79,6 +88,7 @@ List of platform images filtered by "Linux-8":
  Operating System Version: 8.8
  Is encryption in transit enabled? true
  State: AVAILABLE
+ Compatible shapes: VM.DenseIO.E4.Flex, VM.DenseIO1.16, VM.DenseIO1.4, VM.DenseIO1.8, VM.DenseIO2.16, VM.DenseIO2.24, VM.DenseIO2.8, VM.GPU2.1, VM.GPU3.1, VM.GPU3.2, VM.GPU3.4, VM.Optimized3.Flex, VM.Standard.AMD.Generic, VM.Standard.B1.1, VM.Standard.B1.16, VM.Standard.B1.2, VM.Standard.B1.4, VM.Standard.B1.8, VM.Standard.E2.1, VM.Standard.E2.2, VM.Standard.E2.4, VM.Standard.E2.8, VM.Standard.E3.Flex, VM.Standard.E4.Flex, VM.Standard.E5.Flex, VM.Standard.Intel.Generic, VM.Standard.x86.Generic, VM.Standard1.1, VM.Standard1.16, VM.Standard1.2, VM.Standard1.4, VM.Standard1.8, VM.Standard2.1, VM.Standard2.16, VM.Standard2.2, VM.Standard2.24, VM.Standard2.4, VM.Standard2.8, VM.Standard2.Flex, VM.Standard3.Flex, BM.Standard.E2.64, BM.Standard.E3.128, BM.GPU4.8, BM.Standard.E4.128, BM.GPU.B4.8, BM.DenseIO.E4.128, BM.DenseIO.E5.128, BM.Standard.E5.192, BM.Standard1.36, BM.HighIO1.36, BM.DenseIO1.36, BM.Standard.B1.44, BM.GPU2.2, BM.HPC2.36, BM.Standard2.52, BM.GPU3.8, BM.DenseIO2.52, BM.Optimized3.36, BM.Standard3.64
 
  Display Name: Oracle-Autonomous-Linux-8.8-2023.07.30-0
  Publisher Name: Oracle
@@ -87,6 +97,7 @@ List of platform images filtered by "Linux-8":
  Operating System Version: 8.8
  Is encryption in transit enabled? true
  State: AVAILABLE
+ Compatible shapes: VM.DenseIO.E4.Flex, VM.DenseIO1.16, VM.DenseIO1.4, VM.DenseIO1.8, VM.DenseIO2.16, VM.DenseIO2.24, VM.DenseIO2.8, VM.GPU2.1, VM.GPU3.1, VM.GPU3.2, VM.GPU3.4, VM.Optimized3.Flex, VM.Standard.AMD.Generic, VM.Standard.B1.1, VM.Standard.B1.16, VM.Standard.B1.2, VM.Standard.B1.4, VM.Standard.B1.8, VM.Standard.E2.1, VM.Standard.E2.2, VM.Standard.E2.4, VM.Standard.E2.8, VM.Standard.E3.Flex, VM.Standard.E4.Flex, VM.Standard.E5.Flex, VM.Standard.Intel.Generic, VM.Standard.x86.Generic, VM.Standard1.1, VM.Standard1.16, VM.Standard1.2, VM.Standard1.4, VM.Standard1.8, VM.Standard2.1, VM.Standard2.16, VM.Standard2.2, VM.Standard2.24, VM.Standard2.4, VM.Standard2.8, VM.Standard3.Flex, BM.Standard.E2.64, BM.Standard.E3.128, BM.GPU4.8, BM.Standard.E4.128, BM.GPU.B4.8, BM.DenseIO.E4.128, BM.Standard.E5.192, BM.Standard1.36, BM.HighIO1.36, BM.DenseIO1.36, BM.Standard.B1.44, BM.GPU2.2, BM.HPC2.36, BM.Standard2.52, BM.GPU3.8, BM.DenseIO2.52, BM.Optimized3.36, BM.Standard3.64
 
  Display Name: Oracle-Autonomous-Linux-8.8-2023.06.30-0
  Publisher Name: Oracle
@@ -95,6 +106,7 @@ List of platform images filtered by "Linux-8":
  Operating System Version: 8.8
  Is encryption in transit enabled? true
  State: AVAILABLE
+ Compatible shapes: VM.DenseIO.E4.Flex, VM.DenseIO1.16, VM.DenseIO1.4, VM.DenseIO1.8, VM.DenseIO2.16, VM.DenseIO2.24, VM.DenseIO2.8, VM.GPU2.1, VM.GPU3.1, VM.GPU3.2, VM.GPU3.4, VM.Optimized3.Flex, VM.Standard.AMD.Generic, VM.Standard.B1.1, VM.Standard.B1.16, VM.Standard.B1.2, VM.Standard.B1.4, VM.Standard.B1.8, VM.Standard.E2.1, VM.Standard.E2.2, VM.Standard.E2.4, VM.Standard.E2.8, VM.Standard.E3.Flex, VM.Standard.E4.Flex, VM.Standard.E5.Flex, VM.Standard.Intel.Generic, VM.Standard.x86.Generic, VM.Standard1.1, VM.Standard1.16, VM.Standard1.2, VM.Standard1.4, VM.Standard1.8, VM.Standard2.1, VM.Standard2.16, VM.Standard2.2, VM.Standard2.24, VM.Standard2.4, VM.Standard2.8, VM.Standard3.Flex, BM.Standard.E2.64, BM.Standard.E3.128, BM.GPU4.8, BM.Standard.E4.128, BM.GPU.B4.8, BM.DenseIO.E4.128, BM.Standard.E5.192, BM.Standard1.36, BM.HighIO1.36, BM.DenseIO1.36, BM.Standard.B1.44, BM.GPU2.2, BM.HPC2.36, BM.Standard2.52, BM.GPU3.8, BM.DenseIO2.52, BM.Optimized3.36, BM.Standard3.64
 
  Display Name: Oracle-Autonomous-Linux-8.7-2023.05.29-0
  Publisher Name: Oracle
@@ -103,6 +115,7 @@ List of platform images filtered by "Linux-8":
  Operating System Version: 8.7
  Is encryption in transit enabled? true
  State: AVAILABLE
+ Compatible shapes: VM.DenseIO.E4.Flex, VM.DenseIO1.16, VM.DenseIO1.4, VM.DenseIO1.8, VM.DenseIO2.16, VM.DenseIO2.24, VM.DenseIO2.8, VM.GPU2.1, VM.GPU3.1, VM.GPU3.2, VM.GPU3.4, VM.Optimized3.Flex, VM.Standard.AMD.Generic, VM.Standard.B1.1, VM.Standard.B1.16, VM.Standard.B1.2, VM.Standard.B1.4, VM.Standard.B1.8, VM.Standard.E2.1, VM.Standard.E2.2, VM.Standard.E2.4, VM.Standard.E2.8, VM.Standard.E3.Flex, VM.Standard.E4.Flex, VM.Standard.Intel.Generic, VM.Standard.x86.Generic, VM.Standard1.1, VM.Standard1.16, VM.Standard1.2, VM.Standard1.4, VM.Standard1.8, VM.Standard2.1, VM.Standard2.16, VM.Standard2.2, VM.Standard2.24, VM.Standard2.4, VM.Standard2.8, VM.Standard3.Flex, BM.Standard.E2.64, BM.Standard.E3.128, BM.GPU4.8, BM.Standard.E4.128, BM.GPU.B4.8, BM.DenseIO.E4.128, BM.Standard1.36, BM.HighIO1.36, BM.DenseIO1.36, BM.Standard.B1.44, BM.GPU2.2, BM.HPC2.36, BM.Standard2.52, BM.GPU3.8, BM.DenseIO2.52, BM.Optimized3.36, BM.Standard3.64
 
  Display Name: Oracle-Autonomous-Linux-8.7-2023.04.25-0
  Publisher Name: Oracle
@@ -111,6 +124,7 @@ List of platform images filtered by "Linux-8":
  Operating System Version: 8.7
  Is encryption in transit enabled? true
  State: AVAILABLE
+ Compatible shapes: VM.DenseIO.E4.Flex, VM.DenseIO1.16, VM.DenseIO1.4, VM.DenseIO1.8, VM.DenseIO2.16, VM.DenseIO2.24, VM.DenseIO2.8, VM.GPU2.1, VM.GPU3.1, VM.GPU3.2, VM.GPU3.4, VM.Optimized3.Flex, VM.Standard.AMD.Generic, VM.Standard.B1.1, VM.Standard.B1.16, VM.Standard.B1.2, VM.Standard.B1.4, VM.Standard.B1.8, VM.Standard.E2.1, VM.Standard.E2.2, VM.Standard.E2.4, VM.Standard.E2.8, VM.Standard.E3.Flex, VM.Standard.E4.Flex, VM.Standard.Intel.Generic, VM.Standard.x86.Generic, VM.Standard1.1, VM.Standard1.16, VM.Standard1.2, VM.Standard1.4, VM.Standard1.8, VM.Standard2.1, VM.Standard2.16, VM.Standard2.2, VM.Standard2.24, VM.Standard2.4, VM.Standard2.8, VM.Standard3.Flex, BM.Standard.E2.64, BM.Standard.E3.128, BM.GPU4.8, BM.Standard.E4.128, BM.GPU.B4.8, BM.DenseIO.E4.128, BM.Standard1.36, BM.HighIO1.36, BM.DenseIO1.36, BM.Standard.B1.44, BM.GPU2.2, BM.HPC2.36, BM.Standard2.52, BM.GPU3.8, BM.DenseIO2.52, BM.Optimized3.36, BM.Standard3.64
 
  Display Name: Oracle-Autonomous-Linux-8.7-2023.03.28-0
  Publisher Name: Oracle
@@ -119,6 +133,7 @@ List of platform images filtered by "Linux-8":
  Operating System Version: 8.7
  Is encryption in transit enabled? true
  State: AVAILABLE
+ Compatible shapes: VM.DenseIO.E4.Flex, VM.DenseIO1.16, VM.DenseIO1.4, VM.DenseIO1.8, VM.DenseIO2.16, VM.DenseIO2.24, VM.DenseIO2.8, VM.GPU2.1, VM.GPU3.1, VM.GPU3.2, VM.GPU3.4, VM.Optimized3.Flex, VM.Standard.AMD.Generic, VM.Standard.B1.1, VM.Standard.B1.16, VM.Standard.B1.2, VM.Standard.B1.4, VM.Standard.B1.8, VM.Standard.E2.1, VM.Standard.E2.2, VM.Standard.E2.4, VM.Standard.E2.8, VM.Standard.E3.Flex, VM.Standard.E4.Flex, VM.Standard.Intel.Generic, VM.Standard.x86.Generic, VM.Standard1.1, VM.Standard1.16, VM.Standard1.2, VM.Standard1.4, VM.Standard1.8, VM.Standard2.1, VM.Standard2.16, VM.Standard2.2, VM.Standard2.24, VM.Standard2.4, VM.Standard2.8, VM.Standard3.Flex, BM.Standard.E2.64, BM.Standard.E3.128, BM.GPU4.8, BM.Standard.E4.128, BM.GPU.B4.8, BM.DenseIO.E4.128, BM.Standard1.36, BM.HighIO1.36, BM.DenseIO1.36, BM.Standard.B1.44, BM.GPU2.2, BM.HPC2.36, BM.Standard2.52, BM.GPU3.8, BM.DenseIO2.52, BM.Optimized3.36, BM.Standard3.64
 
  Display Name: Oracle-Autonomous-Linux-8.7-2023.02.28-1
  Publisher Name: Oracle
@@ -127,6 +142,7 @@ List of platform images filtered by "Linux-8":
  Operating System Version: 8.7
  Is encryption in transit enabled? true
  State: AVAILABLE
+ Compatible shapes: VM.DenseIO.E4.Flex, VM.DenseIO1.16, VM.DenseIO1.4, VM.DenseIO1.8, VM.DenseIO2.16, VM.DenseIO2.24, VM.DenseIO2.8, VM.GPU2.1, VM.GPU3.1, VM.GPU3.2, VM.GPU3.4, VM.Optimized3.Flex, VM.Standard.AMD.Generic, VM.Standard.B1.1, VM.Standard.B1.16, VM.Standard.B1.2, VM.Standard.B1.4, VM.Standard.B1.8, VM.Standard.E2.1, VM.Standard.E2.2, VM.Standard.E2.4, VM.Standard.E2.8, VM.Standard.E3.Flex, VM.Standard.E4.Flex, VM.Standard.Intel.Generic, VM.Standard.x86.Generic, VM.Standard1.1, VM.Standard1.16, VM.Standard1.2, VM.Standard1.4, VM.Standard1.8, VM.Standard2.1, VM.Standard2.16, VM.Standard2.2, VM.Standard2.24, VM.Standard2.4, VM.Standard2.8, VM.Standard3.Flex, BM.Standard.E2.64, BM.Standard.E3.128, BM.GPU4.8, BM.Standard.E4.128, BM.GPU.B4.8, BM.DenseIO.E4.128, BM.Standard1.36, BM.HighIO1.36, BM.DenseIO1.36, BM.Standard.B1.44, BM.GPU2.2, BM.HPC2.36, BM.Standard2.52, BM.GPU3.8, BM.DenseIO2.52, BM.Optimized3.36, BM.Standard3.64
 
  Display Name: Oracle-Autonomous-Linux-8.7-2023.01.31-1
  Publisher Name: Oracle
@@ -135,3 +151,4 @@ List of platform images filtered by "Linux-8":
  Operating System Version: 8.7
  Is encryption in transit enabled? true
  State: AVAILABLE
+ Compatible shapes: VM.DenseIO.E4.Flex, VM.DenseIO1.16, VM.DenseIO1.4, VM.DenseIO1.8, VM.DenseIO2.16, VM.DenseIO2.24, VM.DenseIO2.8, VM.GPU2.1, VM.GPU3.1, VM.GPU3.2, VM.GPU3.4, VM.Optimized3.Flex, VM.Standard.AMD.Generic, VM.Standard.B1.1, VM.Standard.B1.16, VM.Standard.B1.2, VM.Standard.B1.4, VM.Standard.B1.8, VM.Standard.E2.1, VM.Standard.E2.2, VM.Standard.E2.4, VM.Standard.E2.8, VM.Standard.E3.Flex, VM.Standard.E4.Flex, VM.Standard.Intel.Generic, VM.Standard.x86.Generic, VM.Standard1.1, VM.Standard1.16, VM.Standard1.2, VM.Standard1.4, VM.Standard1.8, VM.Standard2.1, VM.Standard2.16, VM.Standard2.2, VM.Standard2.24, VM.Standard2.4, VM.Standard2.8, VM.Standard3.Flex, BM.Standard.E2.64, BM.Standard.E3.128, BM.GPU4.8, BM.Standard.E4.128, BM.GPU.B4.8, BM.DenseIO.E4.128, BM.Standard1.36, BM.HighIO1.36, BM.DenseIO1.36, BM.Standard.B1.44, BM.GPU2.2, BM.HPC2.36, BM.Standard2.52, BM.GPU3.8, BM.DenseIO2.52, BM.Optimized3.36, BM.Standard3.64
