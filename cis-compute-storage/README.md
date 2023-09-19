@@ -4,7 +4,7 @@
 
 This module manages Compute instances, Block Volume and File System Storage in Oracle Cloud Infrastructure (OCI). These resources and their associated resources can be deployed together in the same configuration or separately. The module enforces Center for Internet Security (CIS) Benchmark recommendations for all supported resource types and provides features for strong cyber resilience posture, including cross-region replication and storage backups. Additionally, the module supports bringing in external dependencies that managed resources depend on, including compartments, subnets, network security groups, encryption keys, and others. 
 
-The following features are available:
+The following security features are currently supported by the module:
 
 ### Compute
 - CIS profile level drives data at rest encryption configuration.
