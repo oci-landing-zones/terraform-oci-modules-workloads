@@ -1,0 +1,137 @@
+List of platform images filtered by "Linux-8":
+
+ Display Name: Oracle-Linux-8.8-aarch64-2023.08.31-0
+ Publisher Name: Oracle
+ Id: ocid1.image.oc1.iad.aaaaaaaamwu6pamu2qv33dcmsta5jp77fkmqjg5nb6zhigk3chlmeoqvt3wa
+ Operating System: Oracle Linux
+ Operating System Version: 8
+ Is encryption in transit enabled? true
+ State: AVAILABLE
+
+ Display Name: Oracle-Linux-8.8-aarch64-2023.08.16-0
+ Publisher Name: Oracle
+ Id: ocid1.image.oc1.iad.aaaaaaaa27fywhfx24qbtw7dedepm6wgbgrwshptjihbhidazcfzwyg3eiqa
+ Operating System: Oracle Linux
+ Operating System Version: 8
+ Is encryption in transit enabled? true
+ State: AVAILABLE
+
+ Display Name: Oracle-Linux-8.8-aarch64-2023.07.31-1
+ Publisher Name: Oracle
+ Id: ocid1.image.oc1.iad.aaaaaaaauueacrqvnpoq7vlvqiv5uozheguisfmx7uqor7yywfogjcf7guwq
+ Operating System: Oracle Linux
+ Operating System Version: 8
+ Is encryption in transit enabled? true
+ State: AVAILABLE
+
+ Display Name: Oracle-Linux-8.8-Gen2-GPU-2023.08.31-0
+ Publisher Name: Oracle
+ Id: ocid1.image.oc1.iad.aaaaaaaaov2gaxukujuc5m225f57sohhbidxa4ffgotfy2fxlx45b4fkj75a
+ Operating System: Oracle Linux
+ Operating System Version: 8
+ Is encryption in transit enabled? true
+ State: AVAILABLE
+
+ Display Name: Oracle-Linux-8.8-Gen2-GPU-2023.08.16-0
+ Publisher Name: Oracle
+ Id: ocid1.image.oc1.iad.aaaaaaaauxvafg2xszvbkwqzfifyvfqxtxwyurrpsrb7kgoai3bwxplsvcaq
+ Operating System: Oracle Linux
+ Operating System Version: 8
+ Is encryption in transit enabled? true
+ State: AVAILABLE
+
+ Display Name: Oracle-Linux-8.8-Gen2-GPU-2023.07.31-1
+ Publisher Name: Oracle
+ Id: ocid1.image.oc1.iad.aaaaaaaatktj2brykmaig23yis4ax2y2istrqnltrm4hhhyei36nt7zpmplq
+ Operating System: Oracle Linux
+ Operating System Version: 8
+ Is encryption in transit enabled? true
+ State: AVAILABLE
+
+ Display Name: Oracle-Linux-8.8-2023.08.31-0
+ Publisher Name: Oracle
+ Id: ocid1.image.oc1.iad.aaaaaaaamf35m2qg5krijvq4alf6qmvdqiroq4i5zdwqqdijmstn4ryes36q
+ Operating System: Oracle Linux
+ Operating System Version: 8
+ Is encryption in transit enabled? true
+ State: AVAILABLE
+
+ Display Name: Oracle-Linux-8.8-2023.08.16-0
+ Publisher Name: Oracle
+ Id: ocid1.image.oc1.iad.aaaaaaaaj3fbxkn7ql2l4zvdio7atzczezg6dv5dncmz247wfoaqgfgyagaq
+ Operating System: Oracle Linux
+ Operating System Version: 8
+ Is encryption in transit enabled? true
+ State: AVAILABLE
+
+ Display Name: Oracle-Linux-8.8-2023.07.31-1
+ Publisher Name: Oracle
+ Id: ocid1.image.oc1.iad.aaaaaaaa6nhl3nu644jemg3i26a52mpho3m7emvmm2cqowcwosfurq2wh52q
+ Operating System: Oracle Linux
+ Operating System Version: 8
+ Is encryption in transit enabled? true
+ State: AVAILABLE
+
+ Display Name: Oracle-Autonomous-Linux-8.8-2023.08.31-0
+ Publisher Name: Oracle
+ Id: ocid1.image.oc1.iad.aaaaaaaagiqfz2mebfvowtvu2fbywahadftfxyo2f3uwjezyinuhhtasvxnq
+ Operating System: Oracle Autonomous Linux
+ Operating System Version: 8.8
+ Is encryption in transit enabled? true
+ State: AVAILABLE
+
+ Display Name: Oracle-Autonomous-Linux-8.8-2023.07.30-0
+ Publisher Name: Oracle
+ Id: ocid1.image.oc1.iad.aaaaaaaa3getw23drourmgsvwkrlryiuvwdi764ebdrdpaujny3mds4gb3ua
+ Operating System: Oracle Autonomous Linux
+ Operating System Version: 8.8
+ Is encryption in transit enabled? true
+ State: AVAILABLE
+
+ Display Name: Oracle-Autonomous-Linux-8.8-2023.06.30-0
+ Publisher Name: Oracle
+ Id: ocid1.image.oc1.iad.aaaaaaaad3zp6lcj4msbtfdtmnujindsaokgdrjabcittm55ijdnxb3w5t2q
+ Operating System: Oracle Autonomous Linux
+ Operating System Version: 8.8
+ Is encryption in transit enabled? true
+ State: AVAILABLE
+
+ Display Name: Oracle-Autonomous-Linux-8.7-2023.05.29-0
+ Publisher Name: Oracle
+ Id: ocid1.image.oc1.iad.aaaaaaaaw6n4bzwcxcuxzbgwb2j4cm7eicqwzih7ci2pvqvdesj7a6fb55oq
+ Operating System: Oracle Autonomous Linux
+ Operating System Version: 8.7
+ Is encryption in transit enabled? true
+ State: AVAILABLE
+
+ Display Name: Oracle-Autonomous-Linux-8.7-2023.04.25-0
+ Publisher Name: Oracle
+ Id: ocid1.image.oc1.iad.aaaaaaaah3yiburi2ldzhg5uht4qjl5k3jv7dum7x7ojojqoh63dabqddbjq
+ Operating System: Oracle Autonomous Linux
+ Operating System Version: 8.7
+ Is encryption in transit enabled? true
+ State: AVAILABLE
+
+ Display Name: Oracle-Autonomous-Linux-8.7-2023.03.28-0
+ Publisher Name: Oracle
+ Id: ocid1.image.oc1.iad.aaaaaaaab4zlq4bi2swmoftd5lxu7kh6cvx6lrpsjvdonfnlsvq2l4blugla
+ Operating System: Oracle Autonomous Linux
+ Operating System Version: 8.7
+ Is encryption in transit enabled? true
+ State: AVAILABLE
+
+ Display Name: Oracle-Autonomous-Linux-8.7-2023.02.28-1
+ Publisher Name: Oracle
+ Id: ocid1.image.oc1.iad.aaaaaaaajxkhjp2ny26h6fdhiq4i5ypoiyyhefo5cfzeu4q3agb2ucozx47a
+ Operating System: Oracle Autonomous Linux
+ Operating System Version: 8.7
+ Is encryption in transit enabled? true
+ State: AVAILABLE
+
+ Display Name: Oracle-Autonomous-Linux-8.7-2023.01.31-1
+ Publisher Name: Oracle
+ Id: ocid1.image.oc1.iad.aaaaaaaatfkldzttdenufodilkiammfu2qq5aek2q6h5pxroa5vchimy5jya
+ Operating System: Oracle Autonomous Linux
+ Operating System Version: 8.7
+ Is encryption in transit enabled? true
+ State: AVAILABLE
