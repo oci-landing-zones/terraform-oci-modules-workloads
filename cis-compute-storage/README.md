@@ -4,6 +4,24 @@
 
 This module manages Compute instances, Block Volume and File System Storage in Oracle Cloud Infrastructure (OCI). These resources and their associated resources can be deployed together in the same configuration or separately. The module enforces Center for Internet Security (CIS) Benchmark recommendations for all supported resource types and provides features for strong cyber resilience posture, including cross-region replication and storage backups. Additionally, the module supports bringing in external dependencies that managed resources depend on, including compartments, subnets, network security groups, encryption keys, and others. 
 
+Check [module specification](./SPEC.md) for a full description of module requirements, supported variables, managed resources and outputs.
+
+Check the [examples](./examples/) folder for actual module usage.
+
+- [Features](#features)
+- [Requirements](#requirements)
+- [Module Functioning](#functioning)
+  - [Compute](#compute)
+  - [Block Volumes](#block-volumes)
+  - [File Storage](#file-storage)
+    - [File Systems](#file-systems)
+    - [Mount Targets](#mount-targets)
+    - [Snapshot Policies](#snapshot-policies)
+  - [External Dependencies](#ext-dep)
+- [Related Documentation](#related)
+- [Known Issues](#issues)
+
+## <a name="features">Features</a>
 The following security features are currently supported by the module:
 
 ### Compute
@@ -26,22 +44,6 @@ The following security features are currently supported by the module:
 - Data at rest encryption with customer managed keys from OCI Vault service.
 - Cross-region replication for strong cyber resilience posture.
 - Backups with custom snapshot policies.
-
-Check [module specification](./SPEC.md) for a full description of module requirements, supported variables, managed resources and outputs.
-
-Check the [examples](./examples/) folder for actual module usage.
-
-- [Requirements](#requirements)
-- [Module Functioning](#functioning)
-  - [Compute](#compute)
-  - [Block Volumes](#block-volumes)
-  - [File Storage](#file-storage)
-    - [File Systems](#file-systems)
-    - [Mount Targets](#mount-targets)
-    - [Snapshot Policies](#snapshot-policies)
-  - [External Dependencies](#ext-dep)
-- [Related Documentation](#related)
-- [Known Issues](#issues)
 
 ## <a name="requirements">Requirements</a>
 ### IAM Permissions
