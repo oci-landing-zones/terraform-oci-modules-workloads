@@ -10,5 +10,6 @@
 **/*.pptx
 **/*.json
 marketplace-images/**/*.txt
+platform-images/**/*.txt
 userdata
 mounting-block-volumes.txt

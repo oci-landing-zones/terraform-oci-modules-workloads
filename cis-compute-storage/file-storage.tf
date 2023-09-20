@@ -34,7 +34,7 @@ resource "oci_file_storage_mount_target" "these" {
     lifecycle {
       precondition {
         condition = each.value.subnet_id != null || var.storage_configuration.file_storage.default_subnet_id != null
-        error_message = "VALIDATION FAILURE in file system mount target ${each.key}: no subnet found for mount target. Either subnet_id or file_storage.default_subnet_id must be provided."
+        error_message = "VALIDATION FAILURE in file system mount target \"${each.key}\": no subnet found for mount target. Either \"subnet_id\" or \"file_storage.default_subnet_id\" must be provided."
       }
     }
     compartment_id      = each.value.compartment_id != null ? (length(regexall("^ocid1.*$", each.value.compartment_id)) > 0 ? each.value.compartment_id : var.compartments_dependency[each.value.compartment_id].id) : (length(regexall("^ocid1.*$", var.storage_configuration.default_compartment_id)) > 0 ? var.storage_configuration.default_compartment_id : var.compartments_dependency[var.storage_configuration.default_compartment_id].id)
@@ -72,6 +72,12 @@ resource "oci_file_storage_export" "these" {
                                                                   options        = export.options
                                                                 }}  
 
+    lifecycle {
+      precondition {
+        condition = var.storage_configuration["file_storage"] != null ? (var.storage_configuration["file_storage"]["file_systems"] != null ? (contains(keys(var.storage_configuration["file_storage"]["file_systems"]),each.value.file_system_id) == true ? true : false) : false) : false
+        error_message = "VALIDATION FAILURE in file system mount target \"${each.key}\": file_system_id \"${each.value.file_system_id}\" not defined within \"file_systems\" attribute."
+      }
+    }
     export_set_id  = oci_file_storage_export_set.these[each.value.mt_key].id
     file_system_id = oci_file_storage_file_system.these[each.value.file_system_id].id
     path           = each.value.path

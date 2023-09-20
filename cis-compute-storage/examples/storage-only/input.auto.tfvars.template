@@ -26,22 +26,27 @@ block_volumes_replication_region = "<REPLACE-BY-REPLICATION-REGION-NAME>"
 
 storage_configuration = {
   default_compartment_id = "<REPLACE-BY-COMPARTMENT-OCID>" 
-  default_subnet_id = "<REPLACE-BY-SUBNET-OCID>"
   block_volumes = {
     BV-1 = {
       display_name = "<REPLACE-BY-BLOCK-VOLUME-NAME>"
       availability_domain = 1   
-      encryption = {
-        encrypt_in_transit = false
-      }
       replication = {
         availability_domain = 1
       }
       backup_policy = "bronze"  
     }
+    BV-2 = {
+      display_name = "<REPLACE-BY-BLOCK-VOLUME-NAME>"
+      availability_domain = 1   
+      encryption = {
+        kms_key_id = "<REPLACE-BY-KEY-OCID>"
+      }
+      backup_policy = "silver"  
+    }
   }
 
    file_storage = {
+    default_subnet_id = "<REPLACE-BY-SUBNET-OCID>"
     file_systems = {
       FS-1 = {
         file_system_name = "<REPLACE-BY-FILE-SYSTEM-NAME>"
@@ -49,6 +54,13 @@ storage_configuration = {
         replication = {
           file_system_target_id = "<REPLACE-BY-TARGET-FILE-SYSTEM-OCID>"
         }
+        snapshot_policy_id = "SNAPSHOT-POLICY-1"
+      }
+      FS-2 = {
+        cis_level = "2"
+        file_system_name = <REPLACE-BY-FILE-SYSTEM-NAME>"
+        availability_domain = 2
+        kms_key_id = "<REPLACE-BY-KEY-OCID>"
         snapshot_policy_id = "SNAPSHOT-POLICY-1"
       }
     }
@@ -61,7 +73,15 @@ storage_configuration = {
             file_system_id = "FS-1"
             options = [
               {source = "0.0.0.0/0", access = "READ_ONLY", identity = "NONE", use_privileged_source_port = true}, 
-              {source = "160.34.115.85/32", access = "READ_WRITE", identity = "ROOT", use_privileged_source_port = true}
+              {source = "<REPLACE-BY-IP_ADDRESS>", access = "READ_WRITE", identity = "ROOT", use_privileged_source_port = true}
+            ]
+          }
+          EXP-2 = {
+            path = "/another_export_path"
+            file_system_id = "FS-2"
+            options = [
+              {source = "0.0.0.0/0", access = "READ_ONLY", identity = "NONE", use_privileged_source_port = true}, 
+              {source = "<REPLACE-BY-IP_ADDRESS>", access = "READ_WRITE", identity = "ROOT", use_privileged_source_port = true}
             ]
           }
         }

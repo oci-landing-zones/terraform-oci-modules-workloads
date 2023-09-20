@@ -27,7 +27,7 @@ The example deploys one Compute instance and two Block volumes with the followin
 
 See [input.auto.tfvars.template](./input.auto.tfvars.template) for the variables configuration.
 
-Note that you must provide the image *name* and *publisher_name* for provisioning the Compute instance. Use the [markeplace-images module](../../../marketplace-images/) to retrieve that information. It will also return the image OCID that can be used instead of the image name/publisher pair.
+Note that you must provide the image *name* and *publisher_name* for provisioning the Compute instance. Use the [marketplace-images module](../../../marketplace-images/) to obtain Marketplace images information. It will also return the image OCID that can be used instead of the image name/publisher pair.
 
 ## External Dependencies
 

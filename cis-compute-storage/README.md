@@ -270,7 +270,7 @@ Mount targets are defined using the attribute **mount_targets**. In Terraform te
 - **subnet_id**: the mount target subnet. *file_storage*'s *default_subnet_id* is used if undefined. This attribute is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *network_dependency* variable. See [External Dependencies](#ext-dep) for details.
 - **exports**: export settings. In Terraform terms, it is a map of objects, where each object is referred by an identifying key. The following attributes are supported:
   - **path**: export path.
-  - **file_system_key**: the file system identifying key this mount target applies.
+  - **file_system_id**: the file system identifying key the export applies to. It must be one of the keys in **file_systems** map of objects.
   - **options**: list of export options.
     - **source**: the source IP address or CIDR range allowed to access the mount target.
     - **access**: type of access grants. Valid values (case sensitive): "READ_WRITE", "READ_ONLY". Default is "READ_ONLY".

@@ -29,7 +29,7 @@ instances_configuration = {
   instances = {
     INSTANCE-1 = {
       cis_level = "2"
-      shape = "<REPLACE-BY-INSTANCE-SHAPE>"
+      shape = "VM.Standard.E4.Flex"
       name  = "<REPLACE-BY-INSTANCE-NAME>"
       placement = {
         availability_domain = 1
@@ -47,12 +47,12 @@ instances_configuration = {
         network_security_groups = ["<REPLACE-BY-NETWORK-SECURITY-GROUP_NAME>"]
       }
       image = {
-        name = "<REPLACE-BY-MARKETPLACE-IMAGE-NAME>"
-        publisher_name = "<REPLACE-BY-MARKETPLACE-IMAGE-PUBLISHER-NAME>"
+        name = "Oracle Linux 7 STIG" # Marketplace image
+        publisher_name = "Oracle Linux"
       }
     }
     INSTANCE-2 = { # Shielded instance, per platform_type and boot_volume.measured_boot settings.
-      shape = "<REPLACE-BY-INSTANCE-SHAPE>"
+      shape = "VM.Standard.E4.Flex"
       name  = "<REPLACE-BY-INSTANCE-NAME>"
       platform_type = "AMD_VM"
       placement = {
@@ -63,6 +63,7 @@ instances_configuration = {
         size = 120
         preserve_on_instance_deletion = true
         measured_boot = true # applicable when plataform_type is set.
+        backup_policy = "silver"
       }
       networking = {
         hostname  = "<REPLACE-BY-INSTANCE-HOSTNAME>"
@@ -72,11 +73,11 @@ instances_configuration = {
         encrypt_in_transit_on_instance_create = true
       }
       image = {
-        id = "<REPLACE-BY-IMAGE-OCID>" # Platform image
+        id = "ocid1.image.oc1.iad.aaaaaaaamf35m2qg5krijvq4alf6qmvdqiroq4i5zdwqqdijmstn4ryes36q" # Oracle-Linux-8.8-2023.08.31-0 platform image
       }
     }
     INSTANCE-3 = { # Confidential computing instance, per platform_type and encryption.encrypt_data_in_use settings.
-      shape = "<REPLACE-BY-INSTANCE-SHAPE>"
+      shape = "VM.Standard.E4.Flex"
       name  = "<REPLACE-BY-INSTANCE-NAME>"
       platform_type = "AMD_VM"
       placement = {
@@ -86,6 +87,7 @@ instances_configuration = {
       boot_volume = {
         size = 120
         preserve_on_instance_deletion = true
+        backup_policy = "gold"
       }
       networking = {
         hostname  = "<REPLACE-BY-INSTANCE-HOSTNAME>"
@@ -95,7 +97,7 @@ instances_configuration = {
         encrypt_data_in_use = true # applicable when plataform_type is set.
       }
       image = {
-        id = "<REPLACE-BY-IMAGE-OCID>" # Platform image
+        id = "ocid1.image.oc1.iad.aaaaaaaamf35m2qg5krijvq4alf6qmvdqiroq4i5zdwqqdijmstn4ryes36q" # Oracle-Linux-8.8-2023.08.31-0 platform image
       }
     }
   }
