@@ -389,8 +389,8 @@ Error: 400-InvalidParameter, Overriding PvEncryptionInTransitEnabled in LaunchOp
 │ OPC request ID: 48f751ec9cecd48aa847d726717bfb93/43BFEB13D6C2B12EDB7DD41700D49F55/B0823CBFC3380550DF3506C136D4D7C6
 ```
 In such cases, there are two options for enabling in-transit encryption:
-1. set *encryption.encrypt_in_transit_on_instance_create* attribute to true. This attribute is only applicable when the instance is initially provisioned.
-2. on any updates to the instance, set *encryption.encrypt_in_transit_on_instance_update* attribute to true. This attribute **must not** be set when the instance is initially provisioned.
+- set *encryption.encrypt_in_transit_on_instance_create* attribute to true. This attribute is only applicable when the instance is initially provisioned.
+- on any updates to the instance, set *encryption.encrypt_in_transit_on_instance_update* attribute to true. This attribute **must not** be set when the instance is initially provisioned.
 
 2. As stated in [OCI documentation](https://docs.oracle.com/en-us/iaas/Content/Block/Concepts/overview.htm#BlockVolumeEncryption), *"...In-transit encryption for boot and block volumes is only available for virtual machine (VM) instances launched from platform images, along with bare metal instances that use the following shapes: BM.Standard.E3.128, BM.Standard.E4.128, BM.DenseIO.E4.128. It is not supported on other bare metal instances. To confirm support for certain Linux-based custom images and for more information, contact Oracle support..."*
 
