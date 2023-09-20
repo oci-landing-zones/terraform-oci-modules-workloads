@@ -140,8 +140,8 @@ The instances themselves are defined within the **instances** attribute, In Terr
   - **network_security_groups**: list of network security groups the instance should be placed into. This attribute is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *network_dependency* variable. See [External Dependencies](#ext-dep) for details.
 - **encryption**: encryption settings. See section [In Transit Encryption](#in-transit-encryption) for important information.
   - **kms_key_id**: the encryption key for boot volume encryption. *default_kms_key_id* is used if undefined. Required if *cis_level* or *default_cis_level* is "2".
-  - **encrypt_in_transit_on_instance_create**: whether to enable in-transit encryption for the data volume's paravirtualized attachment. Default is false. Applicable during instance **creation** time only. Note that some platform images do not allow instances overriding the image configuration for in-transit encryption at instance creation time. In such cases, for enabling in-transit encryption, use *encrypt_in_transit_on_instance_update* attribute. First run terraform with it set to false, then run terraform again with it set to true.
-  - **encrypt_in_transit_on_instance_update**: whether to enable in-transit encryption for the data volume's paravirtualized attachment. Default is false. Applicable during instance **update** time only.
+  - **encrypt_in_transit_on_instance_create**: whether to enable in-transit encryption for the instance. Default is set by the underlying image. Applicable during instance **creation** time only. 
+  - **encrypt_in_transit_on_instance_update**: whether to enable in-transit encryption for the instance. Default is set by the underlying image. Applicable during instance **update** time only. **Do not** set this attribute when initially provisioning the instance (use *encrypt_in_transit_on_instance_create* instead).
   - **encrypt_data_in_use**: whether the instance encrypts data in-use (in memory) while being processed. A.k.a confidential computing. Default is false. Only applicable if *platform_type* is set.
 - **flex_shape_settings**: flex shape settings.
   - **memory**: the instance memory for Flex shapes. Default is 16 (in GB).
@@ -202,7 +202,9 @@ As stated in https://docs.oracle.com/en-us/iaas/Content/Block/Concepts/overview.
 
 Additionally, in-transit encryption is only available to paravirtualized volumes (boot and block volumes).
 
-**Note:** some platform images do not allow instances overriding the image configuration for in-transit encryption at instance creation time. In such cases, for enabling in-transit encryption, use *encrypt_in_transit_on_instance_update* attribute. First run terraform with it set to false, then run terraform again with it set to true.
+**Note:** platform images may not allow instances overriding the image configuration for in-transit encryption at instance launch time. In such cases, there are two options for enabling in-transit encryption:
+1. set *encryption.encrypt_in_transit_on_instance_create* attribute to true. This attribute is only applicable when the instance is initially provisioned.
+2. on any updates to the instance, set *encryption.encrypt_in_transit_on_instance_update* attribute to true. This attribute **must not** be set when the instance is initially provisioned.
 
 ### <a name="storage">Storage</a>
 
@@ -374,7 +376,7 @@ Example:
 2. Terraform does not destroy replicated Block volumes. It is first necessary to disable replication (you can use OCI Console) before running *terraform destroy*.
 
 ### Compute
-1. Some platform images do not allow instances overriding the image configuration for in-transit encryption at instance creation time. Terraform would typically error out with:
+1. Platform images may not allow instances overriding the image configuration for in-transit encryption at instance launch time. Terraform would typically error out with:
 ```
 Error: 400-InvalidParameter, Overriding PvEncryptionInTransitEnabled in LaunchOptions is not supported
 │ Suggestion: Please update the parameter(s) in the Terraform config as per error message Overriding PvEncryptionInTransitEnabled in LaunchOptions is not supported
@@ -386,7 +388,9 @@ Error: 400-InvalidParameter, Overriding PvEncryptionInTransitEnabled in LaunchOp
 │ Operation Name: LaunchInstance
 │ OPC request ID: 48f751ec9cecd48aa847d726717bfb93/43BFEB13D6C2B12EDB7DD41700D49F55/B0823CBFC3380550DF3506C136D4D7C6
 ```
-In such cases, **remove** *encrypt_in_transit_on_instance_create* attribute from any variable assignments. For enabling in-transit encryption, use *encrypt_in_transit_on_instance_update* attribute. First run terraform with it set to false, then run terraform again with it set to true.
+In such cases, there are two options for enabling in-transit encryption:
+1. set *encryption.encrypt_in_transit_on_instance_create* attribute to true. This attribute is only applicable when the instance is initially provisioned.
+2. on any updates to the instance, set *encryption.encrypt_in_transit_on_instance_update* attribute to true. This attribute **must not** be set when the instance is initially provisioned.
 
 2. As stated in [OCI documentation](https://docs.oracle.com/en-us/iaas/Content/Block/Concepts/overview.htm#BlockVolumeEncryption), *"...In-transit encryption for boot and block volumes is only available for virtual machine (VM) instances launched from platform images, along with bare metal instances that use the following shapes: BM.Standard.E3.128, BM.Standard.E4.128, BM.DenseIO.E4.128. It is not supported on other bare metal instances. To confirm support for certain Linux-based custom images and for more information, contact Oracle support..."*
 

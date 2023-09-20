@@ -1,6 +1,11 @@
 # Copyright (c) 2023, Oracle and/or its affiliates. All rights reserved.
 # Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
+data "oci_core_image" "these" {
+  for_each = var.instances_configuration != null ? {for k, v in var.instances_configuration["instances"] : k => v if v.image.id != null} : {}
+    image_id = each.value.image.id
+}
+
 data "oci_identity_availability_domains" "ads" {
   for_each       = var.instances_configuration != null ? var.instances_configuration["instances"] : {}
   compartment_id = each.value.compartment_id != null ? (length(regexall("^ocid1.*$", each.value.compartment_id)) > 0 ? each.value.compartment_id : var.compartments_dependency[each.value.compartment_id].id) : (length(regexall("^ocid1.*$", var.instances_configuration.default_compartment_id)) > 0 ? var.instances_configuration.default_compartment_id : var.compartments_dependency[var.instances_configuration.default_compartment_id].id)
@@ -53,25 +58,35 @@ resource "oci_core_app_catalog_subscription" "these" {
 resource "oci_core_instance" "these" {
   for_each = var.instances_configuration != null ? var.instances_configuration["instances"] : {}
     lifecycle {
+      ## Check 1: Customer managed key must be provided if CIS profile level is "2".
       precondition {
         condition = coalesce(each.value.cis_level,var.instances_configuration.default_cis_level,"1") == "2" ? (each.value.encryption != null ? (each.value.encryption.kms_key_id != null || var.instances_configuration.default_kms_key_id != null) : var.instances_configuration.default_kms_key_id != null) : true # false triggers this.
-        error_message = "VALIDATION FAILURE (CIS Storage 4.1.2) in instance \"${each.key}\": a customer managed key is required when CIS level is set to 2. Either encryption.kms_key_id or default_kms_key_id must be provided."
+        error_message = "VALIDATION FAILURE (CIS Storage 4.1.2) in instance \"${each.key}\": a customer managed key is required when CIS level is set to 2. Either \"encryption.kms_key_id\" or \"default_kms_key_id\" must be provided."
       }
+      ## Check 2: Either image.id or image.name and image.publisher_name pair must be provided.
       precondition {
         condition = each.value.image.id != null || (each.value.image.name != null && each.value.image.publisher_name != null) 
-        error_message = "VALIDATION FAILURE in instance \"${each.key}\": either image.id or (image.name and image.publisher_name) must be provided. image.id takes precedence over the pair image.name/image.publisher_name."
+        error_message = "VALIDATION FAILURE in instance \"${each.key}\": either \"image.id\" or (\"image.name\" and \"image.publisher_name\") must be provided. \"image.id\" takes precedence over the pair \"image.name\"/\"image.publisher_name\"."
       }
+      ## Check 3: In-transit encryption is only available to paravirtualized boot volumes.
       precondition {
-        condition = each.value.encryption != null ? (each.value.boot_volume != null ? (upper(each.value.boot_volume.type) != "PARAVIRTUALIZED" ? each.value.encryption.encrypt_in_transit_at_instance_creation == false && each.value.encryption.encrypt_in_transit_at_instance_update == false : true) : true) : true 
+        condition = each.value.encryption != null ? (each.value.boot_volume != null ? (upper(each.value.boot_volume.type) != "PARAVIRTUALIZED" ? each.value.encryption.encrypt_in_transit_on_instance_create == false && each.value.encryption.encrypt_in_transit_on_instance_update == false : true) : true) : true 
         error_message = "VALIDATION FAILURE in instance \"${each.key}\": in-transit encryption (during instance creation and instance update) is only available to instances with PARAVIRTUALIZED boot volume."
       }
+      ## Check 4: In-transit encryption is only available to images that have it enabled.
       precondition {
-        condition = each.value.platform_type != null ? (each.value.encryption != null ? (each.value.encryption.encrypt_data_in_use == true ? (each.value.boot_volume != null ? each.value.boot_volume.secure_boot == false && each.value.boot_volume.measured_boot == false : true) : true) : true) : true
-        error_message = "VALIDATION FAILURE in instance \"${each.key}\": confidential computing and shielded instances are mutually exclusive. Either set encryption.encrypt_data_in_use to false or set both boot_volume.secure_boot and boot_volume.measured_boot to false."
+        condition = each.value.encryption != null ? (each.value.encryption.encrypt_in_transit_on_instance_create == true || each.value.encryption.encrypt_in_transit_on_instance_update == true ? (contains(keys(data.oci_core_image.these),each.key) ? (data.oci_core_image.these[each.key].launch_options[0].is_pv_encryption_in_transit_enabled == false ? false : true) : true) : true) : true
+        error_message = "VALIDATION FAILURE in instance \"${each.key}\": in-transit encryption is not enabled in the underlying image. Unset both \"encryption.encrypt_in_transit_at_instance_create\" and \"encryption.encrypt_in_transit_at_instance_update\" attributes."
       }
+      ## Check 5: Valid platform types.
       precondition {
         condition = each.value.platform_type != null ? contains(local.platform_types, each.value.platform_type) : true
-        error_message = "VALIDATION FAILURE in instance \"${each.key}\": invalid value for platform_type attribute. Valid values are ${join(",",local.platform_types)}."
+        error_message = "VALIDATION FAILURE in instance \"${each.key}\": invalid value for \"platform_type\" attribute. Valid values are ${join(",",local.platform_types)}."
+      }
+      ## Check 6: Confidential computing and shielded instances are mutually exclusive.
+      precondition {
+        condition = each.value.platform_type != null ? (each.value.encryption != null ? (each.value.encryption.encrypt_data_in_use == true ? (each.value.boot_volume != null ? each.value.boot_volume.secure_boot == false && each.value.boot_volume.measured_boot == false : true) : true) : true) : true
+        error_message = "VALIDATION FAILURE in instance \"${each.key}\": confidential computing and shielded instances are mutually exclusive. Either set \"encryption.encrypt_data_in_use\" to false or set both \"boot_volume.secure_boot\" and \"boot_volume.measured_boot\" to false."
       }
     }  
     compartment_id       = each.value.compartment_id != null ? (length(regexall("^ocid1.*$", each.value.compartment_id)) > 0 ? each.value.compartment_id : var.compartments_dependency[each.value.compartment_id].id) : (length(regexall("^ocid1.*$", var.instances_configuration.default_compartment_id)) > 0 ? var.instances_configuration.default_compartment_id : var.compartments_dependency[var.instances_configuration.default_compartment_id].id)
@@ -83,7 +98,7 @@ resource "oci_core_instance" "these" {
     defined_tags         = each.value.defined_tags != null ? each.value.defined_tags : var.instances_configuration.default_defined_tags
     freeform_tags        = merge(local.cislz_module_tag, each.value.freeform_tags != null ? each.value.freeform_tags : var.instances_configuration.default_freeform_tags)
     # some images don't allow encrypt in transit
-    is_pv_encryption_in_transit_enabled = each.value.encryption != null ? each.value.encryption.encrypt_in_transit_on_instance_create : false
+    is_pv_encryption_in_transit_enabled = each.value.encryption != null ? each.value.encryption.encrypt_in_transit_on_instance_create : null
     create_vnic_details {
       assign_public_ip = each.value.networking != null ? coalesce(each.value.networking.assign_public_ip,false) : false
       subnet_id        = each.value.networking != null ? (each.value.networking.subnet_id != null ? (length(regexall("^ocid1.*$", each.value.networking.subnet_id)) > 0 ? each.value.networking.subnet_id : var.network_dependency[each.value.networking.subnet_id].id) : (length(regexall("^ocid1.*$", var.instances_configuration.default_subnet_id)) > 0 ? var.instances_configuration.default_subnet_id : var.network_dependency[var.instances_configuration.default_subnet_id].id)) : (length(regexall("^ocid1.*$", var.instances_configuration.default_subnet_id)) > 0 ? var.instances_configuration.default_subnet_id : var.network_dependency[var.instances_configuration.default_subnet_id].id)
@@ -101,7 +116,7 @@ resource "oci_core_instance" "these" {
       firmware = each.value.boot_volume != null ? (each.value.boot_volume.firmware != null ? upper(each.value.boot_volume.firmware) : null) : null
       network_type = each.value.networking != null ? upper(each.value.networking.type) : "PARAVIRTUALIZED"
       remote_data_volume_type = upper(each.value.volumes_emulation_type)
-      is_pv_encryption_in_transit_enabled = each.value.encryption != null ? each.value.encryption.encrypt_in_transit_on_instance_update : false
+      is_pv_encryption_in_transit_enabled = each.value.encryption != null ? each.value.encryption.encrypt_in_transit_on_instance_update : null
     }
     dynamic "platform_config" {
       for_each = each.value.platform_type != null ? [1] : []

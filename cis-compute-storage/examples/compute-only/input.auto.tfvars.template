@@ -33,40 +33,69 @@ instances_configuration = {
       name  = "<REPLACE-BY-INSTANCE-NAME>"
       placement = {
         availability_domain = 1
-        fault_domain = 2
+        fault_domain = 1
       }
       boot_volume = {
         size = 120
-        preserve_on_instance_deletion = true
+        preserve_on_instance_deletion = false
       }
       encryption = {
         kms_key_id = "<REPLACE-BY-KEY-OCID>"
       }
       networking = {
         hostname  = "<REPLACE-BY-INSTANCE-HOSTNAME>"
+        network_security_groups = ["<REPLACE-BY-NETWORK-SECURITY-GROUP_NAME>"]
       }
       image = {
-        name = "<REPLACE-BY-IMAGE-NAME>"
-        publisher_name = "<REPLACE-BY-IMAGE-PUBLISHER-NAME>"
+        name = "<REPLACE-BY-MARKETPLACE-IMAGE-NAME>"
+        publisher_name = "<REPLACE-BY-MARKETPLACE-IMAGE-PUBLISHER-NAME>"
       }
     }
-    INSTANCE-2 = {
+    INSTANCE-2 = { # Shielded instance, per platform_type and boot_volume.measured_boot settings.
       shape = "<REPLACE-BY-INSTANCE-SHAPE>"
       name  = "<REPLACE-BY-INSTANCE-NAME>"
+      platform_type = "AMD_VM"
+      placement = {
+        availability_domain = 1
+        fault_domain = 2
+      }
+      boot_volume = {
+        size = 120
+        preserve_on_instance_deletion = true
+        measured_boot = true # applicable when plataform_type is set.
+      }
+      networking = {
+        hostname  = "<REPLACE-BY-INSTANCE-HOSTNAME>"
+        network_security_groups = ["<REPLACE-BY-NETWORK-SECURITY-GROUP_NAME>"]
+      }
+      encryption = {
+        encrypt_in_transit_on_instance_create = true
+      }
+      image = {
+        id = "<REPLACE-BY-IMAGE-OCID>" # Platform image
+      }
+    }
+    INSTANCE-3 = { # Confidential computing instance, per platform_type and encryption.encrypt_data_in_use settings.
+      shape = "<REPLACE-BY-INSTANCE-SHAPE>"
+      name  = "<REPLACE-BY-INSTANCE-NAME>"
+      platform_type = "AMD_VM"
       placement = {
         availability_domain = 1
         fault_domain = 3
       }
       boot_volume = {
         size = 120
-        preserve_on_instance_deletion = false
+        preserve_on_instance_deletion = true
       }
       networking = {
         hostname  = "<REPLACE-BY-INSTANCE-HOSTNAME>"
+        network_security_groups = ["<REPLACE-BY-NETWORK-SECURITY-GROUP_NAME>"]
+      }
+      encryption = {
+        encrypt_data_in_use = true # applicable when plataform_type is set.
       }
       image = {
-        name = "<REPLACE-BY-IMAGE-NAME>"
-        publisher_name = "<REPLACE-BY-IMAGE-PUBLISHER-NAME>"
+        id = "<REPLACE-BY-IMAGE-OCID>" # Platform image
       }
     }
   }
