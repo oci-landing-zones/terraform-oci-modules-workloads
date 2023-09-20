@@ -17,6 +17,7 @@ For block volume BV-2:
 - The block volume is set to be backed up per Oracle-managed *silver* backup policy.
 
 **Note 1:** replicated block volumes are not destroyed upon *terraform destroy*. In order to destroy replicated block volumes, it is first necessary to manually terminate the replication. 
+
 **Note 2:** block volumes encrypted with a customer managed key cannot be replicated to another region.
 
 For file system FS-1:
