@@ -331,12 +331,12 @@ Example:
 Example:
 ```
 {
-    "APP-SUBNET" : {
-        "id" : "ocid1.subnet.oc1.iad.aaaaaaaax...e7a"
-    }, 
-    "APP-NSG" : {
-        "id" : "ocid1.networksecuritygroup.oc1.iad.aaaaaaaa...xlq"
-    }
+  "APP-SUBNET" : {
+    "id" : "ocid1.subnet.oc1.iad.aaaaaaaax...e7a"
+  }, 
+  "APP-NSG" : {
+    "id" : "ocid1.networksecuritygroup.oc1.iad.aaaaaaaa...xlq"
+  }
 } 
 ```  
 - **kms_dependency** &ndash; A map of objects containing the externally managed encryption keys this module may depend on. All map objects must have the same type and must contain at least an *id* attribute with the encryption key OCID.
@@ -358,8 +358,7 @@ Example:
 {
 	"INSTANCE-2": {
 		"id": "ocid1.instance.oc1.iad.anuwc...ftq",
-        "remote_data_volume_type": "PARAVIRTUALIZED",
-        "is_pv_encryption_in_transit_enabled" : false
+    "is_pv_encryption_in_transit_enabled" : false
 	}
 }
 ```
