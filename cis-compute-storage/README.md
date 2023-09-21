@@ -29,9 +29,9 @@ The following security features are currently supported by the module:
 - Boot volumes encryption with customer managed keys from OCI Vault service.
 - In-transit encryption for boot volumes and attached block volumes.
 - Data in-use encryption for platform images ([Confidential computing](https://docs.oracle.com/en-us/iaas/Content/Compute/References/confidential_compute.htm)).
-- [Shielded Compute instances](https://docs.oracle.com/en-us/iaas/Content/Compute/References/shielded-instances.htm).
+- [Shielded instances](https://docs.oracle.com/en-us/iaas/Content/Compute/References/shielded-instances.htm).
 - Boot volumes backup with Oracle managed policies.
-- Cloud Agent Plugins.
+- [Cloud Agent Plugins](https://docs.oracle.com/en-us/iaas/Content/Compute/Tasks/manage-plugins.htm).
 
 ### <a name="block-features">Block Volumes</a>
 - CIS profile level drives data at rest encryption configuration.
