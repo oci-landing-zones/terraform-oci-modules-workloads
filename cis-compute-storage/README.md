@@ -31,6 +31,7 @@ The following security features are currently supported by the module:
 - Data in-use encryption for platform images ([Confidential computing](https://docs.oracle.com/en-us/iaas/Content/Compute/References/confidential_compute.htm)).
 - [Shielded Compute instances](https://docs.oracle.com/en-us/iaas/Content/Compute/References/shielded-instances.htm).
 - Boot volumes backup with Oracle managed policies.
+- Cloud Agent Plugins.
 
 ### Block Volumes
 - CIS profile level drives data at rest encryption configuration.
@@ -54,7 +55,6 @@ For deploying Compute instances:
 ```
 Allow group <GROUP-NAME> to manage instance-family in compartment <INSTANCE-COMPARTMENT-NAME>
 Allow group <GROUP-NAME> to read instance-agent-plugins in compartment <INSTANCE-COMPARTMENT-NAME>
-Allow group <GROUP-NAME> to read instance-images in compartment <IMAGE-COMPARTMENT-NAME> # if images are not in the same compartment as the instances themselves.
 Allow group <GROUP-NAME> to read virtual-network-family in compartment <NETWORK-COMPARTMENT-NAME>
 Allow group <GROUP-NAME> to use subnets in compartment <NETWORK-COMPARTMENT-NAME>
 Allow group <GROUP-NAME> to use network-security-groups in compartment <NETWORK-COMPARTMENT-NAME>
@@ -62,6 +62,11 @@ Allow group <GROUP-NAME> to use vnics in compartment <NETWORK-COMPARTMENT-NAME>
 Allow group <GROUP-NAME> to manage private-ips in compartment <NETWORK-COMPARTMENT-NAME>
 Allow group <GROUP-NAME> to read keys in compartment <ENCRYPTION-KEYS-COMPARTMENT-NAME>
 Allow group <GROUP-NAME> to use key-delegate in compartment <ENCRYPTION-KEYS-COMPARTMENT-NAME>
+```
+If images are not in the same compartment as the instances themselves, add this policy statement.
+
+```
+Allow group <GROUP-NAME> to read instance-images in compartment <IMAGE-COMPARTMENT-NAME>
 ```
 
 For deploying Block volumes:
@@ -90,62 +95,69 @@ This module relies on [Terraform Optional Object Type Attributes feature](https:
 ## <a name="functioning">Module Functioning</a>
 
 The module defines two top level attributes used to manage instances and storage: 
-- **instances_configuration**: for managing Compute instances.
-- **storage_configuration**: for managing storage, including Block Volumes and File System Storage.
+- **instances_configuration** &ndash; for managing Compute instances.
+- **storage_configuration** &ndash; for managing storage, including Block Volumes and File System Storage.
 
 ### <a name="compute">Compute</a>
 
 Compute instances are managed using the **instances_configuration** object. It contains a set of attributes starting with the prefix **default_** and one attribute named **instances**. The **default_** attribute values are applied to all instances within **instances**, unless overriden at the instance level.
 
 The *default_* attributes are the following:
-- **default_compartment_id**: the default compartment for all instances. It can be overriden by *compartment_id* attribute in each instance. This attribute is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *compartments_dependency* variable. See [External Dependencies](#ext-dep) for details.
-- **default_subnet_id**: the default subnet for all instances. It can be overriden by *subnet_id* attribute in each instance. This attribute is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *network_dependency* variable. See [External Dependencies](#ext-dep) for details.
-- **default_ssh_public_key_path**: the default SSH public key path used to access all instances. It can be overriden by the *ssh_public_key* attribute in each instance.
-- **default_kms_key_id**: the default encryption key for all instances. It can be overriden by *kms_key_id* attribute in each instance. This attribute is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *kms_dependency* variable. See [External Dependencies](#ext-dep) for details.
-- **default_cis_level**: the default CIS OCI Benchmark profile level for all instances. Level "2" enforces usage of customer managed keys for boot volume encryption. Default is "1". It can be overriden by *cis_level* attribute in each instance.
-- **default_defined_tags**: the default defined tags for all instances. It can be overriden by *defined_tags* attribute in each instance.
-- **default_freeform_tags**: the default freeform tags for all instances. It can be overriden by *freeform_tags* attribute in each instance.
+- **default_compartment_id** &ndash; Default compartment for all instances. It can be overriden by *compartment_id* attribute in each instance. This attribute is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *compartments_dependency* variable. See [External Dependencies](#ext-dep) for details.
+- **default_subnet_id** &ndash; (Optional) Default subnet for all instances. It can be overriden by *subnet_id* attribute in each instance. This attribute is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *network_dependency* variable. See [External Dependencies](#ext-dep) for details.
+- **default_ssh_public_key_path** &ndash; (Optional) Default SSH public key path used to access all instances. It can be overriden by the *ssh_public_key* attribute in each instance.
+- **default_kms_key_id** &ndash; (Optional) Default encryption key for all instances. It can be overriden by *kms_key_id* attribute in each instance. This attribute is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *kms_dependency* variable. See [External Dependencies](#ext-dep) for details.
+- **default_cis_level** &ndash; (Optional) Default CIS OCI Benchmark profile level for all instances. Level "2" enforces usage of customer managed keys for boot volume encryption. Default is "1". It can be overriden by *cis_level* attribute in each instance.
+- **default_defined_tags** &ndash; (Optional) Default defined tags for all instances. It can be overriden by *defined_tags* attribute in each instance.
+- **default_freeform_tags** &ndash; (Optional) Default freeform tags for all instances. It can be overriden by *freeform_tags* attribute in each instance.
 
 The instances themselves are defined within the **instances** attribute, In Terraform terms, it is a map of objects. where each object is referred by an identifying key. The supported attributes are listed below. For better usability, most attributes are grouped in logical blocks. They are properly indented in the list.
-- **compartment_id**: the instance compartment. *default_compartment_id* is used if undefined. This attribute is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *compartments_dependency* variable. See [External Dependencies](#ext-dep) for details.
-- **cis_level**: the CIS OCI Benchmark profile level to apply. *default_cis_level* is used if undefined.
-- **shape**: the instance shape. See [Compute Shapes](https://docs.oracle.com/en-us/iaas/Content/Compute/References/computeshapes.htm) for OCI Compute shapes.
-- **name**: the instance name.
-- **platform_type**: the platform type. Assigning this attribute enables important platform security features in the Compute service. See [Enabling Platform Features](#platform-features) for more information. Valid values: "AMD_MILAN_BM", "AMD_MILAN_BM_GPU", "AMD_ROME_BM", "AMD_ROME_BM_GPU", "AMD_VM", "GENERIC_BM", "INTEL_ICELAKE_BM", "INTEL_SKYLAKE_BM", "INTEL_VM". By default, no platform features are enabled.
-- **ssh_public_key_path**: the SSH public key path used to access the instance. *default_ssh_public_key_path* is used if undefined.
-- **defined_tags**: the instance defined tags. *default_defined_tags* is used if undefined.
-- **freeform_tags**: the instance freeform tags. *default_freeform_tags* is used if undefined.
-- **image**: the instance base image. You must provider either the id or (name and publisher name). See [Obtaining OCI Platform Images Information](#platform-images) for how to get OCI Platform images and [Obtaining OCI Marketplace Images Information](#marketplace-images) for how to get OCI Marketplace images.
-  - **id**: the image id for the instance. It takes precedence over name and publisher.
-  - **name**: the image name to search for in OCI Marketplace. 
-  - **publisher**: the image's publisher name.
-- **placement**: instance placement settings.
-  - **availability_domain**: the instance availability domain. Default is 1.
-  - **fault_domain**: the instance fault domain. Default is 1.
-- **boot_volume**: boot volume settings.
-  - **type**: boot volume emulation type. Valid values: "PARAVIRTUALIZED", "SCSI", "ISCSI", "IDE", "VFIO". Default is "PARAVIRTUALIZED".
-  - **firmware**: firmware used to boot the VM. Valid options: "BIOS" (compatible with both 32 bit and 64 bit operating systems that boot using MBR style bootloaders), "UEFI_64" (default for platform images).
-  - **size**: boot volume size. Default is 50 (in GB, the minimum allowed by OCI).
-  - **preserve_on_instance_deletion**: whether to preserve boot volume after deletion. Default is true.
-  - **secure_boot**: prevents unauthorized boot loaders and operating systems from booting. Default is false. Only applicable if *platform_type* is set.
-  - **measured_boot**: enhances boot security by taking and storing measurements of boot components, such as bootloaders, drivers, and operating systems. Bare metal instances do not support Measured Boot. Default is false. Only applicable if *platform_type* is set.
-  - **trusted_platform_module**: used to securely store boot measurements. Default is false. Only applicable if *platform_type* is set.
-  - **backup_policy**: the Oracle managed backup policy for the boot volume. Valid values: "gold", "silver", "bronze". Default is "bronze".
-- **volumes_emulation_type**: emulation type for attached storage volumes. Valid values: "PARAVIRTUALIZED" (default), "SCSI", "ISCSI", "IDE", "VFIO". 
-- **networking**: networking settings. 
-  - **type**: emulation type for the physical network interface card (NIC). Valid values: "PARAVIRTUALIZED" (default), "VFIO" (SR-IOV networking), "E1000" (compatible with Linux e1000 driver).
-  - **hostname**: the instance hostname.
-  - **assign_public_ip**: whether to assign the instance a public IP. Default is false.
-  - **subnet_id**: the subnet where the instance is created. *default_subnet_id* is used if undefined. This attribute is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *network_dependency* variable. See [External Dependencies](#ext-dep) for details.
-  - **network_security_groups**: list of network security groups the instance should be placed into. This attribute is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *network_dependency* variable. See [External Dependencies](#ext-dep) for details.
-- **encryption**: encryption settings. See section [In Transit Encryption](#in-transit-encryption) for important information.
-  - **kms_key_id**: the encryption key for boot volume encryption. *default_kms_key_id* is used if undefined. Required if *cis_level* or *default_cis_level* is "2".
-  - **encrypt_in_transit_on_instance_create**: whether to enable in-transit encryption for the instance. Default is set by the underlying image. Applicable during instance **creation** time only. 
-  - **encrypt_in_transit_on_instance_update**: whether to enable in-transit encryption for the instance. Default is set by the underlying image. Applicable during instance **update** time only. **Do not** set this attribute when initially provisioning the instance (use *encrypt_in_transit_on_instance_create* instead).
-  - **encrypt_data_in_use**: whether the instance encrypts data in-use (in memory) while being processed. A.k.a confidential computing. Default is false. Only applicable if *platform_type* is set.
-- **flex_shape_settings**: flex shape settings.
-  - **memory**: the instance memory for Flex shapes. Default is 16 (in GB).
-  - **ocpus**: the number of OCPUs for Flex shapes. Default is 1.
+- **compartment_id** &ndash; (Optional) The instance compartment. *default_compartment_id* is used if undefined. This attribute is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *compartments_dependency* variable. See [External Dependencies](#ext-dep) for details.
+- **cis_level** &ndash; (Optional) The CIS OCI Benchmark profile level to apply. *default_cis_level* is used if undefined.
+- **shape** &ndash; The instance shape. See [Compute Shapes](https://docs.oracle.com/en-us/iaas/Content/Compute/References/computeshapes.htm) for OCI Compute shapes.
+- **name** &ndash; The instance name.
+- **platform_type** &ndash; (Optional) The platform type. Assigning this attribute enables important platform security features in the Compute service. See [Enabling Platform Features](#platform-features) for more information. Valid values are "AMD_MILAN_BM", "AMD_MILAN_BM_GPU", "AMD_ROME_BM", "AMD_ROME_BM_GPU", "AMD_VM", "GENERIC_BM", "INTEL_ICELAKE_BM", "INTEL_SKYLAKE_BM", "INTEL_VM". By default, no platform features are enabled.
+- **ssh_public_key_path** &ndash; (Optional) The SSH public key path used to access the instance. *default_ssh_public_key_path* is used if undefined.
+- **defined_tags** &ndash; (Optional) The instance defined tags. *default_defined_tags* is used if undefined.
+- **freeform_tags** &ndash; (Optional) The instance freeform tags. *default_freeform_tags* is used if undefined.
+- **image** &ndash; The instance base image. You must provider either the id or (name and publisher name). See [Obtaining OCI Platform Images Information](#platform-images) for how to get OCI Platform images and [Obtaining OCI Marketplace Images Information](#marketplace-images) for how to get OCI Marketplace images.
+  - **id** &ndash; (Optional) The image id for the instance. It takes precedence over name and publisher.
+  - **name** &ndash; (Optional) The image name to search for in OCI Marketplace. 
+  - **publisher** &ndash; (Optional) The image's publisher name.
+- **placement** &ndash; (Optional) Instance placement settings.
+  - **availability_domain** &ndash; (Optional) The instance availability domain. Default is 1.
+  - **fault_domain** &ndash; (Optional) The instance fault domain. Default is 1.
+- **boot_volume** &ndash; (Optional) Boot volume settings.
+  - **type** &ndash; (Optional) Boot volume emulation type. Valid values: "PARAVIRTUALIZED", "SCSI", "ISCSI", "IDE", "VFIO". Default is "PARAVIRTUALIZED".
+  - **firmware** &ndash; (Optional) Firmware used to boot the VM. Valid options: "BIOS" (compatible with both 32 bit and 64 bit operating systems that boot using MBR style bootloaders), "UEFI_64" (default for platform images).
+  - **size** &ndash; (Optional) Boot volume size. Default is 50 (in GB, the minimum allowed by OCI).
+  - **preserve_on_instance_deletion** &ndash; (Optional) Whether to preserve boot volume after deletion. Default is true.
+  - **secure_boot** &ndash; (Optional) Prevents unauthorized boot loaders and operating systems from booting. Default is false. Only applicable if *platform_type* is set.
+  - **measured_boot** &ndash; (Optional) enhances boot security by taking and storing measurements of boot components, such as bootloaders, drivers, and operating systems. Bare metal instances do not support Measured Boot. Default is false. Only applicable if *platform_type* is set.
+  - **trusted_platform_module** &ndash; (Optional) Used to securely store boot measurements. Default is false. Only applicable if *platform_type* is set.
+  - **backup_policy** &ndash; (Optional) The Oracle managed backup policy for the boot volume. Valid values: "gold", "silver", "bronze". Default is "bronze".
+- **volumes_emulation_type** &ndash; (Optional) emulation type for attached storage volumes. Valid values: "PARAVIRTUALIZED" (default), "SCSI", "ISCSI", "IDE", "VFIO". 
+- **networking** &ndash; (Optional) Networking settings. 
+  - **type** &ndash; (Optional) Emulation type for the physical network interface card (NIC). Valid values: "PARAVIRTUALIZED" (default), "VFIO" (SR-IOV networking), "E1000" (compatible with Linux e1000 driver).
+  - **hostname** &ndash; (Optional) The instance hostname.
+  - **assign_public_ip** &ndash; (Optional) Whether to assign the instance a public IP. Default is false.
+  - **subnet_id** &ndash; (Optional) The subnet where the instance is created. *default_subnet_id* is used if undefined. This attribute is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *network_dependency* variable. See [External Dependencies](#ext-dep) for details.
+  - **network_security_groups** &ndash; (Optional) List of network security groups the instance should be placed into. This attribute is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *network_dependency* variable. See [External Dependencies](#ext-dep) for details.
+- **encryption** &ndash; (Optional) Encryption settings. See section [In Transit Encryption](#in-transit-encryption) for important information.
+  - **kms_key_id** &ndash; (Optional) The encryption key for boot volume encryption. *default_kms_key_id* is used if undefined. Required if *cis_level* or *default_cis_level* is "2".
+  - **encrypt_in_transit_on_instance_create** &ndash; (Optional) Whether to enable in-transit encryption for the data volume's paravirtualized attachment. Default is false. Applicable during instance **creation** time only. Note that some platform images do not allow instances overriding the image configuration for in-transit encryption at instance creation time. In such cases, for enabling in-transit encryption, use *encrypt_in_transit_on_instance_update* attribute. First run ```terraform apply``` with it set to false, then run ```terraform apply``` again with it set to true.
+  - **encrypt_in_transit_on_instance_update** &ndash; (Optional) Whether to enable in-transit encryption for the data volume's paravirtualized attachment. Default is false. Applicable during instance **update** time only.
+  - **encrypt_data_in_use** &ndash; (Optional) Whether the instance encrypts data in-use (in memory) while being processed (also known as *Confidential Computing*). Default is false. Only applicable if *platform_type* is set.
+- **flex_shape_settings** &ndash; (Optional) Flex shape settings.
+  - **memory** &ndash; (Optional) The instance memory for Flex shapes. Default is 16 (in GB).
+  - **ocpus** &ndash; (Optional) The number of OCPUs for Flex shapes. Default is 1.
+- **cloud_agent** &ndash; (Optional) Cloud Agent settings. Oracle Cloud Agent is supported on current platform images and on custom images that are based on current platform images. See [Oracle Cloud Agent documentation](https://docs.oracle.com/en-us/iaas/Content/Compute/Tasks/manage-plugins.htm) for important information.
+  - **disable_management** &ndash; (Optional) Whether the management plugins should be disabled. These plugins are enabled by default in the Compute service.   
+  - **disable_monitoring** &ndash; (Optional) Whether the monitoring plugins should be disabled. These plugins are enabled by default in the Compute service.
+  - **plugins** &ndash; (Optional) The list of plugins to manage. Each plugin has a name and a boolean flag that enables it.
+    - **name** &ndash; The plugin name. **It must be a valid plugin name**. The plugin names are available in [Oracle Cloud Agent documentation](https://docs.oracle.com/en-us/iaas/Content/Compute/Tasks/manage-plugins.htm) and in [compute-only example](./examples/compute-only/input.auto.tfvars.template) as well.
+    - **enabled** &ndash; Whether or not the plugin should be enabled. In order to disable a previously enabled plugin, set this value to false. Simply removing the plugin from the list will not disable it.
+
 
 #### <a name="platform-features">Enabling Platform Features</a>
 The module currently supports [Confidential computing](https://docs.oracle.com/en-us/iaas/Content/Compute/References/confidential_compute.htm) and [Shielded instances](https://docs.oracle.com/en-us/iaas/Content/Compute/References/shielded-instances.htm), which cannot be enabled at the same time.
@@ -155,7 +167,10 @@ The module currently supports [Confidential computing](https://docs.oracle.com/e
 - Shielded instances are only available for the shapes and images listed in [Supported Shapes and Images](https://docs.oracle.com/en-us/iaas/Content/Compute/References/shielded-instances.htm#supported-shapes).
 
 #### <a name="platform-images">Obtaining OCI Platform Images Information</a>
-Helper module [platform-images](../platform-images/) aids in finding OCI Platform instances based on a search string. See [this example](../platform-images/examples/platform-images/) for finding images containing "Linux-8" in their names. It outputs information as shown below. Note it also outputs the compatible shapes for each image. 
+Helper module [platform-images](../platform-images/) aids in finding OCI Platform instances based on a search string. See [this example](../platform-images/examples/platform-images/) for finding images containing "Linux-8" in their names. It outputs information as shown below.
+
+**Note:** It also outputs the compatible shapes for each image. 
+
 ```
 Display Name: Oracle-Linux-8.8-2023.08.31-0
 Publisher Name: Oracle
@@ -177,7 +192,7 @@ Compatible shapes: VM.DenseIO.E4.Flex, VM.DenseIO1.16, VM.DenseIO1.4, VM.DenseIO
 
 ...
 ```
-Use *Id* value to seed *image.id* attribute. Use one of the *Compatible shapes* value to seed *shape* attribute.
+Use *Id* value to seed the *image.id* attribute. Use one of the *Compatible shapes* value to seed *shape* attribute.
 
 #### <a name="marketplace-images">Obtaining OCI Marketplace Images Information</a>
 Helper module [marketplace-images](../marketplace-images/) aids in finding Compute images in OCI Marketplace based on a search string. See [this example](../marketplace-images/examples/marketplace-images/) for finding images containing "CIS" in their names. It outputs information like:
@@ -193,114 +208,113 @@ Listing resource id: ocid1.image.oc1..aaaaaaaaxmhng6g2j5vi7o4wb5sopjz73zhsiswrvp
 Resource version: 3.1.2.6
 ...
 ```
-Use the *Listing resource id* or *Image name and Publisher* to seed image.id or image.name and image.publisher attributes.
+Use the *Listing resource id* or *Image name* and *Publisher* to seed *image.id* or the *image.name* and *image.publisher* attributes.
 
 #### <a name="in-transit-encryption">In Transit Encryption</a>
-As stated in https://docs.oracle.com/en-us/iaas/Content/Block/Concepts/overview.htm#BlockVolumeEncryption:
+As stated in the [OCI User Guide](https://docs.oracle.com/en-us/iaas/Content/Block/Concepts/overview.htm#BlockVolumeEncryption):
 
 *"In-transit encryption for boot and block volumes is only available for virtual machine (VM) instances launched from platform images, along with bare metal instances that use the following shapes: BM.Standard.E3.128, BM.Standard.E4.128, BM.DenseIO.E4.128. It is not supported on other bare metal instances. To confirm support for certain Linux-based custom images and for more information, contact Oracle support."*
 
 Additionally, in-transit encryption is only available to paravirtualized volumes (boot and block volumes).
 
 **Note:** platform images may not allow instances overriding the image configuration for in-transit encryption at instance launch time. In such cases, there are two options for enabling in-transit encryption:
-1. set *encryption.encrypt_in_transit_on_instance_create* attribute to true. This attribute is only applicable when the instance is initially provisioned.
-2. on any updates to the instance, set *encryption.encrypt_in_transit_on_instance_update* attribute to true. This attribute **must not** be set when the instance is initially provisioned.
+1. Set *encryption.encrypt_in_transit_on_instance_create* attribute to true. This attribute is **only applicable** when the instance is **initially** provisioned.
+2. On any updates to the instance, set *encryption.encrypt_in_transit_on_instance_update* attribute to true. This attribute **must not** be set when the instance is initially provisioned.
 
 ### <a name="storage">Storage</a>
 
 Storage is managed using the **storage_configuration** object. It contains a set of attributes starting with the prefix **default_** and two attribute named **block_volumes** and **file_storage**. The **default_** attribute values are applied to all storage units within **block_volumes** and **file_storage**, unless overriden at the storage unit level.
 
-The *default_* attributes are the following:
-- **default_compartment_id**: the default compartment for all storage units. It can be overriden by *compartment_id* attribute in each unit. This attribute is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *compartments_dependency* variable. See [External Dependencies](#ext-dep) for details.
-- **default_subnet_id**: the default subnet for all file system mount targets. It can be overriden by *subnet_id* attribute in each mount target. This attribute is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *network_dependency* variable. See [External Dependencies](#ext-dep) for details.
-- **default_kms_key_id**: the default encryption key for all storage units. It can be overriden by *kms_key_id* attribute in each unit. This attribute is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *kms_dependency* variable. See [External Dependencies](#ext-dep) for details.
-- **default_cis_level**: the default CIS OCI Benchmark profile level for all storage units. Level "2" enforces usage of customer managed keys for storage encryption. Default is "1". It can be overriden by *cis_level* attribute in each unit.
-- **default_defined_tags**: the default defined tags for all storage units. It can be overriden by *defined_tags* attribute in each unit.
-- **default_freeform_tags**: the default freeform tags for all storage units. It can be overriden by *freeform_tags* attribute in each unit.
+The defined **default_** attributes are the following:
+- **default_compartment_id** &ndash; (Optional) The default compartment for all storage units. It can be overriden by *compartment_id* attribute in each unit. This attribute is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *compartments_dependency* variable. See [External Dependencies](#ext-dep) for details.
+- **default_kms_key_id** &ndash; (Optional) The default encryption key for all storage units. It can be overriden by *kms_key_id* attribute in each unit. This attribute is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *kms_dependency* variable. See [External Dependencies](#ext-dep) for details.
+- **default_cis_level** &ndash; (Optional) The default CIS OCI Benchmark profile level for all storage units. Level "2" enforces usage of customer managed keys for storage encryption. Default is "1". It can be overriden by *cis_level* attribute in each unit.
+- **default_defined_tags** &ndash; (Optional) The default defined tags for all storage units. It can be overriden by *defined_tags* attribute in each unit.
+- **default_freeform_tags** &ndash; (Optional) the default freeform tags for all storage units. It can be overriden by *freeform_tags* attribute in each unit.
 
 #### <a name="block-volumes">Block Volumes</a>
-Block volumes are defined using the **block_volumes** attribute. In Terraform terms, it is a map of objects, where each object is referred by an identifying key. The following attributes are supported:
-- **compartment_id**: the volume compartment. *default_compartment_id* is used if undefined. This attribute is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *compartments_dependency* variable. See [External Dependencies](#ext-dep) for details.
-- **cis_level**: the CIS OCI Benchmark profile level to apply. *default_cis_level* is used if undefined.
-- **display_name**: the volume display name.
-- **availability_domain**: the volume availability domain. Default is 1.
-- **volume_size**: the volume size. Default is 50 (GB).
-- **vpus_per_gb**: the number of VPUs per GB of volume. Values are 0(LOW), 10(BALANCE), 20(HIGH), 30-120(ULTRA HIGH). Default is 0.
-- **defined_tags**: the volume defined tags. *default_defined_tags* is used if undefined.
-- **freeform_tags**: the volume freeform tags. *default_freeform_tags* is used if undefined.
-- **attach_to_instance**: settings for block volume attachment. Note that the module does **not** mount the block volume in the instance. For instructions how to mount block volumes, please section [Mounting Block Volumes](#mounting-block-volumes).
-  - **instance_id**: the instance that the volume attaches to. It must be one of the identifying keys in the *instances* map or in the *instances_dependency* variable. See [External Dependencies](#ext-dep) for details.
-  - **device_name**: the device name where to mount the block volume. It must be one of the *disk_mappings* value in the *instances* map or in the *instances_dependency* object.
-  - **attachment_type**: the block volume attachment type. Valid values: "PARAVIRTUALIZED" (default), "ISCSI".
-- **encryption**: encryption settings
-  - **kms_key_id**: the encryption key for volume encryption. *default_kms_key_id* is used if undefined. Required if *cis_level* or *default_cis_level* is "2". This attribute is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *kms_dependency* variable. See [External Dependencies](#ext-dep) for details.
-  - **encrypt_in_transit**: whether traffic encryption should be enabled for the volume. It only works if the device emulation type is paravirtualized.
-- **replication**: replication settings
-  - **availability_domain**: the availability domain (AD) to replicate the volume. The AD is picked from the region set by the module client to *block_volumes_replication_region* provider alias. Check [here](./examples/storage-only/) for an example with cross-region replication.
-- **backup_policy**: the Oracle managed backup policy for the volume. Valid values: "gold", "silver", "bronze". Default is "bronze".
+Block volumes are defined using the optional **block_volumes** attribute. In Terraform terms, it is a map of objects, where each object is referred by an identifying key. The following attributes are supported:
+- **compartment_id** &ndash; (Optional) The volume compartment. The *default_compartment_id* is used if undefined. This attribute is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *compartments_dependency* variable. See [External Dependencies](#ext-dep) for details.
+- **cis_level** &ndash; (Optional) The CIS OCI Benchmark profile level to apply. The *default_cis_level* is used if undefined.
+- **display_name** &ndash; The volume display name.
+- **availability_domain** &ndash; (Optional) The volume availability domain. Default is 1.
+- **volume_size** &ndash; (Optional) The volume size. Default is 50 (GB).
+- **vpus_per_gb** &ndash; (Optional) The number of VPUs per GB of volume. Values are 0(LOW), 10(BALANCE), 20(HIGH), 30-120(ULTRA HIGH). Default is 0.
+- **defined_tags** &ndash; (Optional) The volume defined tags. The *default_defined_tags* is used if undefined.
+- **freeform_tags** &ndash; (Optional) The volume freeform tags. The *default_freeform_tags* is used if undefined.
+- **attach_to_instance** &ndash; (Optional) Settings for block volume attachment. Note that the module does **not** mount the block volume in the instance. For instructions how to mount block volumes, please section [Mounting Block Volumes](#mounting-block-volumes).
+  - **instance_id** &ndash; The instance that the volume attaches to. It must be one of the identifying keys in the *instances* map or in the *instances_dependency* variable. See [External Dependencies](#ext-dep) for details.
+  - **device_name** &ndash; The device name where to mount the block volume. It must be one of the *disk_mappings* value in the *instances* map or in the *instances_dependency* object.
+  - **attachment_type** &ndash; (Optional) The block volume attachment type. Valid values: "PARAVIRTUALIZED" (default), "ISCSI".
+- **encryption** &ndash; (Optional) Encryption settings
+  - **kms_key_id** &ndash; (Optional) The encryption key for volume encryption. *default_kms_key_id* is used if undefined. Required if *cis_level* or *default_cis_level* is "2". This attribute is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *kms_dependency* variable. See [External Dependencies](#ext-dep) for details.
+  - **encrypt_in_transit** &ndash; (Optional) Whether traffic encryption should be enabled for the volume. It only works if the device emulation type is paravirtualized.
+- **replication** &ndash; (Optional) Replication settings
+  - **availability_domain** &ndash; The availability domain (AD) to replicate the volume. The AD is picked from the region set by the module client to *block_volumes_replication_region* provider alias. Check [here](./examples/storage-only/) for an example with cross-region replication.
+- **backup_policy** &ndash; (Optional) The Oracle managed backup policy for the volume. Valid values: "gold", "silver", "bronze". Default is "bronze".
 
 ##### <a name="mounting-block-volumes">Mounting Block Volumes</a>
-As stated in https://docs.oracle.com/en-us/iaas/Content/Block/Tasks/attachingavolume.htm:
+As stated in the [OCI User Guide](https://docs.oracle.com/en-us/iaas/Content/Block/Tasks/attachingavolume.htm):
 
 *"On Linux-based instances, if you want to automatically mount volumes when the instance starts, you need to set some specific options in the /etc/fstab file, or the instance might fail to start. This applies to both iSCSI and paravirtualized attachment types. For volumes that use consistent device paths, see [fstab Options for Block Volumes Using Consistent Device Paths](https://docs.oracle.com/en-us/iaas/Content/Block/References/fstaboptionsconsistentdevicepaths.htm#fstab_Options_for_Block_Volumes_Using_Consistent_Device_Paths). For all other volumes, see [Traditional fstab Options](https://docs.oracle.com/en-us/iaas/Content/Block/References/fstaboptions.htm#Traditional_fstab_Options)."*
 
 #### <a name="file-storage">File Storage</a>
-The **file_storage** attribute defines the file systems, mount targets and snapshot policies for OCI File Storage service. The attribute **default_subnet_id** applies to all mount targets, unless overriden by **subnet_id** attribute in each mount target. Attribute **subnet_id** is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *network_dependency* variable. See [External Dependencies](#ext-dep) for details.
+The **file_storage** attribute defines the file systems, mount targets and snapshot policies for OCI File Storage service. The optional attribute **default_subnet_id** applies to all mount targets, unless overriden by **subnet_id** attribute in each mount target. Attribute **subnet_id** is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *network_dependency* variable. See [External Dependencies](#ext-dep) for details.
 
 ##### <a name="file-systems">File Systems</a>
-File systems are defined using the attribute **file_systems**. In Terraform terms, it is a map of objects, where each object is referred by an identifying key. The following attributes are supported:
-- **compartment_id**: the file system compartment. *storage_configuration*'s *default_compartment_id* is used if undefined. This attribute is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *compartments_dependency* variable. See [External Dependencies](#ext-dep) for details.
-- **cis_level**: the CIS OCI Benchmark profile level to apply. *storage_configuration*'s *default_cis_level* is used if undefined.
-- **file_system_name**: the file_system name.
-- **availability_domain**: the file system availability domain. 
-- **kms_key_id** : the encryption key for file system encryption. *storage_configuration*'s *default_kms_key_id* is used if undefined. Required if *cis_level* or *default_cis_level* is "2". This attribute is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *kms_dependency* variable. See [External Dependencies](#ext-dep) for details.
-- **replication**: replication settings. To set the file system as a replication target, set *is_target* to true. To set the file system as a replication source, provide the replication file system target in *file_system_target_id*. A file system cannot be replication source and target at the same time.
-  - **is_target**: whether the file system is a replication target. If this is true, then *file_system_target_id* must not be set. Default is false.
-  - **file_system_target_id**: the file system remote replication target for this file system. It must be an existing unexported file system, in the same or in a different region than this file system. If this is set, then *is_target* must be false. This attribute is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *file_systems_dependency* variable. See [External Dependencies](#ext-dep) for details.
-  - **interval_in_minutes**: time interval (in minutes) between replication snapshots. Default is 60 minutes.
-- **snapshot_policy_id**: the snapshot policy identifying key in the *snapshots_policy* map. Default snapshot policies are associated with file systems without a snapshot policy.
-- **defined_tags**: file system defined_tags. *storage_configuration*'s *default_defined_tags* is used if undefined.
-- **freeform_tags**: file system freeform_tags. *storage_configuration*'s *default_freeform_tags* is used if undefined.
+File systems are defined using the optional attribute **file_systems**. A Terraform map of objects, where each object is referred by an identifying key. The following attributes are supported:
+- **compartment_id** &ndash; The file system compartment. *storage_configuration*'s *default_compartment_id* is used if undefined. This attribute is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *compartments_dependency* variable. See [External Dependencies](#ext-dep) for details.
+- **cis_level** &ndash; (Optional) The CIS OCI Benchmark profile level to apply. *storage_configuration*'s *default_cis_level* is used if undefined.
+- **file_system_name** &ndash; The file_system name.
+- **availability_domain** &ndash; (Optional) The file system availability domain. 
+- **kms_key_id** &ndash; (Optional) The encryption key for file system encryption. *storage_configuration*'s *default_kms_key_id* is used if undefined. Required if *cis_level* or *default_cis_level* is "2". This attribute is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *kms_dependency* variable. See [External Dependencies](#ext-dep) for details.
+- **replication** &ndash; (Optional) Replication settings. To set the file system as a replication target, set *is_target* to true. To set the file system as a replication source, provide the replication file system target in *file_system_target_id*. A file system cannot be replication source and target at the same time.
+  - **is_target** &ndash; (Optional) Whether the file system is a replication target. If this is true, then *file_system_target_id* must not be set. Default is false.
+  - **file_system_target_id** &ndash; (Optional) The file system remote replication target for this file system. It must be an existing unexported file system, in the same or in a different region than this file system. If this is set, then *is_target* must be false. This attribute is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *file_systems_dependency* variable. See [External Dependencies](#ext-dep) for details.
+  - **interval_in_minutes** &ndash; (Optional) Time interval (in minutes) between replication snapshots. Default is 60 minutes.
+- **snapshot_policy_id** &ndash; (Optional) The snapshot policy identifying key in the *snapshots_policy* map. Default snapshot policies are associated with file systems without a snapshot policy.
+- **defined_tags** &ndash; (Optional) File system defined_tags. *storage_configuration*'s *default_defined_tags* is used if undefined.
+- **freeform_tags** &ndash; (Optional) File system freeform_tags. *storage_configuration*'s *default_freeform_tags* is used if undefined.
 
 ##### <a name="mount-targets">Mount Targets</a>
-Mount targets are defined using the attribute **mount_targets**. In Terraform terms, it is a map of objects, where each object is referred by an identifying key. The following attributes are supported:
-- **compartment_id**: the mount target compartment. *storage_configuration*'s *default_compartment_id* is used if undefined. This attribute is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *compartments_dependency* variable. See [External Dependencies](#ext-dep) for details.
-- **mount_target_name**: the mount target and export set name.
-- **availability_domain**: the mount target availability domain.  
-- **subnet_id**: the mount target subnet. *file_storage*'s *default_subnet_id* is used if undefined. This attribute is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *network_dependency* variable. See [External Dependencies](#ext-dep) for details.
-- **exports**: export settings. In Terraform terms, it is a map of objects, where each object is referred by an identifying key. The following attributes are supported:
-  - **path**: export path.
-  - **file_system_id**: the file system identifying key the export applies to. It must be one of the keys in **file_systems** map of objects.
-  - **options**: list of export options.
-    - **source**: the source IP address or CIDR range allowed to access the mount target.
-    - **access**: type of access grants. Valid values (case sensitive): "READ_WRITE", "READ_ONLY". Default is "READ_ONLY".
-    - **identity**: UID and GID remapped to. Valid values(case sensitive): ALL, ROOT, NONE. Default is "NONE".
-    - **use_port**: Whether file system access is only allowed from a privileged source port. Default is true.
+Mount targets are defined using the optional attribute **mount_targets**. A Terraform map of objects, where each object is referred by an identifying key. The following attributes are supported:
+- **compartment_id** &ndash; (Optional) The mount target compartment. *storage_configuration*'s *default_compartment_id* is used if undefined. This attribute is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *compartments_dependency* variable. See [External Dependencies](#ext-dep) for details.
+- **mount_target_name** &ndash; The mount target and export set name.
+- **availability_domain** &ndash; (Optional) The mount target availability domain.  
+- **subnet_id** &ndash; (Optional) The mount target subnet. It defaults to *default_subnet_id* from *file_storage* if undefined. This attribute is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *network_dependency* variable. See [External Dependencies](#ext-dep) for details.
+- **exports** &ndash; (Optional) Export settings. A Terraform map of objects, where each object is referred by an identifying key. The following attributes are supported:
+  - **path** &ndash; Export path.
+  - **file_system_key** &ndash; The file system identifying key this mount target applies.
+  - **options** &ndash; (Optional) List of export options.
+    - **source** &ndash; The source IP address or CIDR range allowed to access the mount target.
+    - **access** &ndash; (Optional) Type of access grants. Valid values (case sensitive): "READ_WRITE", "READ_ONLY". Default is "READ_ONLY".
+    - **identity** &ndash; (Optional) UID and GID remapped to. Valid values(case sensitive): ALL, ROOT, NONE. Default is "NONE".
+    - **use_port** &ndash; (Optional) Whether file system access is only allowed from a privileged source port. Default is true.
 
 ##### <a name="snapshot-policies">Snapshot Policies</a>
-Snapshot policies are defined using the attribute **snapshot_policies**. In Terraform terms, it is a map of objects, where each object is referred by an identifying key. The following attributes are supported:
-- **name**: the snapshot policy name.
-- **compartment_id**: the snapshot policy compartment. *storage_configuration*'s *default_compartment_id* is used if undefined. This attribute is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *compartments_dependency* variable. See [External Dependencies](#ext-dep) for details.
-- **availability_domain**: the snapshot policy availability domain.
-- **prefix**: the prefix to apply to all snapshots created by this policy.
-- **schedules** a list of schedules to run the policy. A maximum of 10 schedules can be associated with a policy.
-  - **period**: valid values: "DAILY", "WEEKLY", "MONTHLY", "YEARLY".
-  - **prefix**: a name prefix to be applied to snapshots created by this schedule.
-  - **time_zone**: the schedule time zone. Default is "UTC".
-  - **hour_of_day**: the hour of the day to create a "DAILY", "WEEKLY", "MONTHLY", or "YEARLY" snapshot. If not set, a value will be chosen at creation time. Default is 23.
-  - **day_of_week**: the day of the week to create a scheduled snapshot. Used for "WEEKLY" snapshot schedules. 
-  - **day_of_month**: the day of the month to create a scheduled snapshot. If the day does not exist for the month, snapshot creation will be skipped. Used for "MONTHLY" and "YEARLY" snapshot schedules. 
-  - **month**: the month to create a scheduled snapshot. Used only for "YEARLY" snapshot schedules. 
-  - **retention_in_seconds**: the number of seconds to retain snapshots created with this schedule. Snapshot expiration time is not set if this value is empty. 
-  - **start_time**: the starting point used to begin the scheduling of the snapshots based upon recurrence string in RFC 3339 timestamp format. If no value is provided, the value is set to the time when the schedule is created. 
-- **defined_tags**: snapshot policy defined tags. *storage_configuration*'s *default_defined_tags* is used if undefined.
-- **freeform_tags**: snapshot policy freeform tags. *storage_configuration*'s *default_freeform_tags* is used if undefined.
+Snapshot policies are defined using the optional attribute **snapshot_policies**. A Terraform map of objects, where each object is referred by an identifying key. The following attributes are supported:
+- **name** &ndash; The snapshot policy name.
+- **compartment_id** &ndash; (Optional) The snapshot policy compartment. The *default_compartment_id* of *storage_configuration* is used if undefined. This attribute is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *compartments_dependency* variable. See [External Dependencies](#ext-dep) for details.
+- **availability_domain** &ndash; (Optional) The snapshot policy availability domain.
+- **prefix** &ndash; (Optional) The prefix to apply to all snapshots created by this policy.
+- **schedules** &ndash; (Optional) A list of schedules to run the policy. A maximum of 10 schedules can be associated with a policy.
+  - **period** &ndash; Valid values: "DAILY", "WEEKLY", "MONTHLY", "YEARLY".
+  - **prefix** &ndash; (Optional) A name prefix to be applied to snapshots created by this schedule.
+  - **time_zone** &ndash; (Optional) The schedule time zone. Default is "UTC".
+  - **hour_of_day** &ndash; (Optional) The hour of the day to create a "DAILY", "WEEKLY", "MONTHLY", or "YEARLY" snapshot. If not set, a value will be chosen at creation time. Default is 23.
+  - **day_of_week** &ndash; (Optional) The day of the week to create a scheduled snapshot. Used for "WEEKLY" snapshot schedules. 
+  - **day_of_month** &ndash; (Optional) The day of the month to create a scheduled snapshot. If the day does not exist for the month, snapshot creation will be skipped. Used for "MONTHLY" and "YEARLY" snapshot schedules. 
+  - **month** &ndash; (Optional) The month to create a scheduled snapshot. Used only for "YEARLY" snapshot schedules. 
+  - **retention_in_seconds** &ndash; (Optional) The number of seconds to retain snapshots created with this schedule. Snapshot expiration time is not set if this value is empty. 
+  - **start_time** &ndash; (Optional) 1The starting point used to begin the scheduling of the snapshots based upon recurrence string in RFC 3339 timestamp format. If no value is provided, the value is set to the time when the schedule is created. 
+- **defined_tags** &ndash; (Optional) Snapshot policy defined tags. *storage_configuration*'s *default_defined_tags* is used if undefined.
+- **freeform_tags** &ndash; (Optional) Snapshot policy freeform tags. *storage_configuration*'s *default_freeform_tags* is used if undefined.
 
 As mentioned, default snapshot policies are created for file systems that do not have a snapshot policy. The default snapshot policies are defined with a single schedule, set to run weekly at 23:00 UTC on sundays.
 
 ### <a name="ext-dep">External Dependencies</a>
 An optional feature, external dependencies are resources managed elsewhere that resources managed by this module may depend on. The following dependencies are supported:
-- **compartments_dependency**: A map of objects containing the externally managed compartments this module may depend on. All map objects must have the same type and must contain at least an *id* attribute with the compartment OCID.
+- **compartments_dependency** &ndash; A map of objects containing the externally managed compartments this module may depend on. All map objects must have the same type and must contain at least an *id* attribute with the compartment OCID.
 
 Example:
 ```
@@ -310,9 +324,9 @@ Example:
 	}
 }
 ```
-- **network_dependency**: A map of objects containing the externally managed network resources (including subnets and network security groups) this module may depend on. All map objects must have the same type and should contain the following attributes:
-  - an *id* attribute with the subnet OCID.
-  - an *id* attribute with the network security group OCID.
+- **network_dependency** &ndash; A map of objects containing the externally managed network resources (including subnets and network security groups) this module may depend on. All map objects must have the same type and should contain the following attributes:
+  - An *id* attribute with the subnet OCID.
+  - An *id* attribute with the network security group OCID.
 
 Example:
 ```
@@ -325,7 +339,7 @@ Example:
     }
 } 
 ```  
-- **kms_dependency**: A map of objects containing the externally managed encryption keys this module may depend on. All map objects must have the same type and must contain at least an *id* attribute with the encryption key OCID.
+- **kms_dependency** &ndash; A map of objects containing the externally managed encryption keys this module may depend on. All map objects must have the same type and must contain at least an *id* attribute with the encryption key OCID.
 
 Example:
 ```
@@ -335,9 +349,9 @@ Example:
 	}
 }
 ```
-- **instances_dependency**: A map of objects containing the externally managed instances this module may depend on. All map objects must have the same type and should contain at least the following attributes:
-  - an *id* attribute with the instance OCID.
-  - a *is_pv_encryption_in_transit_enabled* attribute informing whether the instance supports in-transit encryption.
+- **instances_dependency** &ndash; A map of objects containing the externally managed instances this module may depend on. All map objects must have the same type and should contain at least the following attributes:
+  - An *id* attribute with the instance OCID.
+  - A *is_pv_encryption_in_transit_enabled* attribute informing whether the instance supports in-transit encryption.
 
 Example:
 ```
@@ -349,7 +363,7 @@ Example:
 	}
 }
 ```
-- **file_system_dependency**: A map of objects containing the externally managed file systems this module may depend on. All map objects must have the same type and must contain at least an *id* attribute with the file system OCID.
+- **file_system_dependency** &ndash; A map of objects containing the externally managed file systems this module may depend on. All map objects must have the same type and must contain at least an *id* attribute with the file system OCID.
 
 Example:
 ```
@@ -373,7 +387,7 @@ Example:
 
 ### Block Volumes
 1. The module currently supports only one Block volume replica (within or across regions).
-2. Terraform does not destroy replicated Block volumes. It is first necessary to disable replication (you can use OCI Console) before running *terraform destroy*.
+2. Terraform does not destroy replicated Block volumes. It is first necessary to disable replication (for example, in the OCI Console) before running ```terraform destroy```.
 
 ### Compute
 1. Platform images may not allow instances overriding the image configuration for in-transit encryption at instance launch time. Terraform would typically error out with:

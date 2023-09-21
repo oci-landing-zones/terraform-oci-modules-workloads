@@ -67,6 +67,14 @@ variable "instances_configuration" {
         memory = optional(number,16) # the instance memory for Flex shapes. Default is 16GB.
         ocpus  = optional(number,1)  # the instance ocpus number for Flex shapes. Default is 1.
       }))
+      cloud_agent = optional(object({ # Cloud Agent settings
+        disable_management = optional(bool,false) # whether the management plugins should be disabled. These plugins are enabled by default in the Compute service.
+        disable_monitoring = optional(bool,false) # whether the monitoring plugins should be disabled. These plugins are enabled by default in the Compute service.
+        plugins = optional(list(object({ # list of plugins
+          name = string # the plugin name. It must be a valid plugin name. The plugin names are available in https://docs.oracle.com/en-us/iaas/Content/Compute/Tasks/manage-plugins.htm and in compute-only example(./examples/compute-only/input.auto.tfvars.template) as well.
+          enabled = bool #Whether or not the plugin should be enabled. In order to disable a previously enabled plugin, set this value to false. Simply removing the plugin from the list will not disable it.
+        })))
+      }))
       ssh_public_key_path = optional(string) # the SSH public key path used to access the instance.
       defined_tags        = optional(map(string)) # instances defined_tags. default_defined_tags is used if this is not defined.
       freeform_tags       = optional(map(string)) # instances freeform_tags. default_freeform_tags is used if this is not defined.
