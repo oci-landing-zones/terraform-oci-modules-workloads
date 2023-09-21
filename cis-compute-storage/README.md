@@ -24,7 +24,7 @@ Check the [examples](./examples/) folder for actual module usage.
 ## <a name="features">Features</a>
 The following security features are currently supported by the module:
 
-### Compute
+### <a name="compute-features">Compute</a>
 - CIS profile level drives data at rest encryption configuration.
 - Boot volumes encryption with customer managed keys from OCI Vault service.
 - In-transit encryption for boot volumes and attached block volumes.
@@ -33,14 +33,14 @@ The following security features are currently supported by the module:
 - Boot volumes backup with Oracle managed policies.
 - Cloud Agent Plugins.
 
-### Block Volumes
+### <a name="block-features">Block Volumes</a>
 - CIS profile level drives data at rest encryption configuration.
 - Data at rest encryption with customer managed keys from OCI Vault service.
 - In-transit encryption for attached Compute instances.
 - Cross-region replication for strong cyber resilience posture.
 - Backups with Oracle managed policies.
 
-### File Storage
+### <a name="file-features">File Storage</a>
 - CIS profile level drives data at rest encryption configuration.
 - Data at rest encryption with customer managed keys from OCI Vault service.
 - Cross-region replication for strong cyber resilience posture.
@@ -388,6 +388,7 @@ Example:
 ### Block Volumes
 1. The module currently supports only one Block volume replica (within or across regions).
 2. Terraform does not destroy replicated Block volumes. It is first necessary to disable replication (for example, in the OCI Console) before running ```terraform destroy```.
+3. ```terraform plan``` does not detect the change when switching Block volume encryption from customer-managed key to Oracle-managed key. Use some other means in such cases, like OCI Console or OCI CLI.
 
 ### Compute
 1. Platform images may not allow instances overriding the image configuration for in-transit encryption at instance launch time. Terraform would typically error out with:
@@ -421,3 +422,22 @@ Error: 400-InvalidParameter, Instance ocid1.instance.oc1.iad.anuwcl...34q does n
 │ OPC request ID: dd06c66b...08f529c0e1718fdcfc/2780B0B7DA...292AD3...E8FE2A/0E9E0694BF...A11E3AF7B2D4DF8
 ```
 In such cases, either remove or set attributes *encrypt_in_transit_on_instance_create* and *encrypt_in_transit_on_instance_update* attributes to false. Or use a platform image.
+
+3. ```terraform apply``` fails when switching boot volume encryption from customer-managed key to Oracle-managed key.
+```
+Error: 400-InvalidParameter, kmsKeyId is invalid or incorrectly formatted.
+│ Suggestion: Please update the parameter(s) in the Terraform config as per error message kmsKeyId is invalid or incorrectly formatted.
+│ Documentation: https://registry.terraform.io/providers/oracle/oci/latest/docs/resources/core_instance
+│ API Reference: https://docs.oracle.com/iaas/api/#/en/iaas/20160918/BootVolumeKmsKey/UpdateBootVolumeKmsKey
+│ Request Target: PUT https://iaas.us-ashburn-1.oraclecloud.com/20160918/bootVolumes/ocid1.bootvolume.oc1.iad.abuwcljr5uxn5ns6atgccav3shq3nnkoouljbmy6ded4hgyrg5ncfb7k3e6a/kmsKey
+│ Provider version: 5.13.0, released on 2023-09-13.
+│ Service: Core Instance
+│ Operation Name: UpdateBootVolumeKmsKey
+│ OPC request ID: 3cef1c0e5de57200a960d2593a4e0fa9/FA008B0998DD1B2AC1115316D5ED4D42/19C0164138C36754AC289601BF86FC29
+│
+│
+│   with module.compute.oci_core_instance.these["INSTANCE-1"],
+│   on ..\..\compute.tf line 58, in resource "oci_core_instance" "these":
+│   58: resource "oci_core_instance" "these" {
+```
+Use some other means in such cases, like OCI Console or OCI CLI.
