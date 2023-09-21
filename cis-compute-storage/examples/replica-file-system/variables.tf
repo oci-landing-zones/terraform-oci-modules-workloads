@@ -24,14 +24,15 @@ variable "storage_configuration" {
       availability_domain = optional(number,1)  # the availability domain where to create the block volume.     
       volume_size         = optional(number,50) # the size of the block volume.
       vpus_per_gb         = optional(number,0)  # the number of vpus per gb. Values are 0(LOW), 10(BALANCE), 20(HIGH), 30-120(ULTRA HIGH)
-      attach_to_instance = optional(object({ # map to where to attach the block volume.
+      attach_to_instances = optional(list(object({ # map to where to attach the block volume.
         instance_id = string      # the instance that this volume will be attached to.
         device_name = string      # where to mount the block volume. Should be one of the values from disk_mappings in the instance_configuration.
-        attachment_type = optional(string,"PARAVIRTUALIZED") # the block volume attachment type. Valid values: "PARAVIRTUALIZED" (default), "ISCSI".
-      }))
+        attachment_type = optional(string,"paravirtualized") # the block volume attachment type. Valid values: "paravirtualized" (default), "iscsi".
+        read_only = optional(bool,false) # whether the attachment is read_only or read/write. 
+      })))
       encryption = optional(object({ # encryption settings
         kms_key_id              = optional(string) # the KMS key to assign as the master encryption key. default_kms_key_id is used if this is not defined.
-        encrypt_in_transit      = optional(bool,true)  # whether the block volume should encrypt traffic. Works only with paravirtualized attachment type. Default is true.
+        encrypt_in_transit      = optional(bool,false)  # whether the block volume should encrypt traffic. Works only with paravirtualized attachment type. Default is false.
       }))
       replication = optional(object({ # replication settings
         availability_domain = number # the availability domain (AD) to replicate the volume. The AD is picked from the region specified by 'block_volumes_replication_region' variable if defined. Otherwise picked from the region specified by 'region' variable.

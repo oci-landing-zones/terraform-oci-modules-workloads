@@ -28,7 +28,7 @@ variable "instances_configuration" {
         fault_domain         = optional(number,1) # the instance fault domain. Default is 1.
       }))
       boot_volume = optional(object({ # boot volume settings
-        type = optional(string,"PARAVIRTUALIZED") # boot volume emulation type. Valid values: "PARAVIRTUALIZED" (default for platform images), "SCSI", "ISCSI", "IDE", "VFIO".
+        type = optional(string,"paravirtualized") # boot volume emulation type. Valid values: "paravirtualized" (default for platform images), "scsi", "iscsi", "ide", "vfio".
         firmware = optional(string) # firmware used to boot the VM. Valid options: "BIOS" (compatible with both 32 bit and 64 bit operating systems that boot using MBR style bootloaders), "UEFI_64" (default for platform images).
         size = optional(number,50) # boot volume size. Default is 50GB (minimum allowed by OCI).
         preserve_on_instance_deletion = optional(bool,true) # whether to preserve boot volume after deletion. Default is true.
@@ -37,9 +37,9 @@ variable "instances_configuration" {
         trusted_platform_module = optional(bool, false) # used to securely store boot measurements.
         backup_policy = optional(string,"bronze") # the Oracle managed backup policy. Valid values: "gold", "silver", "bronze". Default is "bronze".
       }))
-      volumes_emulation_type = optional(string,"PARAVIRTUALIZED") # Emulation type for attached storage volumes. Valid values: "PARAVIRTUALIZED" (default for platform images), "SCSI", "ISCSI", "IDE", "VFIO". Module supported values for automated attachment: "PARAVIRTUALIZED", "ISCSI".
+      volumes_emulation_type = optional(string,"paravirtualized") # Emulation type for attached storage volumes. Valid values: "paravirtualized" (default for platform images), "scsi", "iscsi", "ide", "vfio". Module supported values for automated attachment: "paravirtualized", "iscsi".
       networking = optional(object({ # networking settings
-        type                    = optional(string,"PARAVIRTUALIZED") # emulation type for the physical network interface card (NIC). Valid values: "PARAVIRTUALIZED" (default), "E1000", "VFIO".
+        type                    = optional(string,"paravirtualized") # emulation type for the physical network interface card (NIC). Valid values: "paravirtualized" (default), "e1000", "vfio".
         hostname                = optional(string) # the instance hostname.
         assign_public_ip        = optional(bool,false)  # whether to assign the instance a public IP. Default is false.
         subnet_id               = optional(string)   # the subnet where the instance is created. default_subnet_id is used if this is not defined.
@@ -87,14 +87,15 @@ variable "storage_configuration" {
       availability_domain = optional(number,1)  # the availability domain where to create the block volume.     
       volume_size         = optional(number,50) # the size of the block volume.
       vpus_per_gb         = optional(number,0)  # the number of vpus per gb. Values are 0(LOW), 10(BALANCE), 20(HIGH), 30-120(ULTRA HIGH)
-      attach_to_instance = optional(object({ # map to where to attach the block volume.
+      attach_to_instances = optional(list(object({ # map to where to attach the block volume.
         instance_id = string      # the instance that this volume will be attached to.
         device_name = string      # where to mount the block volume. Should be one of the values from disk_mappings in the instance_configuration.
-        attachment_type = optional(string,"PARAVIRTUALIZED") # the block volume attachment type. Valid values: "PARAVIRTUALIZED" (default), "ISCSI".
-      }))
+        attachment_type = optional(string,"paravirtualized") # the block volume attachment type. Valid values: "paravirtualized" (default), "iscsi".
+        read_only = optional(bool,false) # whether the attachment is "Read Only" or "Read/Write". Default is false, which means "Read/Write".
+      })))
       encryption = optional(object({ # encryption settings
         kms_key_id              = optional(string) # the KMS key to assign as the master encryption key. default_kms_key_id is used if this is not defined.
-        encrypt_in_transit      = optional(bool,true)  # whether the block volume should encrypt traffic. Works only with paravirtualized attachment type. Default is true.
+        encrypt_in_transit      = optional(bool,false)  # whether the block volume should encrypt traffic. Works only with paravirtualized attachment type. Default is false.
       }))
       replication = optional(object({ # replication settings
         availability_domain = number # the availability domain (AD) to replicate the volume. The AD is picked from the region specified by 'block_volumes_replication_region' variable if defined. Otherwise picked from the region specified by 'region' variable.

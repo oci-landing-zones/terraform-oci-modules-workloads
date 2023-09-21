@@ -49,21 +49,49 @@ resource "oci_core_volume" "these" {
     freeform_tags = merge(local.cislz_module_tag, each.value.freeform_tags != null ? each.value.freeform_tags : var.storage_configuration.default_freeform_tags)
 }
 
+locals {
+  bv_attachments = flatten([
+    for bv_key, bv_value in (var.storage_configuration != null ? (var.storage_configuration["block_volumes"] != null ? var.storage_configuration["block_volumes"] : {}) : {}) : [
+      for attach in (bv_value.attach_to_instances != null ? bv_value.attach_to_instances : []) : {
+        key          = "${bv_key}.${attach.instance_id}"
+        bv_key       = bv_key
+        type         = attach.attachment_type
+        instance_id  = contains(keys(oci_core_instance.these),attach.instance_id) ? oci_core_instance.these[attach.instance_id].id : (contains(keys(var.instances_dependency),attach.instance_id) ? var.instances_dependency[attach.instance_id].id : null)
+        volume_id    = oci_core_volume.these[bv_key].id
+        device       = attach.device_name
+        is_read_only = attach.read_only
+        is_pv_encryption_in_transit_enabled = bv_value.encryption != null ? bv_value.encryption.encrypt_in_transit : false
+      } 
+    ]
+  ])
+}
+
 resource "oci_core_volume_attachment" "these" {
-  for_each = var.storage_configuration != null ? (var.storage_configuration["block_volumes"] != null ? [for bv in var.storage_configuration["block_volumes"] : bv.attach_to_instance != null ? var.storage_configuration["block_volumes"] : {}][0] : {}) : {}
+  for_each = {for attach in local.bv_attachments : attach.key => {
+    attachment_type = attach.type
+    instance_id     = attach.instance_id
+    volume_id       = attach.volume_id
+    device          = attach.device
+    is_read_only    = attach.is_read_only
+    is_pv_encryption_in_transit_enabled = attach.is_pv_encryption_in_transit_enabled
+    bv_key          = attach.bv_key
+  }}
     lifecycle {
       precondition {
-        condition = contains(keys(oci_core_instance.these),each.value.attach_to_instance.instance_id) || (var.instances_dependency != null ? contains(keys(var.instances_dependency),each.value.attach_to_instance.instance_id) : true)
-        error_message = "VALIDATION FAILURE when attaching block volume to instance. Instance referred by \"${each.value.attach_to_instance.instance_id}\" not found."
+        condition = contains(keys(oci_core_instance.these),each.value.instance_id) || (var.instances_dependency != null ? contains(keys(var.instances_dependency),each.value.instance_id) : true)
+        error_message = "VALIDATION FAILURE when attaching block volume to instance. Instance referred by \"${each.value.instance_id}\" not found."
       }
     }
-    #attachment_type                     = lower(var.instances_configuration["instances"][each.value.attach_to_instance.instance_id].device_mounting.emulation_type)
-    attachment_type                     = each.value.attach_to_instance.attachment_type
-    instance_id                         = contains(keys(oci_core_instance.these),each.value.attach_to_instance.instance_id) ? oci_core_instance.these[each.value.attach_to_instance.instance_id].id : (contains(keys(var.instances_dependency),each.value.attach_to_instance.instance_id) ? var.instances_dependency[each.value.attach_to_instance.instance_id].id : null)
-    volume_id                           = oci_core_volume.these[each.key].id
-    device                              = each.value.attach_to_instance.device_name
-    #is_pv_encryption_in_transit_enabled = upper(var.instances_configuration["instances"][each.value.attach_to_instance.instance_id].device_mounting.emulation_type) == "PARAVIRTUALIZED" ? (each.value.encryption != null ? each.value.encryption.encrypt_in_transit : true) : true
-    is_pv_encryption_in_transit_enabled = contains(keys(oci_core_instance.these),each.value.attach_to_instance.instance_id) ? oci_core_instance.these[each.value.attach_to_instance.instance_id].is_pv_encryption_in_transit_enabled : (contains(keys(var.instances_dependency),each.value.attach_to_instance.instance_id) ? var.instances_dependency[each.value.attach_to_instance.instance_id].is_pv_encryption_in_transit_enabled : false)
+    attachment_type = each.value.attachment_type
+    instance_id     = each.value.instance_id
+    volume_id       = each.value.volume_id
+    device          = each.value.device
+    # is_shareable is automatically set to true if there is more than one instance attachment to the same volume. 
+    # We are testing the length of a list with block volume keys that are equal to the attachment key (each.bv_key)
+    # If there's more than one element, it means the volume is attached to more than one instance and we set is_shareable to true.
+    is_shareable    = length([for a in local.bv_attachments : a.bv_key if a.bv_key == each.value.bv_key]) > 1 ? true : false
+    is_read_only    = each.value.is_read_only
+    is_pv_encryption_in_transit_enabled = each.value.is_pv_encryption_in_transit_enabled
 }
 
 resource "oci_core_volume_backup_policy_assignment" "these" {

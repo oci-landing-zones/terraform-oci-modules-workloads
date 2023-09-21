@@ -128,7 +128,7 @@ The instances themselves are defined within the **instances** attribute, In Terr
   - **availability_domain** &ndash; (Optional) The instance availability domain. Default is 1.
   - **fault_domain** &ndash; (Optional) The instance fault domain. Default is 1.
 - **boot_volume** &ndash; (Optional) Boot volume settings.
-  - **type** &ndash; (Optional) Boot volume emulation type. Valid values: "PARAVIRTUALIZED", "SCSI", "ISCSI", "IDE", "VFIO". Default is "PARAVIRTUALIZED".
+  - **type** &ndash; (Optional) Boot volume emulation type. Valid values: "paravirtualized", "scsi", "iscsi", "ide", "vfio". Default is "paravirtualized".
   - **firmware** &ndash; (Optional) Firmware used to boot the VM. Valid options: "BIOS" (compatible with both 32 bit and 64 bit operating systems that boot using MBR style bootloaders), "UEFI_64" (default for platform images).
   - **size** &ndash; (Optional) Boot volume size. Default is 50 (in GB, the minimum allowed by OCI).
   - **preserve_on_instance_deletion** &ndash; (Optional) Whether to preserve boot volume after deletion. Default is true.
@@ -136,9 +136,9 @@ The instances themselves are defined within the **instances** attribute, In Terr
   - **measured_boot** &ndash; (Optional) enhances boot security by taking and storing measurements of boot components, such as bootloaders, drivers, and operating systems. Bare metal instances do not support Measured Boot. Default is false. Only applicable if *platform_type* is set.
   - **trusted_platform_module** &ndash; (Optional) Used to securely store boot measurements. Default is false. Only applicable if *platform_type* is set.
   - **backup_policy** &ndash; (Optional) The Oracle managed backup policy for the boot volume. Valid values: "gold", "silver", "bronze". Default is "bronze".
-- **volumes_emulation_type** &ndash; (Optional) emulation type for attached storage volumes. Valid values: "PARAVIRTUALIZED" (default), "SCSI", "ISCSI", "IDE", "VFIO". 
+- **volumes_emulation_type** &ndash; (Optional) emulation type for attached storage volumes. Valid values: "paravirtualized" (default), "scsi", "iscsi", "ide", "vfio". 
 - **networking** &ndash; (Optional) Networking settings. 
-  - **type** &ndash; (Optional) Emulation type for the physical network interface card (NIC). Valid values: "PARAVIRTUALIZED" (default), "VFIO" (SR-IOV networking), "E1000" (compatible with Linux e1000 driver).
+  - **type** &ndash; (Optional) Emulation type for the physical network interface card (NIC). Valid values: "paravirtualized" (default), "vfio" (SR-IOV networking), "e1000" (compatible with Linux e1000 driver).
   - **hostname** &ndash; (Optional) The instance hostname.
   - **assign_public_ip** &ndash; (Optional) Whether to assign the instance a public IP. Default is false.
   - **subnet_id** &ndash; (Optional) The subnet where the instance is created. *default_subnet_id* is used if undefined. This attribute is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *network_dependency* variable. See [External Dependencies](#ext-dep) for details.
@@ -242,13 +242,14 @@ Block volumes are defined using the optional **block_volumes** attribute. In Ter
 - **vpus_per_gb** &ndash; (Optional) The number of VPUs per GB of volume. Values are 0(LOW), 10(BALANCE), 20(HIGH), 30-120(ULTRA HIGH). Default is 0.
 - **defined_tags** &ndash; (Optional) The volume defined tags. The *default_defined_tags* is used if undefined.
 - **freeform_tags** &ndash; (Optional) The volume freeform tags. The *default_freeform_tags* is used if undefined.
-- **attach_to_instance** &ndash; (Optional) Settings for block volume attachment. Note that the module does **not** mount the block volume in the instance. For instructions how to mount block volumes, please section [Mounting Block Volumes](#mounting-block-volumes).
+- **attach_to_instances** &ndash; (Optional) A list with instance attachments. Each element defines an attachment. If more than one attachment is defined for a volume, all attachments are automatically configured as shareable. Note that the module does **not** mount the block volume in the instances. For instructions how to mount block volumes, please section [Mounting Block Volumes](#mounting-block-volumes).
   - **instance_id** &ndash; The instance that the volume attaches to. It must be one of the identifying keys in the *instances* map or in the *instances_dependency* variable. See [External Dependencies](#ext-dep) for details.
   - **device_name** &ndash; The device name where to mount the block volume. It must be one of the *disk_mappings* value in the *instances* map or in the *instances_dependency* object.
-  - **attachment_type** &ndash; (Optional) The block volume attachment type. Valid values: "PARAVIRTUALIZED" (default), "ISCSI".
+  - **attachment_type** &ndash; (Optional) The block volume attachment type. Valid values: "paravirtualized" (default), "iscsi".
+  - **read_only** &ndash; (Optional) The attachment access mode. Default is false, which means attachments are "Read/Write" by default.
 - **encryption** &ndash; (Optional) Encryption settings
   - **kms_key_id** &ndash; (Optional) The encryption key for volume encryption. *default_kms_key_id* is used if undefined. Required if *cis_level* or *default_cis_level* is "2". This attribute is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *kms_dependency* variable. See [External Dependencies](#ext-dep) for details.
-  - **encrypt_in_transit** &ndash; (Optional) Whether traffic encryption should be enabled for the volume. It only works if the device emulation type is paravirtualized.
+  - **encrypt_in_transit** &ndash; (Optional) Whether traffic encryption should be enabled for the volume. Only applicable for "paravirtualized" attachment type. Default is false.
 - **replication** &ndash; (Optional) Replication settings
   - **availability_domain** &ndash; The availability domain (AD) to replicate the volume. The AD is picked from the region set by the module client to *block_volumes_replication_region* provider alias. Check [here](./examples/storage-only/) for an example with cross-region replication.
 - **backup_policy** &ndash; (Optional) The Oracle managed backup policy for the volume. Valid values: "gold", "silver", "bronze". Default is "bronze".
