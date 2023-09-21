@@ -62,6 +62,14 @@ variable "instances_configuration" {
         memory = optional(number,16) # the instance memory for Flex shapes. Default is 16GB.
         ocpus  = optional(number,1)  # the instance ocpus number for Flex shapes. Default is 1.
       }))
+      cloud_agent = optional(object({
+        disable_management = optional(bool,false)
+        disable_monitoring = optional(bool,false)
+        plugins = optional(list(object({
+          name = string
+          enabled = bool
+        })))
+      }))
       ssh_public_key_path = optional(string) # the SSH public key path used to access the instance.
       defined_tags        = optional(map(string)) # instances defined_tags. default_defined_tags is used if this is not defined.
       freeform_tags       = optional(map(string)) # instances freeform_tags. default_freeform_tags is used if this is not defined.

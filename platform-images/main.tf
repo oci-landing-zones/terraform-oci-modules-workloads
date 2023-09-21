@@ -14,7 +14,7 @@ locals {
   
   all_platform_images = [
     for i in data.oci_core_images.these.images :
-     { "display_name" : i.display_name, "publisher_name" : "Oracle", "id" : i.id, "operating_system" : i.operating_system,  "operating_system_version" : i.operating_system_version, "encryption_in_transit" : i.launch_options[0].is_pv_encryption_in_transit_enabled, "state" : i.state, "shapes" : [for s in data.oci_core_image_shapes.these[i.id].image_shape_compatibilities : s.shape] }
+     { "display_name" : i.display_name, "publisher_name" : "Oracle", "id" : i.id, "operating_system" : i.operating_system,  "operating_system_version" : i.operating_system_version, "encryption_in_transit" : i.launch_options[0].is_pv_encryption_in_transit_enabled, "state" : i.state, "shapes" : [for s in data.oci_core_image_shapes.these[i.id].image_shape_compatibilities : s.shape]}
   ]
 
   filtered_images = join("\n", compact([

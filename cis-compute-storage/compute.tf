@@ -135,6 +135,22 @@ resource "oci_core_instance" "these" {
         ocpus         = each.value.flex_shape_settings != null ? each.value.flex_shape_settings.ocpus : 1
       }
     }
+    dynamic "agent_config" {
+      for_each = each.value.cloud_agent != null ? [1] : []
+      content {
+        #are_all_plugins_disabled = false
+        is_management_disabled = each.value.cloud_agent.disable_management
+        is_monitoring_disabled = each.value.cloud_agent.disable_monitoring
+        dynamic "plugins_config" {
+          for_each = coalesce(each.value.cloud_agent.plugins,[])
+            iterator = plugin
+            content {
+              name = plugin.value.name
+              desired_state = plugin.value.enabled ? "ENABLED" : "DISABLED"
+            }
+        }
+      }
+    }
     metadata = {
       ssh_authorized_keys = each.value.ssh_public_key_path != null ? file(each.value.ssh_public_key_path) : file(var.instances_configuration.default_ssh_public_key_path)
     #  user_data           = contains(keys(data.template_cloudinit_config.config),each.key) ? data.template_cloudinit_config.config[each.key].rendered : null

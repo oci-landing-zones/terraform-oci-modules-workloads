@@ -14,6 +14,7 @@ For INSTANCE-1:
 - The instance requires a customer managed key for boot volume encryption, as defined by *cis_level* atrribute.
 - The instance boot volume is encrypted with a customer managed key referred by *encryption.kms_key_id* attribute.
 - The instance boot volume is set to be backed up per Oracle-managed *bronze* backup policy (enforced by the module by default).
+- The instance has all Cloud Agent plugins enabled, as defined by *cloud_agent.plugins* attribute.
 
 For INSTANCE-2:
 - The instance is based on "VM.Standard.E4.Flex" shape, as defined by the *shape* attribute.
@@ -23,6 +24,7 @@ For INSTANCE-2:
 - The instance boot volume is set to be backed up per Oracle-managed *silver* backup policy, as defined by *boot_volume.backup_policy* attribute.
 - The instance has in-transit encryption enabled, as defined by *encryption.encrypt_in_transit_on_instance_create* attribute.
 - The instance is a shielded instance, as defined by *platform_type* and *boot_volume.measured_boot* attributes.
+- The instance has only default Cloud Agent plugins (management and monitoring) enabled, as *cloud_agent.plugins* attribute is undefined.
 
 For INSTANCE-3:
 - The instance is based on "VM.Standard.E4.Flex" shape, as defined by the *shape* attribute.
@@ -31,6 +33,7 @@ For INSTANCE-3:
 - The instance boot volume is encrypted with an Oracle-managed key (OCI default) as it does not define *encryption.kms_key_id* attribute and there's no applicable *default_kms_key_id* attribute.
 - The instance boot volume is set to be backed up per Oracle-managed *gold* backup policy, as defined by *boot_volume.backup_policy* attribute.
 - The instance has confidential computing enabled, as defined by *platform_type* and *encryption.encrypt_data_in_use* attributes.
+- The instance has only default Cloud Agent plugins (management and monitoring) enabled, as *cloud_agent.plugins* attribute is undefined.
 
 See [input.auto.tfvars.template](./input.auto.tfvars.template) for the variables configuration.
 

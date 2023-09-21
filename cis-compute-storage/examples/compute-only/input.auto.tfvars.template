@@ -50,6 +50,25 @@ instances_configuration = {
         name = "Oracle Linux 7 STIG" # Marketplace image
         publisher_name = "Oracle Linux"
       }
+      cloud_agent = {
+        disable_monitoring = false
+        disable_management = false
+        plugins = [
+          {name = "Vulnerability Scanning", enabled = true},
+          {name = "Oracle Java Management Service", enabled = true},
+          {name = "Oracle Autonomous Linux", enabled = true},
+          {name = "Management Agent", enabled = true},
+          {name = "OS Management Service Agent", enabled = true}, # management plugin, impacted by disable_management attribute if not set.
+          {name = "Custom Logs Monitoring", enabled = true}, # monitoring plugin, impacted by disable_monitoring attribute if not set.
+          {name = "Compute RDMA GPU Monitoring", enabled = true},
+          {name = "Compute Instance Run Command", enabled = true}, # management plugin, impacted by disable_management attribute if not set.
+          {name = "Compute Instance Monitoring", enabled = true}, # monitoring plugin, impacted by disable_monitoring attribute if not set.
+          {name = "Compute HPC RDMA Auto-Configuration", enabled = true},
+          {name = "Compute HPC RDMA Authentication", enabled = true},
+          {name = "Block Volume Management", enabled = true},
+          {name = "Bastion", enabled = true}
+        ]
+      }
     }
     INSTANCE-2 = { # Shielded instance, per platform_type and boot_volume.measured_boot settings.
       shape = "VM.Standard.E4.Flex"
