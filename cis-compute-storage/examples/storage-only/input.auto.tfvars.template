@@ -67,16 +67,16 @@ storage_configuration = {
     mount_targets = {
       MT-1 = {
         mount_target_name = "<REPLACE-BY-MOUNT-TARGET-NAME>"
-        exports = {
-          EXP-1 = {
+        exports = [
+          {
             path = "/my_export_path"
             file_system_id = "FS-1"
             options = [
               {source = "0.0.0.0/0", access = "READ_ONLY", identity = "NONE", use_privileged_source_port = true}, 
               {source = "<REPLACE-BY-IP_ADDRESS>", access = "READ_WRITE", identity = "ROOT", use_privileged_source_port = true}
             ]
-          }
-          EXP-2 = {
+          },
+          {
             path = "/another_export_path"
             file_system_id = "FS-2"
             options = [
@@ -84,7 +84,7 @@ storage_configuration = {
               {source = "<REPLACE-BY-IP_ADDRESS>", access = "READ_WRITE", identity = "ROOT", use_privileged_source_port = true}
             ]
           }
-        }
+        ]
       }
     }
     snapshot_policies = {
