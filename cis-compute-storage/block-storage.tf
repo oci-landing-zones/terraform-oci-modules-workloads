@@ -56,7 +56,7 @@ locals {
         key          = "${bv_key}.${attach.instance_id}"
         bv_key       = bv_key
         type         = attach.attachment_type
-        instance_id  = contains(keys(oci_core_instance.these),attach.instance_id) ? oci_core_instance.these[attach.instance_id].id : (contains(keys(var.instances_dependency),attach.instance_id) ? var.instances_dependency[attach.instance_id].id : null)
+        instance_id  = attach.instance_id
         volume_id    = oci_core_volume.these[bv_key].id
         device       = attach.device_name
         is_read_only = attach.read_only
@@ -83,7 +83,7 @@ resource "oci_core_volume_attachment" "these" {
       }
     }
     attachment_type = each.value.attachment_type
-    instance_id     = each.value.instance_id
+    instance_id     = contains(keys(oci_core_instance.these),each.value.instance_id) ? oci_core_instance.these[each.value.instance_id].id : (contains(keys(var.instances_dependency),each.value.instance_id) ? var.instances_dependency[each.value.instance_id].id : null)
     volume_id       = each.value.volume_id
     device          = each.value.device
     # is_shareable is automatically set to true if there is more than one instance attachment to the same volume. 
