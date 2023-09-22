@@ -53,7 +53,10 @@ This module requires the following OCI IAM permissions in the compartments where
 
 For deploying Compute instances:
 ```
-Allow group <GROUP-NAME> to manage instance-family in compartment <INSTANCE-COMPARTMENT-NAME>
+Allow group <GROUP-NAME> to manage instance-family in compartment <INSTANCE-COMPARTMENT-NAME> # covers block volume attachments
+Allow group <GROUP-NAME> to manage backup-policy-assignments in compartment <INSTANCE-COMPARTMENT-NAME> # for boot volume policy assignment
+Allow group <GROUP-NAME> to use volumes in compartment <INSTANCE-COMPARTMENT-NAME> # for boot volume policy assignment
+Allow group <GROUP-NAME> to use backup-policies in compartment <INSTANCE-COMPARTMENT-NAME> # for boot volume policy assignment
 Allow group <GROUP-NAME> to read instance-agent-plugins in compartment <INSTANCE-COMPARTMENT-NAME>
 Allow group <GROUP-NAME> to read virtual-network-family in compartment <NETWORK-COMPARTMENT-NAME>
 Allow group <GROUP-NAME> to use subnets in compartment <NETWORK-COMPARTMENT-NAME>
@@ -63,7 +66,7 @@ Allow group <GROUP-NAME> to manage private-ips in compartment <NETWORK-COMPARTME
 Allow group <GROUP-NAME> to read keys in compartment <ENCRYPTION-KEYS-COMPARTMENT-NAME>
 Allow group <GROUP-NAME> to use key-delegate in compartment <ENCRYPTION-KEYS-COMPARTMENT-NAME>
 ```
-If images are not in the same compartment as the instances themselves, add this policy statement.
+If (custom) images are not in the same compartment as the instances themselves, add this policy statement:
 
 ```
 Allow group <GROUP-NAME> to read instance-images in compartment <IMAGE-COMPARTMENT-NAME>
