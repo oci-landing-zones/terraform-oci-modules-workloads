@@ -39,6 +39,7 @@ The following security features are currently supported by the module:
 - In-transit encryption for attached Compute instances.
 - Cross-region replication for strong cyber resilience posture.
 - Backups with Oracle managed policies.
+- [Shareable block volume attachments](https://docs.oracle.com/en-us/iaas/Content/Block/Tasks/attachingvolumetomultipleinstances.htm).
 
 ### <a name="file-features">File Storage</a>
 - CIS profile level drives data at rest encryption configuration.

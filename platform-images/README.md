@@ -8,6 +8,15 @@ Check [module specification](./SPEC.md) for a full description of module require
 
 Check the [examples](./examples/) folder for actual module usage.
 
+## Requirements
+### IAM Permissions
+
+This module requires the following OCI IAM permissions:
+
+```
+Allow group <GROUP-NAME> to inspect instance-images in tenancy
+```
+
 ## Contributing
 See [CONTRIBUTING.md](./CONTRIBUTING.md).
 
