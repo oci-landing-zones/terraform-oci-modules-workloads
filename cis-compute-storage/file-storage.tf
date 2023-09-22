@@ -53,9 +53,9 @@ resource "oci_file_storage_export_set" "these" {
 locals {
   exports = flatten([
     for mt_key, mt in (var.storage_configuration != null ? (var.storage_configuration["file_storage"] != null ? (var.storage_configuration["file_storage"]["mount_targets"] != null ? var.storage_configuration["file_storage"]["mount_targets"] : {}) : {}) : {}): [
-      for exp_key, exp in (mt["exports"] != null ? mt["exports"] : {}) : {
+      for exp in (mt["exports"] != null ? mt["exports"] : []) : {
         mt_key  = mt_key
-        exp_key = exp_key
+        exp_key = "${mt_key}.${exp.file_system_id}"#exp_key
         path    = exp.path
         file_system_id = exp.file_system_id
         options = exp.options

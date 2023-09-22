@@ -60,10 +60,10 @@ storage_configuration = {
     BV-1 = {
       display_name = "<REPLACE-BY-BLOCK-VOLUME-NAME>"
       availability_domain = 1   
-      attach_to_instance = { 
+      attach_to_instances = [{ 
         instance_id = "INSTANCE-1" # obtained from local instances map.     
         device_name  = "/dev/oracleoci/oraclevdb"
-      }
+      }]
       encryption = {
         encrypt_in_transit = false
       }
@@ -75,10 +75,10 @@ storage_configuration = {
     BV-2 = {
       display_name = "<REPLACE-BY-BLOCK-VOLUME-NAME>"
       availability_domain = 1   
-      attach_to_instance = { 
+      attach_to_instances = [{ 
         instance_id = "<REPLACE-BY-INSTANCE-REFERENCE>" # obtained from oci_compute_dependency.      
         device_name  = "/dev/oracleoci/oraclevdb"
-      }
+      }]
       encryption = {
         kms_key_id = "<REPLACE-BY-ENCRYPTION-KEY-REFERENCE>" # obtained from oci_kms_dependency.
         encrypt_in_transit = false

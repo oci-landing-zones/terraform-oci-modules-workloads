@@ -64,7 +64,7 @@ variable "storage_configuration" {
         mount_target_name   = string           # the mount target and export set name.
         availability_domain = optional(number,1) # the mount target availability domain.  
         subnet_id           = optional(string) # the mount target subnet. default_subnet_id is used if this is not defined.
-        exports = optional(map(object({
+        exports = optional(list(object({
           path = string # export path. For example: /foo
           file_system_id = string # the file system identifying key the export applies to. It must be one of the keys in file_systems map of objects.
           options = optional(list(object({ # optional export options.

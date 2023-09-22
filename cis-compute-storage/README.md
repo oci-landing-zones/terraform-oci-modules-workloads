@@ -283,9 +283,9 @@ Mount targets are defined using the optional attribute **mount_targets**. A Terr
 - **mount_target_name** &ndash; The mount target and export set name.
 - **availability_domain** &ndash; (Optional) The mount target availability domain.  
 - **subnet_id** &ndash; (Optional) The mount target subnet. It defaults to *default_subnet_id* from *file_storage* if undefined. This attribute is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *network_dependency* variable. See [External Dependencies](#ext-dep) for details.
-- **exports** &ndash; (Optional) Export settings. A Terraform map of objects, where each object is referred by an identifying key. The following attributes are supported:
+- **exports** &ndash; (Optional) List of exports, where each element refers to a file system, defined by *file_system_id* attribute. The following attributes are supported:
   - **path** &ndash; Export path.
-  - **file_system_key** &ndash; The file system identifying key this mount target applies.
+  - **file_system_id** &ndash; The file system identifying key this mount target applies.
   - **options** &ndash; (Optional) List of export options.
     - **source** &ndash; The source IP address or CIDR range allowed to access the mount target.
     - **access** &ndash; (Optional) Type of access grants. Valid values (case sensitive): "READ_WRITE", "READ_ONLY". Default is "READ_ONLY".
