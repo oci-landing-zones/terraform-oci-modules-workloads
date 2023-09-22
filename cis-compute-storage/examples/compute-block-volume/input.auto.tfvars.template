@@ -1,0 +1,260 @@
+# Copyright (c) 2023 Oracle and/or its affiliates.
+# Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
+
+#--------------------------------------------------------------------------------------------------------------------------------------
+# 1. Rename this file to <project-name>.auto.tfvars, where <project-name> is a name of your choice.
+# 2. Provide values for "Tenancy Connectivity Variables".
+# 3. Replace <REPLACE-BY-*> placeholders with appropriate values.
+#--------------------------------------------------------------------------------------------------------------------------------------
+
+#---------------------------------------
+# Tenancy Connectivity Variables
+#---------------------------------------
+
+tenancy_ocid         = "<tenancy OCID>"            # Get this from OCI Console (after logging in, go to top-right-most menu item and click option "Tenancy: <your tenancy name>").
+user_ocid            = "<user OCID>"               # Get this from OCI Console (after logging in, go to top-right-most menu item and click option "My profile").
+fingerprint          = "<PEM key fingerprint>"     # The fingerprint can be gathered from your user account. In the "My profile page, click "API keys" on the menu in left hand side.
+private_key_path     = "<path to the private key>" # This is the full path on your local system to the API signing private key.
+private_key_password = ""                          # This is the password that protects the private key, if any.
+region               = "<your tenancy region>"     # The region name.
+
+#---------------------------------------
+# Input variables
+#---------------------------------------
+
+block_volumes_replication_region = "<REPLACE-BY-REPLICATION-REGION-NAME>"
+
+instances_configuration = {
+  default_compartment_id = "<REPLACE-BY-COMPARTMENT-OCID>" 
+  default_subnet_id = "<REPLACE-BY-SUBNET-OCID>"
+  default_kms_key_id = "<REPLACE-BY-KEY-OCID>"
+  default_ssh_public_key_path = "~/.ssh/id_rsa.pub"
+  instances = {
+    INSTANCE-1 = {
+      shape = "VM.Standard.E4.Flex"
+      name  = "<REPLACE-BY-INSTANCE-NAME>"
+      placement = {
+        availability_domain = 1
+        fault_domain = 1
+      }
+      boot_volume = {
+        size = 120
+        preserve_on_instance_deletion = false
+      }
+      networking = {
+        hostname  = "<REPLACE-BY-INSTANCE-HOSTNAME>"
+        network_security_groups = ["REPLACE-BY-NETWORK-SECURITY-GROUP-OCID"]
+      }
+      image = {
+        name = "<REPLACE-BY-IMAGE-NAME>"
+        publisher_name = "<REPLACE-BY-IMAGE-PUBLISHER-NAME>"
+      }
+    }
+    INSTANCE-2 = {
+      shape = "VM.Standard.E4.Flex"
+      name  = "<REPLACE-BY-INSTANCE-NAME>"
+      placement = {
+        availability_domain = 1
+        fault_domain = 2
+      }
+      boot_volume = {
+        size = 120
+        preserve_on_instance_deletion = true
+        backup_policy = "silver"
+      }
+      encryption = {
+        encrypt_in_transit_on_instance_create = true
+      }
+      networking = {
+        hostname  = "<REPLACE-BY-INSTANCE-HOSTNAME>"
+        network_security_groups = ["REPLACE-BY-NETWORK-SECURITY-GROUP-OCID"]
+      }
+      image = {
+        id = "ocid1.image.oc1.iad.aaaaaaaamf35m2qg5krijvq4alf6qmvdqiroq4i5zdwqqdijmstn4ryes36q" # Oracle-Linux-8.8-2023.08.31-0 platform image
+      }
+    }
+    INSTANCE-3 = {
+      shape = "VM.Standard.E4.Flex"
+      name  = "<REPLACE-BY-INSTANCE-NAME>"
+      placement = {
+        availability_domain = 1
+        fault_domain = 3
+      }
+      boot_volume = {
+        size = 120
+        preserve_on_instance_deletion = true
+        backup_policy = "gold"
+      encryption = {
+        encrypt_in_transit_on_instance_create = true
+      }
+      networking = {
+        hostname  = "<REPLACE-BY-INSTANCE-HOSTNAME>"
+        network_security_groups = ["REPLACE-BY-NETWORK-SECURITY-GROUP-OCID"]
+      }
+      image = {
+        id = "ocid1.image.oc1.iad.aaaaaaaamf35m2qg5krijvq4alf6qmvdqiroq4i5zdwqqdijmstn4ryes36q" # Oracle-Linux-8.8-2023.08.31-0 platform image
+      }
+    }
+  }
+}
+
+storage_configuration = {
+  default_compartment_id = "<REPLACE-BY-COMPARTMENT-OCID>"
+  block_volumes = {
+    BV-1 = {
+      display_name = "<REPLACE-BY-BLOCK-VOLUME-NAME>"
+      availability_domain = 1   
+      attach_to_instances = [{ 
+        instance_id = "INSTANCE-1"      
+        device_name  = "/dev/oracleoci/oraclevdb"
+      }]
+      encryption = {
+        encrypt_in_transit = false
+      }
+      backup_policy = "bronze"
+      replication = {
+        availability_domain = 1
+      }
+    }
+    BV-2 = {
+      display_name = "<REPLACE-BY-BLOCK-VOLUME-NAME>"
+      availability_domain = 1
+      encryption = {
+        encrypt_in_transit = true
+      }
+      backup_policy = "silver"   
+      attach_to_instances = [{ 
+        instance_id = "INSTANCE-2"      
+        device_name  = "/dev/oracleoci/oraclevdc"
+        read_only = true
+      },
+      {
+        instance_id = "INSTANCE-3"      
+        device_name  = "/dev/oracleoci/oraclevdd"
+        read_only = false
+      }]
+    }
+  }
+}
+
+###------------------------------------------------------------------------
+### Below a real variables assignment. The OCIDs are redacted though.
+###------------------------------------------------------------------------
+
+/*
+block_volumes_replication_region = "sa-saopaulo-1"
+
+instances_configuration = {
+  default_compartment_id = "ocid1.compartment.oc1..aaaaaaaas...7xq" 
+  default_subnet_id = "ocid1.subnet.oc1.iad.aaaaaaaa...e7a" 
+  default_kms_key_id = "ocid1.key.oc1.iad.ejsp...yna"
+  default_ssh_public_key_path = "~/.ssh/id_rsa.pub"
+  instances = {
+    INSTANCE-1 = {
+      shape = "VM.Standard.E4.Flex"
+      name  = "instance-1-compute-block-volume"
+      placement = {
+        availability_domain = 1
+        fault_domain = 1
+      }
+      boot_volume = {
+        size = 120
+        preserve_on_instance_deletion = false
+      }
+      networking = {
+        hostname  = "instance-1-compute-block-volume"
+        network_security_groups = ["ocid1.networksecuritygroup.oc1.iad.aaaaaaaa...xlq"]
+      }
+      image = {
+        name = "Oracle Linux 7 STIG"
+        publisher_name = "Oracle Linux"
+      }
+    }
+    INSTANCE-2 = {
+      shape = "VM.Standard.E4.Flex"
+      name  = "instance-2-compute-block-volume"
+      placement = {
+        availability_domain = 1
+        fault_domain = 2
+      }
+      boot_volume = {
+        size = 120
+        preserve_on_instance_deletion = true
+        backup_policy = "silver"
+      }
+      encryption = {
+        encrypt_in_transit_on_instance_create = true
+      }
+      networking = {
+        hostname  = "instance-2-compute-block-volume"
+        network_security_groups = ["ocid1.networksecuritygroup.oc1.iad.aaaaaaaa...xlq"]
+      }
+      image = {
+        id = "ocid1.image.oc1.iad.aaaaaaaamf35m2qg5krijvq4alf6qmvdqiroq4i5zdwqqdijmstn4ryes36q" # Oracle-Linux-8.8-2023.08.31-0 platform image
+      }
+    }
+    INSTANCE-3 = {
+      shape = "VM.Standard.E4.Flex"
+      name  = "instance-3-compute-block-volume"
+      placement = {
+        availability_domain = 1
+        fault_domain = 3
+      }
+      boot_volume = {
+        size = 120
+        preserve_on_instance_deletion = true
+        backup_policy = "gold"
+      }
+      encryption = {
+        encrypt_in_transit_on_instance_create = true
+      }
+      networking = {
+        hostname  = "instance-3-compute-block-volume"
+        network_security_groups = ["ocid1.networksecuritygroup.oc1.iad.aaaaaaaa...xlq"]
+      }
+      image = {
+        id = "ocid1.image.oc1.iad.aaaaaaaamf35m2qg5krijvq4alf6qmvdqiroq4i5zdwqqdijmstn4ryes36q" # Oracle-Linux-8.8-2023.08.31-0 platform image
+      }
+    }
+  }
+}
+
+storage_configuration = {
+  default_compartment_id = "ocid1.compartment.oc1..aaaaaaaa...7xq"
+  block_volumes = {
+    BV-1 = {
+      display_name = "block-volume-1-compute-block-volume"
+      availability_domain = 1   
+      attach_to_instances = [{ 
+        instance_id = "INSTANCE-1"      
+        device_name  = "/dev/oracleoci/oraclevdb"
+      }]
+      encryption = {
+        encrypt_in_transit = false
+      }
+      backup_policy = "bronze"
+      replication = {
+        availability_domain = 1
+      }
+    }
+    BV-2 = {
+      display_name = "block-volume-2-compute-block-volume"
+      availability_domain = 1
+      encryption = {
+        encrypt_in_transit = true
+      }
+      backup_policy = "silver"   
+      attach_to_instances = [{ 
+        instance_id = "INSTANCE-2"      
+        device_name  = "/dev/oracleoci/oraclevdc"
+        read_only = true
+      },
+      {
+        instance_id = "INSTANCE-3"      
+        device_name  = "/dev/oracleoci/oraclevdd"
+        read_only = false
+      }]
+    }
+  }
+}
+*/

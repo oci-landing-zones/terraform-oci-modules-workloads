@@ -1,0 +1,99 @@
+# Copyright (c) 2023 Oracle and/or its affiliates.
+# Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
+
+#--------------------------------------------------------------------------------------------------------------------------------------
+# 1. Rename this file to <project-name>.auto.tfvars, where <project-name> is a name of your choice.
+# 2. Provide values for "Tenancy Connectivity Variables".
+# 3. Replace <REPLACE-BY-*> placeholders with appropriate values.
+#--------------------------------------------------------------------------------------------------------------------------------------
+
+#---------------------------------------
+# Tenancy Connectivity Variables
+#---------------------------------------
+
+tenancy_ocid         = "<tenancy OCID>"            # Get this from OCI Console (after logging in, go to top-right-most menu item and click option "Tenancy: <your tenancy name>").
+user_ocid            = "<user OCID>"               # Get this from OCI Console (after logging in, go to top-right-most menu item and click option "My profile").
+fingerprint          = "<PEM key fingerprint>"     # The fingerprint can be gathered from your user account. In the "My profile page, click "API keys" on the menu in left hand side.
+private_key_path     = "<path to the private key>" # This is the full path on your local system to the API signing private key.
+private_key_password = ""                          # This is the password that protects the private key, if any.
+region               = "<your tenancy region>"     # The region name.
+
+#---------------------------------------
+# Input variable
+#---------------------------------------
+
+block_volumes_replication_region = "<REPLACE-BY-REPLICATION-REGION-NAME>"
+
+storage_configuration = {
+  default_compartment_id = "<REPLACE-BY-COMPARTMENT-OCID>" 
+  block_volumes = {
+    BV-1 = {
+      display_name = "<REPLACE-BY-BLOCK-VOLUME-NAME>"
+      availability_domain = 1   
+      replication = {
+        availability_domain = 1
+      }
+      backup_policy = "bronze"  
+    }
+    BV-2 = {
+      display_name = "<REPLACE-BY-BLOCK-VOLUME-NAME>"
+      availability_domain = 1   
+      encryption = {
+        kms_key_id = "<REPLACE-BY-KEY-OCID>"
+      }
+      backup_policy = "silver"  
+    }
+  }
+
+   file_storage = {
+    default_subnet_id = "<REPLACE-BY-SUBNET-OCID>"
+    file_systems = {
+      FS-1 = {
+        file_system_name = "<REPLACE-BY-FILE-SYSTEM-NAME>"
+        availability_domain = 1
+        replication = {
+          file_system_target_id = "<REPLACE-BY-TARGET-FILE-SYSTEM-OCID>"
+        }
+        snapshot_policy_id = "SNAPSHOT-POLICY-1"
+      }
+      FS-2 = {
+        cis_level = "2"
+        file_system_name = <REPLACE-BY-FILE-SYSTEM-NAME>"
+        availability_domain = 2
+        kms_key_id = "<REPLACE-BY-KEY-OCID>"
+        snapshot_policy_id = "SNAPSHOT-POLICY-1"
+      }
+    }
+    mount_targets = {
+      MT-1 = {
+        mount_target_name = "<REPLACE-BY-MOUNT-TARGET-NAME>"
+        exports = [
+          {
+            path = "/my_export_path"
+            file_system_id = "FS-1"
+            options = [
+              {source = "0.0.0.0/0", access = "READ_ONLY", identity = "NONE", use_privileged_source_port = true}, 
+              {source = "<REPLACE-BY-IP_ADDRESS>", access = "READ_WRITE", identity = "ROOT", use_privileged_source_port = true}
+            ]
+          },
+          {
+            path = "/another_export_path"
+            file_system_id = "FS-2"
+            options = [
+              {source = "0.0.0.0/0", access = "READ_ONLY", identity = "NONE", use_privileged_source_port = true}, 
+              {source = "<REPLACE-BY-IP_ADDRESS>", access = "READ_WRITE", identity = "ROOT", use_privileged_source_port = true}
+            ]
+          }
+        ]
+      }
+    }
+    snapshot_policies = {
+      SNAPSHOT-POLICY-1 = {
+        name = "<REPLACE-BY-SNAPSHOT-POLICY-NAME>"
+        schedules = [
+          {period = "DAILY", prefix = "daily"}
+        ]
+      }
+    }
+  } 
+}

@@ -1,0 +1,15 @@
+**/*.tfstate*
+**/*.out
+**/.terraform/*
+**/.terraform.*
+**/.DS_Store
+**/crash.log
+**/*.pem
+**/terraform_*.tfvars*
+**/*.auto.tfvars
+**/*.pptx
+**/*.json
+marketplace-images/**/*.txt
+platform-images/**/*.txt
+userdata
+mounting-block-volumes.txt
