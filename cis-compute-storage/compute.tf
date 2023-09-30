@@ -100,10 +100,12 @@ resource "oci_core_instance" "these" {
     # some images don't allow encrypt in transit
     is_pv_encryption_in_transit_enabled = each.value.encryption != null ? each.value.encryption.encrypt_in_transit_on_instance_create : null
     create_vnic_details {
+      private_ip       = each.value.networking != null ? each.value.networking.private_ip : null
       assign_public_ip = each.value.networking != null ? coalesce(each.value.networking.assign_public_ip,false) : false
       subnet_id        = each.value.networking != null ? (each.value.networking.subnet_id != null ? (length(regexall("^ocid1.*$", each.value.networking.subnet_id)) > 0 ? each.value.networking.subnet_id : var.network_dependency[each.value.networking.subnet_id].id) : (length(regexall("^ocid1.*$", var.instances_configuration.default_subnet_id)) > 0 ? var.instances_configuration.default_subnet_id : var.network_dependency[var.instances_configuration.default_subnet_id].id)) : (length(regexall("^ocid1.*$", var.instances_configuration.default_subnet_id)) > 0 ? var.instances_configuration.default_subnet_id : var.network_dependency[var.instances_configuration.default_subnet_id].id)
       hostname_label   = each.value.networking != null ? (coalesce(each.value.networking.hostname,lower(replace(each.value.name," ","")))) : lower(replace(each.value.name," ",""))
       nsg_ids          = each.value.networking != null ? [for nsg in coalesce(each.value.networking.network_security_groups,[]) : (length(regexall("^ocid1.*$", nsg)) > 0 ? nsg : var.network_dependency[nsg].id)] : null
+      skip_source_dest_check = each.value.networking != null ? each.value.networking.skip_source_dest_check : false
     }
     source_details {
       boot_volume_size_in_gbs = each.value.boot_volume != null ? each.value.boot_volume.size : 50
@@ -185,3 +187,106 @@ data "template_cloudinit_config" "config" {
       content      = data.template_file.block_volumes_templates[each.key].rendered
     }
   } */
+
+data "oci_core_vnic_attachments" "these" {
+  for_each = var.instances_configuration != null ? var.instances_configuration["instances"] : {}
+    compartment_id = each.value.compartment_id != null ? (length(regexall("^ocid1.*$", each.value.compartment_id)) > 0 ? each.value.compartment_id : var.compartments_dependency[each.value.compartment_id].id) : (length(regexall("^ocid1.*$", var.instances_configuration.default_compartment_id)) > 0 ? var.instances_configuration.default_compartment_id : var.compartments_dependency[var.instances_configuration.default_compartment_id].id) 
+    instance_id    = oci_core_instance.these[each.key].id
+}
+
+locals {
+  secondary_vnics = flatten([
+    for inst_key, inst_value in (var.instances_configuration != null ? var.instances_configuration["instances"] : {}) : [
+      for vnic_key, vnic_value in (inst_value.networking != null ? (inst_value.networking.secondary_vnics != null ? inst_value.networking.secondary_vnics : {}) : {}) : {
+        key              = "${inst_key}.${vnic_key}"
+        inst_key         = inst_key
+        display_name     = vnic_value.display_name
+        private_ip       = vnic_value.private_ip
+        hostname         = vnic_value.hostname
+        assign_public_ip = vnic_value.assign_public_ip
+        subnet_id               = vnic_value.subnet_id
+        network_security_groups = vnic_value.network_security_groups
+        skip_source_dest_check  = vnic_value.skip_source_dest_check
+        nic_index               = vnic_value.nic_index
+        defined_tags            = vnic_value.defined_tags
+        freeform_tags           = vnic_value.freeform_tags
+      } 
+    ]
+  ])
+
+  primary_vnic_secondary_ips = flatten([
+    for inst_key, inst_value in (var.instances_configuration != null ? var.instances_configuration["instances"] : {}) : [
+      for ip_key, ip_value in (inst_value.networking != null ? (inst_value.networking.secondary_ips != null ? inst_value.networking.secondary_ips : {}) : {}) : {
+        key           = "${inst_key}.${ip_key}"
+        vnic_id       = data.oci_core_vnic_attachments.these[inst_key].vnic_attachments[0].vnic_id
+        display_name  = ip_value.display_name
+        private_ip    = ip_value.private_ip
+        hostname      = ip_value.hostname
+        defined_tags  = ip_value.defined_tags
+        freeform_tags = ip_value.freeform_tags
+      } 
+    ]
+  ])
+
+  secondary_vnics_secondary_ips = flatten([
+    for inst_key, inst_value in (var.instances_configuration != null ? var.instances_configuration["instances"] : {}) : [
+      for vnic_key, vnic_value in (inst_value.networking != null ? (inst_value.networking.secondary_vnics != null ? inst_value.networking.secondary_vnics : {}) : {}) : [
+        for ip_key, ip_value in (vnic_value.secondary_ips != null ? vnic_value.secondary_ips : {}) : {
+          key           = "${inst_key}.${vnic_key}.${ip_key}"
+          vnic_id       = oci_core_vnic_attachment.these["${inst_key}.${vnic_key}"].vnic_id
+          display_name  = ip_value.display_name
+          private_ip    = ip_value.private_ip
+          hostname      = ip_value.hostname
+          defined_tags  = ip_value.defined_tags
+          freeform_tags = ip_value.freeform_tags
+        }
+      ] 
+    ]
+  ])
+}
+resource "oci_core_vnic_attachment" "these" {
+  for_each = { for v in local.secondary_vnics : v.key => {
+                                                            inst_key         = v.inst_key
+                                                            display_name     = v.display_name
+                                                            private_ip       = v.private_ip
+                                                            hostname         = v.hostname
+                                                            assign_public_ip = v.assign_public_ip
+                                                            subnet_id               = v.subnet_id
+                                                            network_security_groups = v.network_security_groups
+                                                            skip_source_dest_check  = v.skip_source_dest_check
+                                                            nic_index               = v.nic_index
+                                                            defined_tags            = v.defined_tags
+                                                            freeform_tags           = v.freeform_tags
+                                                         } }
+    display_name = each.value.display_name
+    instance_id  = oci_core_instance.these[each.value.inst_key].id
+    nic_index    = each.value.nic_index
+    create_vnic_details {
+      display_name     = each.value.display_name
+      assign_public_ip = each.value.assign_public_ip
+      private_ip       = each.value.private_ip
+      hostname_label   = each.value.hostname
+      subnet_id        = each.value.subnet_id != null ? (length(regexall("^ocid1.*$", each.value.subnet_id)) > 0 ? each.value.subnet_id : var.network_dependency[each.value.subnet_id].id) : (length(regexall("^ocid1.*$", var.instances_configuration.default_subnet_id)) > 0 ? var.instances_configuration.default_subnet_id : var.network_dependency[var.instances_configuration.default_subnet_id].id)
+      nsg_ids          = [for nsg in coalesce(each.value.network_security_groups,[]) : (length(regexall("^ocid1.*$", nsg)) > 0 ? nsg : var.network_dependency[nsg].id)]
+      skip_source_dest_check = each.value.skip_source_dest_check
+      defined_tags     = each.value.defined_tags != null ? each.value.defined_tags : var.instances_configuration.default_defined_tags
+      freeform_tags    = merge(local.cislz_module_tag, each.value.freeform_tags != null ? each.value.freeform_tags : var.instances_configuration.default_freeform_tags)
+    }
+}
+
+resource "oci_core_private_ip" "these" {
+  for_each = { for v in concat(local.primary_vnic_secondary_ips, local.secondary_vnics_secondary_ips) : v.key => {
+                                                                                                                  vnic_id       = v.vnic_id
+                                                                                                                  display_name  = v.display_name
+                                                                                                                  private_ip    = v.private_ip
+                                                                                                                  hostname      = v.hostname
+                                                                                                                  defined_tags  = v.defined_tags
+                                                                                                                  freeform_tags = v.freeform_tags
+                                                                                                                } }
+    display_name   = each.value.display_name
+    ip_address     = each.value.private_ip
+    vnic_id        = each.value.vnic_id
+    hostname_label = each.value.hostname
+    defined_tags   = each.value.defined_tags != null ? each.value.defined_tags : var.instances_configuration.default_defined_tags
+    freeform_tags  = merge(local.cislz_module_tag, each.value.freeform_tags != null ? each.value.freeform_tags : var.instances_configuration.default_freeform_tags)
+}
