@@ -32,6 +32,7 @@ The following security features are currently supported by the module:
 - [Shielded instances](https://docs.oracle.com/en-us/iaas/Content/Compute/References/shielded-instances.htm).
 - Boot volumes backup with Oracle managed policies.
 - [Cloud Agent Plugins](https://docs.oracle.com/en-us/iaas/Content/Compute/Tasks/manage-plugins.htm).
+- Secondary VNICs and secondary IP addresses per VNIC. 
 
 ### <a name="block-features">Block Volumes</a>
 - CIS profile level drives data at rest encryption configuration.
@@ -143,10 +144,33 @@ The instances themselves are defined within the **instances** attribute, In Terr
 - **volumes_emulation_type** &ndash; (Optional) emulation type for attached storage volumes. Valid values: "paravirtualized" (default), "scsi", "iscsi", "ide", "vfio". 
 - **networking** &ndash; (Optional) Networking settings. 
   - **type** &ndash; (Optional) Emulation type for the physical network interface card (NIC). Valid values: "paravirtualized" (default), "vfio" (SR-IOV networking), "e1000" (compatible with Linux e1000 driver).
-  - **hostname** &ndash; (Optional) The instance hostname.
-  - **assign_public_ip** &ndash; (Optional) Whether to assign the instance a public IP. Default is false.
-  - **subnet_id** &ndash; (Optional) The subnet where the instance is created. *default_subnet_id* is used if undefined. This attribute is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *network_dependency* variable. See [External Dependencies](#ext-dep) for details.
-  - **network_security_groups** &ndash; (Optional) List of network security groups the instance should be placed into. This attribute is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *network_dependency* variable. See [External Dependencies](#ext-dep) for details.
+  - **private_ip** &ndash; (Optional) A private IP address of your choice to assign to the primary VNIC. If not provided, an IP address from the subnet is randomly chosen.
+  - **hostname** &ndash; (Optional) The primary VNIC hostname.
+  - **assign_public_ip** &ndash; (Optional) Whether to assign the primary VNIC a public IP. Default is false.
+  - **subnet_id** &ndash; (Optional) The subnet where the primary VNIC is created. *default_subnet_id* is used if undefined. This attribute is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *network_dependency* variable. See [External Dependencies](#ext-dep) for details.
+  - **network_security_groups** &ndash; (Optional) List of network security groups the primary VNIC should be placed into. This attribute is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *network_dependency* variable. See [External Dependencies](#ext-dep) for details.
+  - **skip_source_dest_check** &ndash; (Optional) Whether the source/destination check is disabled on the primary VNIC. If true, the VNIC is able to forward the packet. Default is false.
+  - **secondary_ips** &ndash; (Optional) Map of secondary private IP addresses for the primary VNIC.
+    - **display_name** &ndash; (Optional) Secondary IP display name.
+    - **hostname** &ndash; (Optional) Secondary IP host name.
+    - **private_ip** &ndash; (Optional) Secondary IP address. If not provided, an IP address from the subnet is randomly chosen.
+    - **defined_tags** &ndash; (Optional) Secondary IP defined_tags. default_defined_tags is used if undefined.
+    - **freeform_tags** &ndash; (Optional) Secondary IP freeform_tags. default_freeform_tags is used if undefined.
+  - **secondary_vnics** &ndash; (Optional) Map of secondary VNICs attached to the instance
+    - **display_name** &ndash; (Optional) The VNIC display name.
+    - **private_ip** &ndash; (Optional) a private IP address of your choice to assign to the VNIC. If not provided, an IP address from the subnet is randomly chosen.
+    - **hostname** &ndash; (Optional) The VNIC hostname.
+    - **assign_public_ip**&ndash; (Optional) Whether to assign the VNIC a public IP. Defaults to whether the subnet is public or private.
+    - **subnet_id** &ndash; (Optional) The subnet where the VNIC is created. default_subnet_id is used if undefined.
+    - **network_security_groups** &ndash; (Optional) List of network security groups the VNIC should be placed into.
+    - **skip_source_dest_check** &ndash; (Optional) Whether the source/destination check is disabled on the VNIC. If true, the VNIC is able to forward the packet. Default is false.
+    - **nic_index** &ndash; (Optional) The physical network interface card (NIC) the VNIC will use. Defaults to 0. Certain bare metal instance shapes have two active physical NICs (0 and 1).
+    - **secondary_ips** &ndash; (Optional) Map of secondary private IP addresses for the VNIC.
+      - **display_name** &ndash; (Optional) Secondary IP display name.
+      - **hostname** &ndash; (Optional) Secondary IP host name.
+      - **private_ip** &ndash; (Optional) Secondary IP address. If not provided, an IP address from the subnet is randomly chosen.
+      - **defined_tags** &ndash; (Optional) Secondary IP defined_tags. default_defined_tags is used if undefined.
+      - **freeform_tags** &ndash; (Optional) Secondary IP freeform_tags. default_freeform_tags is used if undefined.  
 - **encryption** &ndash; (Optional) Encryption settings. See section [In Transit Encryption](#in-transit-encryption) for important information.
   - **kms_key_id** &ndash; (Optional) The encryption key for boot volume encryption. *default_kms_key_id* is used if undefined. Required if *cis_level* or *default_cis_level* is "2".
   - **encrypt_in_transit_on_instance_create** &ndash; (Optional) Whether to enable in-transit encryption for the data volume's paravirtualized attachment. Default is false. Applicable during instance **creation** time only. Note that some platform images do not allow instances overriding the image configuration for in-transit encryption at instance creation time. In such cases, for enabling in-transit encryption, use *encrypt_in_transit_on_instance_update* attribute. First run ```terraform apply``` with it set to false, then run ```terraform apply``` again with it set to true.

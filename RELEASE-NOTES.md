@@ -1,3 +1,11 @@
+# October 05, 2023 Release Notes - 0.1.1
+
+## Updates
+1. [Secondary VNICs](#0-1-1-compute-secondary-vnics)
+
+### <a name="0-1-1-compute-secondary-vnics">Secondary VNICs</a>
+Compute module can configure instances with secondary VNICs and secondary IPs per VNIC.
+
 # September 22, 2023 Release Notes - 0.1.0
 
 ## Added

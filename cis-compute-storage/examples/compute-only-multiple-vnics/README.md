@@ -1,39 +1,25 @@
-# CIS OCI Compute/Storage Example - Compute only
+# CIS OCI Compute Example - Compute with Multiple VNICs and Multiple IP Addresses
 
 ## Introduction
 
-This example shows how to deploy Compute instances in OCI using the [cis-compute-storage module](../../). It deploys three Compute instances with the following characteristics:
-- All instances are deployed in the same compartment and same subnet, defined by *default_compartment_id* and *default_subnet_id* attributes.
-- All instances can be accessed over SSH with the private key corresponding to the public key defined by *default_ssh_public_key_path* attribute.
-- All instances are placed in the network security groups defined by *networking.network_security_groups* attribute within each instance.
-
-For INSTANCE-1:
+This example shows how to deploy Compute instances in OCI using the [cis-compute-storage module](../../). It deploys one Compute instance with the following characteristics:
+- The instances is deployed in the compartment and subnet defined by *default_compartment_id* and *default_subnet_id* attributes.
+- The instance can be accessed over SSH with the private key corresponding to the public key defined by *default_ssh_public_key_path* attribute.
+- The instances is placed in the network security groups defined by *networking.network_security_groups* attribute.
 - The instance is based on "VM.Standard.E4.Flex" shape, as defined by the *shape* attribute.
 - The instance is based on the "Oracle Linux 7 STIG" Marketplace image published by "Oracle Linux", as defined by *image.name* and *image.publisher_name* attributes. Use the [markeplace-images module](../../../marketplace-images/) to find Marketplace images information based on a search filter.
 - The instance will **not** have the boot volume preserved on termination, as defined by *boot_volume.preserve_on_instance_deletion* attribute.
-- The instance requires a customer managed key for boot volume encryption, as defined by *cis_level* atrribute.
 - The instance boot volume is encrypted with a customer managed key referred by *encryption.kms_key_id* attribute.
 - The instance boot volume is set to be backed up per Oracle-managed *bronze* backup policy (enforced by the module by default).
-- The instance has all Cloud Agent plugins enabled, as defined by *cloud_agent.plugins* attribute.
-
-For INSTANCE-2:
-- The instance is based on "VM.Standard.E4.Flex" shape, as defined by the *shape* attribute.
-- The instance is based on the "Oracle-Linux-8.8-2023.08.31-0" image published, as defined by *image.id* attributes. Use the [platform-images module](../../../platform-images/) to obtain platform images information based on a search filter.
-- The instance will have the boot volume preserved on termination, as defined by *boot_volume.preserve_on_instance_deletion* attribute.
-- The instance boot volume is encrypted with an Oracle-managed key (OCI default) as it does not define *encryption.kms_key_id* attribute and there's no applicable *default_kms_key_id* attribute.
-- The instance boot volume is set to be backed up per Oracle-managed *silver* backup policy, as defined by *boot_volume.backup_policy* attribute.
-- The instance has in-transit encryption enabled, as defined by *encryption.encrypt_in_transit_on_instance_create* attribute.
-- The instance is a shielded instance, as defined by *platform_type* and *boot_volume.measured_boot* attributes.
-- The instance has only default Cloud Agent plugins (management and monitoring) enabled, as *cloud_agent.plugins* attribute is undefined.
-
-For INSTANCE-3:
-- The instance is based on "VM.Standard.E4.Flex" shape, as defined by the *shape* attribute.
-- The instance is based on the "Oracle-Linux-8.8-2023.08.31-0" image published, as defined by *image.id* attributes. Use the [platform-images module](../../../platform-images/) to obtain platform images information based on a search filter.
-- The instance will have the boot volume preserved on termination, as defined by *boot_volume.preserve_on_instance_deletion* attribute.
-- The instance boot volume is encrypted with an Oracle-managed key (OCI default) as it does not define *encryption.kms_key_id* attribute and there's no applicable *default_kms_key_id* attribute.
-- The instance boot volume is set to be backed up per Oracle-managed *gold* backup policy, as defined by *boot_volume.backup_policy* attribute.
-- The instance has confidential computing enabled, as defined by *platform_type* and *encryption.encrypt_data_in_use* attributes.
-- The instance has only default Cloud Agent plugins (management and monitoring) enabled, as *cloud_agent.plugins* attribute is undefined.
+- The instance primary VNIC is assigned a primary IP address defined by *networking.private_ip*. The IP address must be available in the VNIC subnet.
+- The instance has a secondary IP address attached to the primary VNIC, defined by *networking.secondary-ips* attribute. 
+   - The IP address is randomly chosen from available addresses in the subnet, as its *primary_ip* attribute is undefined.
+- The instance has a secondary VNIC attached, defined by *networking.secondary-vnics* attribute. 
+   - The VNIC is created in the subnet defined by its *subnet_id* attribute.
+   - The VNIC is placed in the network security groups defined by its *network_security_groups* attribute.
+   - The VNIC is assigned a primary IP address defined by its *private_ip* attribute. The IP address must be available in the VNIC subnet.
+   - The VNIC will forward packets, as *skip_source_dest_check* is true.
+   - The VNIC has a secondary IP address randomly chosen from available addresses in the subnet, as its *primary_ip* attribute is undefined.
 
 See [input.auto.tfvars.template](./input.auto.tfvars.template) for the variables configuration.
 
