@@ -1,0 +1,79 @@
+# Copyright (c) 2023 Oracle and/or its affiliates.
+# Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
+
+#--------------------------------------------------------------------------------------------------------------------------------------
+# 1. Rename this file to <project-name>.auto.tfvars, where <project-name> is a name of your choice.
+# 2. Provide values for "Tenancy Connectivity Variables".
+# 3. Replace <REPLACE-BY-*> placeholders with appropriate values.
+#--------------------------------------------------------------------------------------------------------------------------------------
+
+#---------------------------------------
+# Tenancy Connectivity Variables
+#---------------------------------------
+
+tenancy_ocid         = "<tenancy OCID>"            # Get this from OCI Console (after logging in, go to top-right-most menu item and click option "Tenancy: <your tenancy name>").
+user_ocid            = "<user OCID>"               # Get this from OCI Console (after logging in, go to top-right-most menu item and click option "My profile").
+fingerprint          = "<PEM key fingerprint>"     # The fingerprint can be gathered from your user account. In the "My profile page, click "API keys" on the menu in left hand side.
+private_key_path     = "<path to the private key>" # This is the full path on your local system to the API signing private key.
+private_key_password = ""                          # This is the password that protects the private key, if any.
+region               = "<your tenancy region>"     # The region name.
+
+#---------------------------------------
+# Input variable
+#---------------------------------------
+
+instances_configuration = {
+  default_compartment_id = "<REPLACE-BY-COMPARTMENT-OCID>"
+  default_subnet_id = "<REPLACE-BY-SUBNET-OCID>"
+  default_ssh_public_key_path = "~/.ssh/id_rsa.pub"
+  instances = {
+
+    INSTANCE-1 = {
+      shape = "VM.Standard.E4.Flex"
+      name  = "instance-1-compute-only-multiple-vnics"
+      image = {
+        name = "Oracle Linux 7 STIG" # Marketplace image
+        publisher_name = "Oracle Linux"
+      }
+      placement = {
+        availability_domain = 1
+        fault_domain = 1
+      }
+      boot_volume = {
+        size = 120
+        preserve_on_instance_deletion = false
+      }
+      encryption = {
+        kms_key_id = "<REPLACE-BY-KEY-OCID>"
+      }
+      networking = {
+        hostname  = "instance-1-compute-only-multiple-vnics"
+        primary_ip = "<REPLACE-BY-IP-ADDRESS-OF-CHOICE>"
+        network_security_groups = ["<REPLACE-BY-NETWORK-SECURITY-GROUP_NAME>"]
+        secondary_ips = {
+          IP-2 = {
+            display_name = "ip-2"
+            hostname = "instance-1-compute-only-multiple-vnics-ip-2"
+          }
+        }
+        secondary_vnics = {
+          VNIC-2 = {
+            display_name = "vnic-2"
+            subnet_id = "<REPLACE-BY-SUBNET-OCID>"
+            private_ip = "<REPLACE-BY-IP-ADDRESS-OF-CHOICE>"
+            network_security_groups = ["<REPLACE-BY-NETWORK-SECURITY-GROUP_NAME>"]
+            skip_source_dest_check = true
+            hostname = "instance-1-compute-only-multiple-vnics-vnic-2"
+            secondary_ips = {
+              IP-2 = {
+                display_name = "ip-2"
+                hostname = "instance-1-compute-only-multiple-vnics-vnic-2-ip-2"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
