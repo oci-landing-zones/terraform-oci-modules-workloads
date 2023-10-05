@@ -84,6 +84,7 @@ instances_configuration = {
         size = 120
         preserve_on_instance_deletion = true
         backup_policy = "gold"
+      }  
       encryption = {
         encrypt_in_transit_on_instance_create = true
       }
