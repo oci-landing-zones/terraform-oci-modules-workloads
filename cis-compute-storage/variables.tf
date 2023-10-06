@@ -40,10 +40,38 @@ variable "instances_configuration" {
       volumes_emulation_type = optional(string,"paravirtualized") # Emulation type for attached storage volumes. Valid values: "paravirtualized" (default for platform images), "scsi", "iscsi", "ide", "vfio". Module supported values for automated attachment: "paravirtualized", "iscsi".
       networking = optional(object({ # networking settings
         type                    = optional(string,"paravirtualized") # emulation type for the physical network interface card (NIC). Valid values: "paravirtualized" (default), "e1000", "vfio".
-        hostname                = optional(string) # the instance hostname.
-        assign_public_ip        = optional(bool,false)  # whether to assign the instance a public IP. Default is false.
-        subnet_id               = optional(string)   # the subnet where the instance is created. default_subnet_id is used if this is not defined.
-        network_security_groups = optional(list(string))  # list of network security groups the instance should be placed into.
+        private_ip              = optional(string) # a private IP address of your choice to assign to the primary VNIC.
+        hostname                = optional(string) # the primary VNIC hostname.
+        assign_public_ip        = optional(bool)  # whether to assign the primary VNIC a public IP. Defaults to whether the subnet is public or private.
+        subnet_id               = optional(string)   # the subnet where the primary VNIC is created. default_subnet_id is used if this is not defined.
+        network_security_groups = optional(list(string))  # list of network security groups the primary VNIC should be placed into.
+        skip_source_dest_check  = optional(bool,false) # whether the source/destination check is disabled on the primary VNIC. Default is false.
+        secondary_ips           = optional(map(object({ # list of secondary private IP addresses for the primary VNIC.
+          display_name  = optional(string) # Secondary IP display name.
+          hostname      = optional(string) # Secondary IP host name.
+          private_ip    = optional(string) # Secondary IP address. If not provided, an IP address from the subnet is randomly chosen.
+          defined_tags  = optional(map(string)) # Secondary IP defined_tags. default_defined_tags is used if this is not defined.
+          freeform_tags = optional(map(string)) # Secondary IP freeform_tags. default_freeform_tags is used if this is not defined.
+        }))) 
+        secondary_vnics         = optional(map(object({
+          display_name            = optional(string) # the VNIC display name.
+          private_ip              = optional(string) # a private IP address of your choice to assign to the VNIC.
+          hostname                = optional(string) # the VNIC hostname.
+          assign_public_ip        = optional(bool)   # whether to assign the VNIC a public IP. Defaults to whether the subnet is public or private.
+          subnet_id               = optional(string)   # the subnet where the VNIC is created. default_subnet_id is used if this is not defined.
+          network_security_groups = optional(list(string))  # list of network security groups the VNIC should be placed into.
+          skip_source_dest_check  = optional(bool,false) # whether the source/destination check is disabled on the VNIC. Default is false.
+          nic_index               = optional(number,0) # the physical network interface card (NIC) the VNIC will use. Defaults to 0. Certain bare metal instance shapes have two active physical NICs (0 and 1).
+          secondary_ips           = optional(map(object({ # list of secondary private IP addresses for the VNIC.
+            display_name  = optional(string) # Secondary IP display name.
+            hostname      = optional(string) # Secondary IP host name.
+            private_ip    = optional(string) # Secondary IP address. If not provided, an IP address from the subnet is randomly chosen.
+            defined_tags  = optional(map(string)) # Secondary IP defined_tags. default_defined_tags is used if this is not defined.
+            freeform_tags = optional(map(string)) # Secondary IP freeform_tags. default_freeform_tags is used if this is not defined.
+          })))
+          defined_tags            = optional(map(string)) # VNIC defined_tags. default_defined_tags is used if this is not defined.
+          freeform_tags           = optional(map(string)) # VNIC freeform_tags. default_freeform_tags is used if this is not defined.
+        })))
       }))
       encryption = optional(object({ # encryption settings
         kms_key_id = optional(string) # the KMS key to assign as the master encryption key. default_kms_key_id is used if this is not defined.
