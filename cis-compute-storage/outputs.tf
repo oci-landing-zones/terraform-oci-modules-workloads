@@ -11,6 +11,11 @@ output "private_ips" {
   value = var.enable_output ? oci_core_private_ip.these : null
 }
 
+output "vnic_attachments" {
+  description = "The VNIC attachments"
+  value = var.enable_output ? oci_core_vnic_attachment.these : null
+}
+
 output "block_volumes" {
   description = "The block volumes"
   value       = var.enable_output ? oci_core_volume.these : null
