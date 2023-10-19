@@ -6,6 +6,11 @@ output "instances" {
   value       = var.enable_output ? oci_core_instance.these : null
 }
 
+output "private_ips" {
+  description = "The private IPs"
+  value = var.enable_output ? oci_core_private_ip.these : null
+}
+
 output "block_volumes" {
   description = "The block volumes"
   value       = var.enable_output ? oci_core_volume.these : null
