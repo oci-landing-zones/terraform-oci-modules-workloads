@@ -285,7 +285,200 @@ Block volumes are defined using the optional **block_volumes** attribute. In Ter
 ##### <a name="mounting-block-volumes">Mounting Block Volumes</a>
 As stated in the [OCI User Guide](https://docs.oracle.com/en-us/iaas/Content/Block/Tasks/attachingavolume.htm):
 
-*"On Linux-based instances, if you want to automatically mount volumes when the instance starts, you need to set some specific options in the /etc/fstab file, or the instance might fail to start. This applies to both iSCSI and paravirtualized attachment types. For volumes that use consistent device paths, see [fstab Options for Block Volumes Using Consistent Device Paths](https://docs.oracle.com/en-us/iaas/Content/Block/References/fstaboptionsconsistentdevicepaths.htm#fstab_Options_for_Block_Volumes_Using_Consistent_Device_Paths). For all other volumes, see [Traditional fstab Options](https://docs.oracle.com/en-us/iaas/Content/Block/References/fstaboptions.htm#Traditional_fstab_Options)."*
+*"On Linux-based instances, if you want to automatically mount volumes when the instance starts, you need to set some specific options in the /etc/fstab file, or the instance might fail to start. This applies to both iSCSI and paravirtualized attachment types."*
+In case of the ISCSI attachment type, you need to connect to the Block Volume before mounting it. This can be done automatically by enabling the **Block Volume Management** agent on the Instances where you want to mount Block Volumes. Volumes attached with Paravirtualized are automatically connected.
+
+- **For volumes that use consistent device path see the following steps**:
+
+1. To verify that the volume is attached to a supported instance, connect to the instance and run the following command:
+```
+ll /dev/oracleoci/oraclevd*
+```
+The output will look similar to the following:
+```
+lrwxrwxrwx. 1 root root 6 Oct  6 08:17 /dev/oracleoci/oraclevda -> ../sda
+lrwxrwxrwx. 1 root root 7 Oct  6 08:17 /dev/oracleoci/oraclevda1 -> ../sda1
+lrwxrwxrwx. 1 root root 7 Oct  6 08:17 /dev/oracleoci/oraclevda2 -> ../sda2
+lrwxrwxrwx. 1 root root 7 Oct  6 08:17 /dev/oracleoci/oraclevda3 -> ../sda3
+```
+
+2. To see the volumes attached to the instance, run the following command:
+```
+lsblk
+```
+The output will look similar to the following:
+```
+NAME               MAJ:MIN RM  SIZE RO TYPE MOUNTPOINT
+sda                  8:0    0 46.6G  0 disk
+├─sda1               8:1    0  100M  0 part /boot/efi
+├─sda2               8:2    0    1G  0 part /boot
+└─sda3               8:3    0 45.5G  0 part
+  ├─ocivolume-root 252:0    0 35.5G  0 lvm  /
+  └─ocivolume-oled 252:1    0   10G  0 lvm  /var/oled
+sdb                  8:16   0   75G  0 disk
+```
+ **sda** is the root volume.
+ **sdb** is the block volume.
+
+3. Create the filesystem of your choice on the volume. If a file system already exists on the volume, you don't need to create another one.
+Example to create a filesystem:
+```
+sudo parted /dev/oracleoci/oraclevdb  --script -- mklabel gpt
+sudo parted /dev/oracleoci/oraclevdb  --script -- mkpart primary 0% 100%
+sudo mkfs.ext4 /dev/oracleoci/oraclevdb1
+```
+Running the **lsblk** command again, you will see an output similar to the following:
+```
+NAME               MAJ:MIN RM  SIZE RO TYPE MOUNTPOINT
+sda                  8:0    0 46.6G  0 disk
+├─sda1               8:1    0  100M  0 part /boot/efi
+├─sda2               8:2    0    1G  0 part /boot
+└─sda3               8:3    0 45.5G  0 part
+  ├─ocivolume-root 252:0    0 35.5G  0 lvm  /
+  └─ocivolume-oled 252:1    0   10G  0 lvm  /var/oled
+sdb                  8:16   0   75G  0 disk
+└─sdb1               8:17   0   75G  0 part
+```
+**sdb1** is the partition of the **sdb** block volume.
+
+4. To automatically attach the block volume at /mnt/vol1, create the directory with the following command:
+```
+sudo mkdir /mnt/vol1
+```
+
+5. Add an entry in the /etc/fstab with the following format to automatically mount the block volume after reboot:
+```
+/dev/oracleoci/oraclevdb1 /mnt/vol1 ext4 defaults,_netdev,nofail 0 2
+```
+The **ext4** option is the filesystem type you set when you created the filesystem.
+The **_netdev** option is to configure the mount process to initiate before the volumes are mounted.
+The **nofail** option is to prevent an issue when you create a custom image of an instance where the volumes, excluding the root volume, are listed in the /etc/fstab file, instances will fail to launch from the custom image.
+
+6. Run the following command to update the systemd after you modified the fstab:
+```
+sudo systemctl daemon-reload
+```
+
+7. Mount the volume by running the following commands to mount and check if the volume has been mounted:
+```
+sudo mount -a
+lsblk
+```
+The output will look similar to the following:
+```
+sda                  8:0    0 46.6G  0 disk
+├─sda1               8:1    0  100M  0 part /boot/efi
+├─sda2               8:2    0    1G  0 part /boot
+└─sda3               8:3    0 45.5G  0 part
+  ├─ocivolume-root 252:0    0 35.5G  0 lvm  /
+  └─ocivolume-oled 252:1    0   10G  0 lvm  /var/oled
+sdb                  8:16   0   75G  0 disk
+└─sdb1               8:17   0   75G  0 part /mnt/vol1
+```
+
+8. You can test if the volume is mounted by restarting the instance and run the **lsblk** command.
+
+For more information on mounting block volumes with consistent device path see [fstab Options for Block Volumes Using Consistent Device Paths](https://docs.oracle.com/en-us/iaas/Content/Block/References/fstaboptionsconsistentdevicepaths.htm#fstab_Options_for_Block_Volumes_Using_Consistent_Device_Paths).
+
+- **For volumes that don't use consistent device path:**
+
+On Linux operating systems, the order in which volumes are attached is non-deterministic, so it can change with each reboot. If you refer to a volume using the device name, such as /dev/sdb, and you have more than one non-root volume, you can't guarantee that the volume you intend to mount for a specific device name will be the volume mounted.
+To prevent this issue, specify the volume UUID in the /etc/fstab file instead of the device name. When you use the UUID, the mount process matches the UUID in the superblock with the mount point specified in the /etc/fstab file. This process guarantees that the same volume is always mounted to the same mount point.
+See the following steps for mounting traditional volumes:
+
+1. To see the volumes attached to the instance, run the following command:
+```
+lsblk
+```
+The output will look similar to the following:
+```
+NAME               MAJ:MIN RM  SIZE RO TYPE MOUNTPOINT
+sda                  8:0    0 46.6G  0 disk
+├─sda1               8:1    0  100M  0 part 
+├─sda2               8:2    0    1G  0 part
+└─sda3               8:3    0 45.5G  0 part
+  ├─ocivolume-root 252:0    0 35.5G  0 lvm  /
+  └─ocivolume-oled 252:1    0   10G  0 lvm  /var/oled
+sdb                  8:16   0   60G  0 disk
+```
+ **sda** is the root volume.
+ **sdb** is the block volume.
+
+2. Create the filesystem of your choice on the volume. If a file system already exists on the volume, you don't need to create another one.
+
+Example to create a filesystem:
+```
+sudo parted /dev/sdb --script -- mklabel gpt
+sudo parted /dev/sdb  --script -- mkpart primary 0% 100%
+sudo mkfs.xfs /dev/sdb1
+```
+Running the **lsblk** command again, you will see an output similar to the following:
+```
+NAME               MAJ:MIN RM  SIZE RO TYPE MOUNTPOINT
+sda                  8:0    0 46.6G  0 disk
+├─sda1               8:1    0  100M  0 part
+├─sda2               8:2    0    1G  0 part
+└─sda3               8:3    0 45.5G  0 part
+  ├─ocivolume-root 252:0    0 35.5G  0 lvm  /
+  └─ocivolume-oled 252:1    0   10G  0 lvm  /var/oled
+sdb                  8:16   0   60G  0 disk
+└─sdb1               8:17   0   60G  0 part
+```
+**sdb1** is the partition of the **sdb** block volume.
+
+3. Run the following command to get the UUIDs for the volumes:
+```
+sudo blkid
+```
+The output will look similar to the following:
+```
+/dev/mapper/ocivolume-oled: UUID="b19c85cf-53cb-4cf3-a2f5-946d7a30bbf0" BLOCK_SIZE="4096" TYPE="xfs"
+/dev/sda3: UUID="xW7hJV-XCVZ-zI0I-qhp7-mLnH-3oDH-hppEqq" TYPE="LVM2_member" PARTUUID="8bb84ab7-f5df-47f1-b630-21442c9102c1"
+/dev/sda1: SEC_TYPE="msdos" UUID="A1B2-7E6F" BLOCK_SIZE="512" TYPE="vfat" PARTLABEL="EFI System Partition" PARTUUID="ceb6c9aa-4543-4cbf-a44e-d75d7bddc644"
+/dev/sda2: UUID="3f9d566b-9964-4512-bcd6-3bb2596d710c" BLOCK_SIZE="4096" TYPE="xfs" PARTUUID="340a48cc-18ed-4c1a-aad7-90cdb8e0b600"
+/dev/mapper/ocivolume-root: UUID="9ba90a84-c4e7-447d-bfff-92134fee9387" BLOCK_SIZE="4096" TYPE="xfs"
+/dev/sdb1: UUID="3c378562-2bbe-4641-a508-34797d3e198e" BLOCK_SIZE="4096" TYPE="xfs" PARTLABEL="primary" PARTUUID="708ad452-569b-4dfb-b7f0-0b9e38c58157"
+```
+
+4. To automatically attach the volume at /mnt/vol1, create the directory with the following command:
+```
+sudo mkdir /mnt/vol1
+```
+
+5. Add an entry in the /etc/fstab with the following format to automatically mount the block volume after reboot:
+```
+UUID=3c378562-2bbe-4641-a508-34797d3e198e /mnt/vol1 xfs defaults,_netdev,nofail 0 2
+```
+The **xfs** option is the filesystem type you set when you created the filesystem.
+The **_netdev** option is to configure the mount process to initiate before the volumes are mounted.
+The **nofail** option is to prevent an issue when you create a custom image of an instance where the volumes, excluding the root volume, are listed in the /etc/fstab file, instances will fail to launch from the custom image.
+
+6. Run the following command to update the systemd after you modified the fstab:
+```
+sudo systemctl daemon-reload
+```
+
+7. Mount the volume by running the following commands to mount and check if the volume has been mounted:
+```
+sudo mount -a
+lsblk
+```
+The output will look similar to the following:
+```
+sda                  8:0    0 46.6G  0 disk
+├─sda1               8:1    0  100M  0 part /boot/efi
+├─sda2               8:2    0    1G  0 part /boot
+└─sda3               8:3    0 45.5G  0 part
+  ├─ocivolume-root 252:0    0 35.5G  0 lvm  /
+  └─ocivolume-oled 252:1    0   10G  0 lvm  /var/oled
+sdb                  8:16   0   60G  0 disk
+└─sdb1               8:17   0   60G  0 part /mnt/vol1
+```
+
+8. You can test if the volume is mounted by restarting the instance and run the **lsblk** command.
+
+For more information on mounting block volumes without consistent device path see [Traditional fstab Options](https://docs.oracle.com/en-us/iaas/Content/Block/References/fstaboptions.htm#Traditional_fstab_Options).
+
 
 #### <a name="file-storage">File Storage</a>
 The **file_storage** attribute defines the file systems, mount targets and snapshot policies for OCI File Storage service. The optional attribute **default_subnet_id** applies to all mount targets, unless overriden by **subnet_id** attribute in each mount target. Attribute **subnet_id** is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *network_dependency* variable. See [External Dependencies](#ext-dep) for details.
@@ -342,8 +535,9 @@ Snapshot policies are defined using the optional attribute **snapshot_policies**
 As mentioned, default snapshot policies are created for file systems that do not have a snapshot policy. The default snapshot policies are defined with a single schedule, set to run weekly at 23:00 UTC on sundays.
 
 ### <a name="ext-dep">External Dependencies</a>
-An optional feature, external dependencies are resources managed elsewhere that resources managed by this module may depend on. The following dependencies are supported:
-- **compartments_dependency** &ndash; A map of objects containing the externally managed compartments this module may depend on. All map objects must have the same type and must contain at least an *id* attribute with the compartment OCID.
+An optional feature, external dependencies are resources managed elsewhere that resources managed by this module depends on. The following dependencies are supported:
+
+- **compartments_dependency** &ndash; A map of objects containing the externally managed compartments this module depends on. All map objects must have the same type and must contain at least an *id* attribute with the compartment OCID. This mechanism allows for the usage of referring keys (instead of OCIDs) in *default_compartment_id* and *compartment_id* attributes. The module replaces the keys by the OCIDs provided within *compartments_dependency* map. Contents of *compartments_dependency* is typically the output of a [Compartments module](../compartments/) client.
 
 Example:
 ```
@@ -353,22 +547,26 @@ Example:
 	}
 }
 ```
-- **network_dependency** &ndash; A map of objects containing the externally managed network resources (including subnets and network security groups) this module may depend on. All map objects must have the same type and should contain the following attributes:
+- **network_dependency** &ndash; A map of map of objects containing the externally managed network resources this module depends on. This mechanism allows for the usage of referring keys (instead of OCIDs) in *default_subnet_id*, *subnet_id* and *network_security_groups* attributes. The module replaces the keys by the OCIDs provided within *network_dependency* map. Contents of *network_dependency* is typically the output of a [Networking module](https://github.com/oracle-quickstart/terraform-oci-cis-landing-zone-networking) client. All map objects must have the same type and should contain the following attributes:
   - An *id* attribute with the subnet OCID.
   - An *id* attribute with the network security group OCID.
 
 Example:
 ```
 {
-  "APP-SUBNET" : {
-    "id" : "ocid1.subnet.oc1.iad.aaaaaaaax...e7a"
-  }, 
-  "APP-NSG" : {
-    "id" : "ocid1.networksecuritygroup.oc1.iad.aaaaaaaa...xlq"
-  }
+  "subnets" : {
+    "APP-SUBNET" : {
+      "id" : "ocid1.subnet.oc1.iad.aaaaaaaax...e7a"
+    }
+  },
+  "network_security_groups" : {  
+    "APP-NSG" : {
+      "id" : "ocid1.networksecuritygroup.oc1.iad.aaaaaaaa...xlq"
+    }
+  }  
 } 
 ```  
-- **kms_dependency** &ndash; A map of objects containing the externally managed encryption keys this module may depend on. All map objects must have the same type and must contain at least an *id* attribute with the encryption key OCID.
+- **kms_dependency** &ndash; A map of objects containing the externally managed encryption keys this module depends on. All map objects must have the same type and must contain at least an *id* attribute with the encryption key OCID. This mechanism allows for the usage of referring keys (instead of OCIDs) in *default_kms_key_id*, and *kms_key_id* attributes. The module replaces the keys by the OCIDs provided within *kms_dependency* map. Contents of *kms_dependency* is typically the output of a [Vault module](https://github.com/oracle-quickstart/terraform-oci-cis-landing-zone-security/tree/main/vaults) client.
 
 Example:
 ```
@@ -378,20 +576,17 @@ Example:
 	}
 }
 ```
-- **instances_dependency** &ndash; A map of objects containing the externally managed instances this module may depend on. All map objects must have the same type and should contain at least the following attributes:
-  - An *id* attribute with the instance OCID.
-  - A *is_pv_encryption_in_transit_enabled* attribute informing whether the instance supports in-transit encryption.
+- **instances_dependency** &ndash; A map of objects containing the externally managed instances this module depends on. All map objects must have the same type and must contain at least an *id* attribute with the instance OCID. This mechanism allows for the usage of referring keys (instead of OCIDs) in *instance_id* attributes. The module replaces the keys by the OCIDs provided within *instances_dependency* map. Contents of *instances_dependency* is typically the output of a client of this module.
 
 Example:
 ```
 {
 	"INSTANCE-2": {
 		"id": "ocid1.instance.oc1.iad.anuwc...ftq",
-    "is_pv_encryption_in_transit_enabled" : false
 	}
 }
 ```
-- **file_system_dependency** &ndash; A map of objects containing the externally managed file systems this module may depend on. All map objects must have the same type and must contain at least an *id* attribute with the file system OCID.
+- **file_system_dependency** &ndash; A map of objects containing the externally managed file systems this module depends on. All map objects must have the same type and must contain at least an *id* attribute with the file system OCID. This mechanism allows for the usage of referring keys (instead of OCIDs) in *file_system_id* and *file_system_target_id* attributes. The module replaces the keys by the OCIDs provided within *file_system_dependency* map. Contents of *file_system_dependency* is typically the output of a client of this module.
 
 Example:
 ```
