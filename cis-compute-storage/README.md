@@ -296,7 +296,7 @@ sdb                  8:16   0   75G  0 disk
  **sda** is the root volume.
  **sdb** is the block volume.
 
-3. Create the filesystem of your choice on the volume.If a file system already exists on the volume, you don't need to create another one.
+3. Create the filesystem of your choice on the volume. If a file system already exists on the volume, you don't need to create another one.
 Example to create a filesystem:
 ```
 sudo parted /dev/oracleoci/oraclevdb  --script -- mklabel gpt
@@ -354,7 +354,7 @@ sdb                  8:16   0   75G  0 disk
 
 8. You can test if the volume is mounted by restarting the instance and run the **lsblk** command.
 
-*"For more information on mounting block volumes with consistent device path see [fstab Options for Block Volumes Using Consistent Device Paths](https://docs.oracle.com/en-us/iaas/Content/Block/References/fstaboptionsconsistentdevicepaths.htm#fstab_Options_for_Block_Volumes_Using_Consistent_Device_Paths)."*
+For more information on mounting block volumes with consistent device path see [fstab Options for Block Volumes Using Consistent Device Paths](https://docs.oracle.com/en-us/iaas/Content/Block/References/fstaboptionsconsistentdevicepaths.htm#fstab_Options_for_Block_Volumes_Using_Consistent_Device_Paths).
 
 - **For volumes that don't use consistent device path:**
 
@@ -380,7 +380,7 @@ sdb                  8:16   0   60G  0 disk
  **sda** is the root volume.
  **sdb** is the block volume.
 
-2. Create the filesystem of your choice on the volume.If a file system already exists on the volume, you don't need to create another one.
+2. Create the filesystem of your choice on the volume. If a file system already exists on the volume, you don't need to create another one.
 
 Example to create a filesystem:
 ```
@@ -453,7 +453,7 @@ sdb                  8:16   0   60G  0 disk
 
 8. You can test if the volume is mounted by restarting the instance and run the **lsblk** command.
 
-*"For more information on mounting block volumes without consistent device path see [Traditional fstab Options](https://docs.oracle.com/en-us/iaas/Content/Block/References/fstaboptions.htm#Traditional_fstab_Options)."*
+For more information on mounting block volumes without consistent device path see [Traditional fstab Options](https://docs.oracle.com/en-us/iaas/Content/Block/References/fstaboptions.htm#Traditional_fstab_Options).
 
 
 #### <a name="file-storage">File Storage</a>
@@ -511,8 +511,9 @@ Snapshot policies are defined using the optional attribute **snapshot_policies**
 As mentioned, default snapshot policies are created for file systems that do not have a snapshot policy. The default snapshot policies are defined with a single schedule, set to run weekly at 23:00 UTC on sundays.
 
 ### <a name="ext-dep">External Dependencies</a>
-An optional feature, external dependencies are resources managed elsewhere that resources managed by this module may depend on. The following dependencies are supported:
-- **compartments_dependency** &ndash; A map of objects containing the externally managed compartments this module may depend on. All map objects must have the same type and must contain at least an *id* attribute with the compartment OCID.
+An optional feature, external dependencies are resources managed elsewhere that resources managed by this module depends on. The following dependencies are supported:
+
+- **compartments_dependency** &ndash; A map of objects containing the externally managed compartments this module depends on. All map objects must have the same type and must contain at least an *id* attribute with the compartment OCID. This mechanism allows for the usage of referring keys (instead of OCIDs) in *default_compartment_id* and *compartment_id* attributes. The module replaces the keys by the OCIDs provided within *compartments_dependency* map. Contents of *compartments_dependency* is typically the output of a [Compartments module](../compartments/) client.
 
 Example:
 ```
@@ -522,22 +523,26 @@ Example:
 	}
 }
 ```
-- **network_dependency** &ndash; A map of objects containing the externally managed network resources (including subnets and network security groups) this module may depend on. All map objects must have the same type and should contain the following attributes:
+- **network_dependency** &ndash; A map of map of objects containing the externally managed network resources this module depends on. This mechanism allows for the usage of referring keys (instead of OCIDs) in *default_subnet_id*, *subnet_id* and *network_security_groups* attributes. The module replaces the keys by the OCIDs provided within *network_dependency* map. Contents of *network_dependency* is typically the output of a [Networking module](https://github.com/oracle-quickstart/terraform-oci-cis-landing-zone-networking) client. All map objects must have the same type and should contain the following attributes:
   - An *id* attribute with the subnet OCID.
   - An *id* attribute with the network security group OCID.
 
 Example:
 ```
 {
-  "APP-SUBNET" : {
-    "id" : "ocid1.subnet.oc1.iad.aaaaaaaax...e7a"
-  }, 
-  "APP-NSG" : {
-    "id" : "ocid1.networksecuritygroup.oc1.iad.aaaaaaaa...xlq"
-  }
+  "subnets" : {
+    "APP-SUBNET" : {
+      "id" : "ocid1.subnet.oc1.iad.aaaaaaaax...e7a"
+    }
+  },
+  "network_security_groups" : {  
+    "APP-NSG" : {
+      "id" : "ocid1.networksecuritygroup.oc1.iad.aaaaaaaa...xlq"
+    }
+  }  
 } 
 ```  
-- **kms_dependency** &ndash; A map of objects containing the externally managed encryption keys this module may depend on. All map objects must have the same type and must contain at least an *id* attribute with the encryption key OCID.
+- **kms_dependency** &ndash; A map of objects containing the externally managed encryption keys this module depends on. All map objects must have the same type and must contain at least an *id* attribute with the encryption key OCID. This mechanism allows for the usage of referring keys (instead of OCIDs) in *default_kms_key_id*, and *kms_key_id* attributes. The module replaces the keys by the OCIDs provided within *kms_dependency* map. Contents of *kms_dependency* is typically the output of a [Vault module](https://github.com/oracle-quickstart/terraform-oci-cis-landing-zone-security/tree/main/vaults) client.
 
 Example:
 ```
@@ -547,20 +552,17 @@ Example:
 	}
 }
 ```
-- **instances_dependency** &ndash; A map of objects containing the externally managed instances this module may depend on. All map objects must have the same type and should contain at least the following attributes:
-  - An *id* attribute with the instance OCID.
-  - A *is_pv_encryption_in_transit_enabled* attribute informing whether the instance supports in-transit encryption.
+- **instances_dependency** &ndash; A map of objects containing the externally managed instances this module depends on. All map objects must have the same type and must contain at least an *id* attribute with the instance OCID. This mechanism allows for the usage of referring keys (instead of OCIDs) in *instance_id* attributes. The module replaces the keys by the OCIDs provided within *instances_dependency* map. Contents of *instances_dependency* is typically the output of a client of this module.
 
 Example:
 ```
 {
 	"INSTANCE-2": {
 		"id": "ocid1.instance.oc1.iad.anuwc...ftq",
-    "is_pv_encryption_in_transit_enabled" : false
 	}
 }
 ```
-- **file_system_dependency** &ndash; A map of objects containing the externally managed file systems this module may depend on. All map objects must have the same type and must contain at least an *id* attribute with the file system OCID.
+- **file_system_dependency** &ndash; A map of objects containing the externally managed file systems this module depends on. All map objects must have the same type and must contain at least an *id* attribute with the file system OCID. This mechanism allows for the usage of referring keys (instead of OCIDs) in *file_system_id* and *file_system_target_id* attributes. The module replaces the keys by the OCIDs provided within *file_system_dependency* map. Contents of *file_system_dependency* is typically the output of a client of this module.
 
 Example:
 ```
