@@ -43,12 +43,16 @@ The OCI Object Storage objects with external dependencies are expected to have s
 - **oci_network_dependency**
 ```
 {
-  "APP-SUBNET" : {
-   "id" : "ocid1.subnet.oc1.iad.aaaaaaaax...e7a"
-  }, 
-  "APP-NSG" : {
-   "id" : "ocid1.networksecuritygroup.oc1.iad.aaaaaaaa...xlq"
-  }
+  "subnets" : {
+    "APP-SUBNET" : {
+      "id" : "ocid1.subnet.oc1.iad.aaaaaaaax...e7a"
+    }
+  },
+  "network_security_groups" : {  
+    "APP-NSG" : {
+      "id" : "ocid1.networksecuritygroup.oc1.iad.aaaaaaaa...xlq"
+    }
+  }  
 } 
 ```  
 - **oci_kms_dependency**

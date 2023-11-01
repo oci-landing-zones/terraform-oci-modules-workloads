@@ -1,3 +1,15 @@
+# October 30, 2023 Release Notes - 0.1.2
+
+## Updates
+1. [How to Mount Block Volumes](#0-1-2-bv-mount-doc)
+2. [Network dependency aligned with CIS Landing Zone Networking Module Output](#0-1-2-net-dep)
+
+### <a name="0-1-2-bv-mount-doc">How to Mount Block Volumes</a>
+Instructions are provided in [README.md](./README.md) for mounting block volumes. The modules does not mount volumes automatically.
+
+### <a name="0-1-2-net-dep">Network dependency aligned with CIS Landing Zone Networking Module Output</a>
+*network_dependency* input variable aligns with [CIS Landing Zone Networking](https://github.com/oracle-quickstart/terraform-oci-cis-landing-zone-networking) module output. The Networking module outputs resources grouped by resource type ("vcns", "subnets", "network_security_groups", etc.). All modules in this repository have been updated accordingly. This impacts the contents of *network_dependency* variable. See [external-dependencies](./cis-compute-storage/examples/external-dependencies/) for an example.
+
 # October 05, 2023 Release Notes - 0.1.1
 
 ## Updates
