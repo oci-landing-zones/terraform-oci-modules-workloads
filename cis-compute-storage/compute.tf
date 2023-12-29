@@ -163,6 +163,12 @@ resource "oci_core_instance" "these" {
         }
       }
     }
+    dynamic "instance_options" {
+      for_each = coalesce(each.value.cis_level,var.instances_configuration.default_cis_level,"1") == "2" ? [1] : []
+      content {
+        are_legacy_imds_endpoints_disabled = true
+      }
+    }
     metadata = {
       ssh_authorized_keys = each.value.ssh_public_key_path != null ? file(each.value.ssh_public_key_path) : file(var.instances_configuration.default_ssh_public_key_path)
     #  user_data           = contains(keys(data.template_cloudinit_config.config),each.key) ? data.template_cloudinit_config.config[each.key].rendered : null
