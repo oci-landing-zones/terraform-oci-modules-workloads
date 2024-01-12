@@ -52,7 +52,7 @@ variable "cluster_configuration" {
       networking = object({                         # cluster networking settings.
         vcn_id             = string                 # the vcn where the cluster will be created.
         public_endpoint    = optional(bool)         # if the api endpoint is public. default to false.
-        nsg_ids            = optional(list(string)) # the nsgs used by the api endpoint.
+        api_nsg_ids        = optional(list(string)) # the nsgs used by the api endpoint.
         endpoint_subnet_id = string                 # the subnet for the api endpoint.
         services_subnet_id = optional(list(string)) # the subnets for the services(Load Balancers).
 

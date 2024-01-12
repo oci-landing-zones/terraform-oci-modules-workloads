@@ -67,7 +67,7 @@ resource "oci_containerengine_node_pool" "these" {
 
 
     dynamic "placement_configs" {
-      for_each = each.value.node_config_details.placement != null ? each.value.node_config_details.placement : tolist(1)
+      for_each = each.value.node_config_details.placement != null ? each.value.node_config_details.placement : tolist([(tomap({1 = 1}))])
       iterator = pc
       content {
         availability_domain     = each.value.node_config_details.placement != null ? data.oci_identity_availability_domains.ads[each.key].availability_domains[(pc.value.availability_domain != null ? pc.value.availability_domain : 1) - 1].name : data.oci_identity_availability_domains.ads[each.key].availability_domains[0].name

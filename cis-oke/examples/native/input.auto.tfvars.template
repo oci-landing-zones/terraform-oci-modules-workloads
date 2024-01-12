@@ -65,7 +65,7 @@ cluster_configuration = {
       networking = {
         vcn_id             = "<REPLACE-BY-VCN-OCID>"
         public_endpoint    = false
-        nsg_ids            = ["<REPLACE-BY-NSG-IDS>"]
+        api_nsg_ids        = ["<REPLACE-BY-NSG-IDS>"]
         endpoint_subnet_id = "<REPLACE-BY-ENDPOINT-SUBNET-OCID>"
         services_subnet_id = ["<REPLACE-BY-SERVICES-SUBNET-OCID>"]
       }
@@ -80,7 +80,7 @@ cluster_configuration = {
       name = "<REPLACE-BY-CLUSTER-NAME>"
       networking = {
         vcn_id             = "<REPLACE-BY-VCN-OCID>"
-        nsg_ids            = ["<REPLACE-BY-NSG-IDS>"]
+        api_nsg_ids        = ["<REPLACE-BY-NSG-IDS>"]
         endpoint_subnet_id = "<REPLACE-BY-ENDPOINT-SUBNET-OCID>"
         services_subnet_id = ["<REPLACE-BY-SERVICES-SUBNET-OCID>"]
       }

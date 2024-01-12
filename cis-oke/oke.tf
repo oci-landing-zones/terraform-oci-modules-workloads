@@ -79,7 +79,7 @@ resource "oci_containerengine_cluster" "these" {
 
     is_public_ip_enabled = each.value.networking.public_endpoint != null ? each.value.networking.public_endpoint : false
     # should we enforce the use of nsgs?
-    nsg_ids   = each.value.networking.nsg_ids != null ? [for nsg in each.value.networking.nsg_ids : (length(regexall("^ocid1.*$", nsg))) > 0 ? nsg : var.network_dependency[nsg].id] : []
+    nsg_ids   = each.value.networking.api_nsg_ids != null ? [for nsg in each.value.networking.api_nsg_ids : (length(regexall("^ocid1.*$", nsg))) > 0 ? nsg : var.network_dependency[nsg].id] : []
     subnet_id = length(regexall("^ocid1.*$", each.value.networking.endpoint_subnet_id)) > 0 ? each.value.networking.endpoint_subnet_id : var.network_dependency[each.value.networking.endpoint_subnet_id].id
   }
   dynamic "image_policy_config" {

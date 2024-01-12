@@ -7,7 +7,6 @@ variable "user_ocid" { default = "" }
 variable "fingerprint" { default = "" }
 variable "private_key_path" { default = "" }
 variable "private_key_password" { default = "" }
-
 variable "cluster_configuration" {
   description = "Cluster configuration attributes."
   type = object({
@@ -17,7 +16,6 @@ variable "cluster_configuration" {
     default_cis_level              = optional(string)       # The CIS OCI Benchmark profile level. Level "1" is be practical and prudent. Level "2" is intended for environments where security is more critical than manageability and usability. Default is "1".
     default_defined_tags           = optional(map(string)), # the default defined tags. It's overriden by the defined_tags attribute within each object.
     default_freeform_tags          = optional(map(string)), # the default freeform tags. It's overriden by the freeform_tags attribute within each object.
-
     oke = map(object({ # the clusters to manage in this configuration.
       cis_level          = optional(string)
       compartment_id     = optional(string)      # the compartment where the cluster is created. default_compartment_ocid is used if this is not defined.
@@ -48,27 +46,21 @@ variable "cluster_configuration" {
           freeform_tags = optional(map(string)) # LB freeform_tags. default_freeform_tags is used if this is not defined.
         }))
       }))
-
       networking = object({                         # cluster networking settings.
         vcn_id             = string                 # the vcn where the cluster will be created.
         public_endpoint    = optional(bool)         # if the api endpoint is public. default to false.
-        nsg_ids            = optional(list(string)) # the nsgs used by the api endpoint.
+        api_nsg_ids        = optional(list(string)) # the nsgs used by the api endpoint.
         endpoint_subnet_id = string                 # the subnet for the api endpoint.
         services_subnet_id = optional(list(string)) # the subnets for the services(Load Balancers).
-
       })
-
       encryption = optional(object({              # encryption settings
         image_policy_enabled   = optional(bool)   # whether the image verification policy is enabled. default to false.
         img_kms_key_id         = optional(string) # the KMS key to assign as the master encryption key for images. default_img_kms_key_id is used if this is not defined.
         kube_secret_kms_key_id = optional(string) # # the KMS key to assign as the master encryption key for kube secrets. default_kube_secret_kms_key_id is used if this is not defined.
-
       }))
-
     }))
   })
   default = null
-
 }
 
 
@@ -82,13 +74,13 @@ variable "worker_configuration" {
     default_freeform_tags       = optional(map(string)), # the default freeform tags. It's overriden by the freeform_tags attribute within each object.
     default_ssh_public_key_path = optional(string)       # the default SSH public key path used to access the workers.
     default_kms_key_id          = optional(string)       # the default KMS key to assign as the master encryption key. It's overriden by the kms_key_id attribute within each object.
+    default_initial_node_labels = optional(map(string))  # the default initial node labels, a list of key/value pairs to add to nodes after they join the Kubernetes cluster.
     node_pool = map(object({                             # the node pools to manage in this configuration.
       cis_level          = optional(string)
       kubernetes_version = optional(string) # the kubernetes version for the node pool. it cannot be 2 versions older behind of the cluster version or newer. If not specified, the version of the cluster will be selected.
       cluster_id         = string           # the cluster where the node pool will be created.
       compartment_id     = optional(string) # the compartment where the node pool is created. default_compartment_ocid is used if this is not defined.
       name               = string           # the node pool display name.
-
       defined_tags        = optional(map(string))  # node pool defined_tags. default_defined_tags is used if this is not defined.
       freeform_tags       = optional(map(string))  # node pool freeform_tags. default_freeform_tags is used if this is not defined.
       initial_node_labels = optional(map(string))  # a list of key/value pairs to add to nodes after they join the Kubernetes cluster.
@@ -132,9 +124,7 @@ variable "worker_configuration" {
           max_surge       = optional(string) # maximum additional new compute instances that would be temporarily created and added to nodepool during the cycling nodepool process. OKE supports both integer and percentage input. Defaults to 1, Ranges from 0 to Nodepool size or 0% to 100%.
           max_unavailable = optional(string) # maximum active nodes that would be terminated from nodepool during the cycling nodepool process. OKE supports both integer and percentage input. Defaults to 0, Ranges from 0 to Nodepool size or 0% to 100%.
         }))
-
       })
-
     }))
   })
   default = null

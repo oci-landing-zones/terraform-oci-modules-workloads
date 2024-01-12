@@ -45,7 +45,7 @@ variable "cluster_configuration" {
       networking = object({                         # cluster networking settings.
         vcn_id             = string                 # the vcn where the cluster will be created.
         public_endpoint    = optional(bool)         # if the api endpoint is public. default to false.
-        nsg_ids            = optional(list(string)) # the nsgs used by the api endpoint.
+        api_nsg_ids        = optional(list(string)) # the nsgs used by the api endpoint.
         endpoint_subnet_id = string                 # the subnet for the api endpoint.
         services_subnet_id = optional(list(string)) # the subnets for the services(Load Balancers).
 
@@ -75,6 +75,7 @@ variable "worker_configuration" {
     default_freeform_tags       = optional(map(string)), # the default freeform tags. It's overriden by the freeform_tags attribute within each object.
     default_ssh_public_key_path = optional(string)       # the default SSH public key path used to access the workers.
     default_kms_key_id          = optional(string)       # the default KMS key to assign as the master encryption key. It's overriden by the kms_key_id attribute within each object.
+    default_initial_node_labels = optional(map(string))  # the default initial node labels, a list of key/value pairs to add to nodes after they join the Kubernetes cluster.
     node_pool = map(object({                             # the node pools to manage in this configuration.
       cis_level          = optional(string)
       kubernetes_version = optional(string) # the kubernetes version for the node pool. it cannot be 2 versions older behind of the cluster version or newer. If not specified, the version of the cluster will be selected.
