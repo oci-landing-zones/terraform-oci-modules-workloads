@@ -22,7 +22,7 @@ region               = "<your tenancy region>"     # The region name.
 # Input variable
 #---------------------------------------
 
-cluster_configuration = {
+clusters_configuration = {
   default_cis_level              = "1"
   default_compartment_id         = "<REPLACE-BY-COMPARTMENT-OCID>"
   default_img_kms_key_id         = "<REPLACE-BY-IMG-KMS-KEY-OCID>"
@@ -30,7 +30,7 @@ cluster_configuration = {
   default_defined_tags           = {}
   default_freeform_tags          = {}
 
-  oke = {
+  clusters = {
     #enhanced native cluster
     OKE1 = {
       cis_level          = "1"
@@ -91,14 +91,14 @@ cluster_configuration = {
 
 
 
-worker_configuration = {
+workers_configuration = {
   default_cis_level           = "1"
   default_compartment_id      = "<REPLACE-BY-COMPARTMENT-OCID>"
   default_defined_tags        = {}
   default_freeform_tags       = {}
   default_ssh_public_key_path = "~/.ssh/id_rsa.pub"
   default_kms_key_id          = "<REPLACE-BY-IMG-KMS-KEY-OCID>"
-  node_pool = {
+  node_pools = {
     #node pool configured for enhanced cluster OKE1
     NODEPOOL1 = {
       cis_level           = "1"
@@ -111,8 +111,8 @@ worker_configuration = {
       initial_node_labels = null
       size                = 3
       networking = {
-        nsg_ids           = ["<REPLACE-BY-NODES-NSG-OCID>"]
-        worker_subnet_id  = "<REPLACE-BY-WORKER-SUBNET-OCID>"
+        workers_nsg_ids           = ["<REPLACE-BY-NODES-NSG-OCID>"]
+        workers_subnet_id  = "<REPLACE-BY-WORKER-SUBNET-OCID>"
         pods_subnet_id    = "<REPLACE-BY-PODS-SUBNET-OCID>"
         pods_nsg_ids      = ["<REPLACE-BY-PODS-NSG-OCID>"]
         max_pods_per_node = null
@@ -166,8 +166,8 @@ worker_configuration = {
       name       = "<REPLACE-BY-NODE_POOL-NAME>"
       size       = 3
       networking = {
-        nsg_ids          = ["<REPLACE-BY-NODES-NSG-OCID>"]
-        worker_subnet_id = "<REPLACE-BY-WORKER-SUBNET-OCID>"
+        workers_nsg_ids          = ["<REPLACE-BY-NODES-NSG-OCID>"]
+        workers_subnet_id = "<REPLACE-BY-WORKER-SUBNET-OCID>"
         pods_subnet_id   = "<REPLACE-BY-PODS-SUBNET-OCID>"
         pods_nsg_ids     = ["<REPLACE-BY-PODS-NSG-OCID>"]
       }

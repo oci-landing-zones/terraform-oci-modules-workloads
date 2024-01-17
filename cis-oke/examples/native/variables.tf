@@ -8,7 +8,7 @@ variable "fingerprint" { default = "" }
 variable "private_key_path" { default = "" }
 variable "private_key_password" { default = "" }
 
-variable "cluster_configuration" {
+variable "clusters_configuration" {
   description = "Cluster configuration attributes."
   type = object({
     default_compartment_id         = optional(string),      # the default compartment where all resources are defined. It's overriden by the compartment_ocid attribute within each object.
@@ -18,7 +18,7 @@ variable "cluster_configuration" {
     default_defined_tags           = optional(map(string)), # the default defined tags. It's overriden by the defined_tags attribute within each object.
     default_freeform_tags          = optional(map(string)), # the default freeform tags. It's overriden by the freeform_tags attribute within each object.
 
-    oke = map(object({ # the clusters to manage in this configuration.
+    clusters = map(object({ # the clusters to manage in this configuration.
       cis_level          = optional(string)
       compartment_id     = optional(string)      # the compartment where the cluster is created. default_compartment_ocid is used if this is not defined.
       kubernetes_version = optional(string)      # the kubernetes version. If not specified the latest version will be selected.
@@ -72,7 +72,7 @@ variable "cluster_configuration" {
 }
 
 
-variable "worker_configuration" {
+variable "workers_configuration" {
   description = "Worker Nodes configuration attributes"
   type = object({
     #defaults
@@ -82,7 +82,7 @@ variable "worker_configuration" {
     default_freeform_tags       = optional(map(string)), # the default freeform tags. It's overriden by the freeform_tags attribute within each object.
     default_ssh_public_key_path = optional(string)       # the default SSH public key path used to access the workers.
     default_kms_key_id          = optional(string)       # the default KMS key to assign as the master encryption key. It's overriden by the kms_key_id attribute within each object.
-    node_pool = map(object({                             # the node pools to manage in this configuration.
+    node_pools = map(object({                            # the node pools to manage in this configuration.
       cis_level          = optional(string)
       kubernetes_version = optional(string) # the kubernetes version for the node pool. it cannot be 2 versions older behind of the cluster version or newer. If not specified, the version of the cluster will be selected.
       cluster_id         = string           # the cluster where the node pool will be created.
@@ -94,8 +94,8 @@ variable "worker_configuration" {
       initial_node_labels = optional(map(string))  # a list of key/value pairs to add to nodes after they join the Kubernetes cluster.
       size                = optional(number)       # the number of nodes that should be in the node pool.
       networking = object({                        # node pool networking settings.
-        nsg_ids           = optional(list(string)) # the nsgs to be used by the nodes.
-        worker_subnet_id  = string                 # the subnet for the nodes.
+        workers_nsg_ids   = optional(list(string)) # the nsgs to be used by the nodes.
+        workers_subnet_id = string                 # the subnet for the nodes.
         pods_subnet_id    = optional(string)       # the subnet for the pods. only applied to native CNI.
         pods_nsg_ids      = optional(list(string)) # the nsgs to be used by the pods. only applied to native CNI.
         max_pods_per_node = optional(number)       # the maximum number of pods per node. only applied to native CNI.

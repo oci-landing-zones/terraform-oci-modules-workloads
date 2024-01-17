@@ -1,4 +1,4 @@
-# Oracle Cloud Infrastructure (OCI) Terraform CIS Compute & Storage (Block Volumes and File System Storage) Module
+# Oracle Cloud Infrastructure (OCI) Terraform CIS OKE Module
 
 ![Landing Zone logo](../landing_zone_300.png)
 
@@ -60,12 +60,12 @@ This module relies on [Terraform Optional Object Type Attributes feature](https:
 ## <a name="functioning">Module Functioning</a>
 
 The module defines two top level attributes used to manage kubernetes clusters and node pools: 
-- **cluster_configuration** &ndash; for managing Kubernetes Clusters.
-- **worker_configuration** &ndash; for managing Node pools.
+- **clusters_configuration** &ndash; for managing Kubernetes Clusters.
+- **workers_configuration** &ndash; for managing Node pools.
 
 ### <a name="oke">OKE</a>
 
-Kubernetes Clusters are managed using the **cluster_configuration** object. It contains a set of attributes starting with the prefix **default_** and one attribute named **oke**. The **default_** attribute values are applied to all clusters within **oke**, unless overriden at the oke level.
+Kubernetes Clusters are managed using the **clusters_configuration** object. It contains a set of attributes starting with the prefix **default_** and one attribute named **clusters**. The **default_** attribute values are applied to all clusters within **clusters**, unless overriden at the cluster level.
 
 The *default_* attributes are the following:
 - **default_compartment_id** &ndash; Default compartment for all clusters. It can be overriden by *compartment_id* attribute in each cluster. This attribute is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *compartments_dependency* variable. See [External Dependencies](#ext-dep) for details.
@@ -75,7 +75,7 @@ The *default_* attributes are the following:
 - **default_defined_tags** &ndash; (Optional) Default defined tags for all clusters. It can be overriden by *defined_tags* attribute in each cluster.
 - **default_freeform_tags** &ndash; (Optional) Default freeform tags for all clusters. It can be overriden by *freeform_tags* attribute in each cluster.
 
-The clusters themselves are defined within the **oke** attribute, In Terraform terms, it is a map of objects. where each object is referred by an identifying key. The supported attributes are listed below. For better usability, most attributes are grouped in logical blocks. They are properly indented in the list.
+The clusters themselves are defined within the **clusters** attribute, In Terraform terms, it is a map of objects. where each object is referred by an identifying key. The supported attributes are listed below. For better usability, most attributes are grouped in logical blocks. They are properly indented in the list.
 - **compartment_id** &ndash; (Optional) The cluster compartment. *default_compartment_id* is used if undefined. This attribute is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *compartments_dependency* variable. See [External Dependencies](#ext-dep) for details.
 - **cis_level** &ndash; (Optional) The CIS OCI Benchmark profile level to apply. *default_cis_level* is used if undefined.
 - **kubernetes_version** &ndash; (Optional) the kubernetes version. If not specified the latest version will be selected.
@@ -102,7 +102,7 @@ The clusters themselves are defined within the **oke** attribute, In Terraform t
 - **networking** &ndash; (Optional) cluster networking settings.
   - **vcn_id** &ndash;  the vcn where the cluster will be created.
   - **public_endpoint** &ndash; (Optional) if the api endpoint is public. default to false.
-  - **nsg_ids** &ndash; (Optional) the nsgs used by the api endpoint.
+  - **api_nsg_ids** &ndash; (Optional) the nsgs used by the api endpoint.
   - **endpoint_subnet_id** &ndash;  the subnet for the api endpoint.
   - **services_subnet_id** &ndash; (Optional) the subnet for the cluster service
 - **encryption** &ndash; (Optional) encryption settings
@@ -116,7 +116,7 @@ The clusters themselves are defined within the **oke** attribute, In Terraform t
 
 ### <a name="node-pools">Node Pools</a>
 
-Node Pools are managed using the **workers_configuration** object. It contains a set of attributes starting with the prefix **default_** and an attribute named **node_pool** .The **default_** attribute values are applied to all node pools, unless overriden at the storage unit level.
+Node Pools are managed using the **workers_configuration** object. It contains a set of attributes starting with the prefix **default_** and an attribute named **node_pools** .The **default_** attribute values are applied to all node pools, unless overriden at the storage unit level.
 The defined **default_** attributes are the following:
 
 - **default_compartment_id** &ndash; (Optional) The default compartment for all node pools. It can be overriden by *compartment_id* attribute in each node pool. This attribute is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *compartments_dependency* variable. See [External Dependencies](#ext-dep) for details.
@@ -126,8 +126,7 @@ The defined **default_** attributes are the following:
 - **default_freeform_tags** &ndash; (Optional) the default freeform tags for all node pools. It can be overriden by *freeform_tags* attribute in each unit.
 - **default_ssh_public_key_path** &ndash; (Optional) Default SSH public key path used to access all nodes. It can be overriden by the *ssh_public_key* attribute in each node pool.
 
-#### <a name="node-pools">Node Pools</a>
-Node Pools are defined using the  **node_pool** attribute. In Terraform terms, it is a map of objects, where each object is referred by an identifying key. The following attributes are supported:
+Node Pools are defined using the  **node_pools** attribute. In Terraform terms, it is a map of objects, where each object is referred by an identifying key. The following attributes are supported:
 - **compartment_id** &ndash; (Optional) The volume compartment. The *default_compartment_id* is used if undefined. This attribute is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *compartments_dependency* variable. See [External Dependencies](#ext-dep) for details.
 - **cis_level** &ndash; (Optional) The CIS OCI Benchmark profile level to apply. The *default_cis_level* is used if undefined.
 - **kubernetes_version** &ndash; (Optional) the kubernetes version for the node pool. it cannot be 2 versions older behind of the cluster version or newer. If not specified, the version of the cluster will be selected.
@@ -139,8 +138,8 @@ Node Pools are defined using the  **node_pool** attribute. In Terraform terms, i
 - **initial_node_labels** &ndash; (Optional) a list of key/value pairs to add to nodes after they join the Kubernetes cluster.
 - **size** &ndash; (Optional) the number of nodes that should be in the node pool.
 - **networking** &ndash; node pool networking settings.
-  - **nsg_ids** &ndash; (Optional) the nsgs to be used by the nodes.
-  - **worker_subnet_id** &ndash; the subnet for the nodes.
+  - **workers_nsg_ids** &ndash; (Optional) the nsgs to be used by the nodes.
+  - **workers_subnet_id** &ndash; the subnet for the nodes.
   - **pods_subnet_id** &ndash; (Optional) the subnet for the pods. only applied to native CNI.
   - **pods_nsg_ids** &ndash; (Optional) the nsgs to be used by the pods. only applied to native CNI.
   - **max_pods_per_node** &ndash; (Optional) the maximum number of pods per node. only applied to native CNI.

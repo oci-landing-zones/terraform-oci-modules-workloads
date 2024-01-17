@@ -7,6 +7,6 @@ module "oke" {
   providers = {
     oci = oci
   }
-  cluster_configuration = var.cluster_configuration
-  worker_configuration  = var.worker_configuration
+  clusters_configuration = var.clusters_configuration
+  workers_configuration  = var.workers_configuration
 }
