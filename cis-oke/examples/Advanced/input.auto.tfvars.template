@@ -11,30 +11,45 @@
 # Tenancy Connectivity Variables
 #---------------------------------------
 
-# tenancy_ocid         = "<tenancy OCID>"            # Get this from OCI Console (after logging in, go to top-right-most menu item and click option "Tenancy: <your tenancy name>").
-# user_ocid            = "<user OCID>"               # Get this from OCI Console (after logging in, go to top-right-most menu item and click option "My profile").
-# fingerprint          = "<PEM key fingerprint>"     # The fingerprint can be gathered from your user account. In the "My profile page, click "API keys" on the menu in left hand side.
-# private_key_path     = "<path to the private key>" # This is the full path on your local system to the API signing private key.
-# private_key_password = ""                          # This is the password that protects the private key, if any.
-# region               = "<your tenancy region>"     # The region name.
-
+tenancy_ocid         = "<tenancy OCID>"            # Get this from OCI Console (after logging in, go to top-right-most menu item and click option "Tenancy: <your tenancy name>").
+user_ocid            = "<user OCID>"               # Get this from OCI Console (after logging in, go to top-right-most menu item and click option "My profile").
+fingerprint          = "<PEM key fingerprint>"     # The fingerprint can be gathered from your user account. In the "My profile page, click "API keys" on the menu in left hand side.
+private_key_path     = "<path to the private key>" # This is the full path on your local system to the API signing private key.
+private_key_password = ""                          # This is the password that protects the private key, if any.
+region               = "<your tenancy region>"     # The region name.
 
 #---------------------------------------
 # Input variable
 #---------------------------------------
 
 clusters_configuration = {
-  default_cis_level      = "1"
-  default_compartment_id = "<REPLACE-BY-COMPARTMENT-OCID>"
+  default_cis_level              = "1"
+  default_compartment_id         = "<REPLACE-BY-COMPARTMENT-OCID>"
+  default_img_kms_key_id         = "<REPLACE-BY-IMG-KMS-KEY-OCID>"
+  default_kube_secret_kms_key_id = "<REPLACE-BY-KUBE-SECRET-KMS-KEY-OCID>"
+  default_defined_tags           = {}
+  default_freeform_tags          = {}
+
   clusters = {
-    #all parameters flannel cluster
-    # OKE1 = {
-    #   cis_level = "1"
+    #basic native cluster
+    OKE1 = {
+      name     = "<REPLACE-BY-CLUSTER-NAME>"
+      cni_type = "native"
+      networking = {
+        vcn_id             = "<REPLACE-BY-VCN-OCID>"
+        api_nsg_ids        = ["<REPLACE-BY-NSG-IDS>"]
+        endpoint_subnet_id = "<REPLACE-BY-ENDPOINT-SUBNET-OCID>"
+        services_subnet_id = ["<REPLACE-BY-SERVICES-SUBNET-OCID>"]
+      }
+    }
+    #enhanced native cluster
+    # OKE2 = {
+    #   cis_level          = "1"
     #   compartment_id     = "<REPLACE-BY-COMPARTMENT-OCID>"
     #   kubernetes_version = null
     #   name               = "<REPLACE-BY-CLUSTER-NAME>"
-    #   is_enhanced        = false
-    #   cni_type           = "flannel"
+    #   is_enhanced        = true
+    #   cni_type           = "native"
     #   defined_tags       = null
     #   freeform_tags      = null
     #   options = {
@@ -60,8 +75,8 @@ clusters_configuration = {
     #   }
     #   networking = {
     #     vcn_id             = "<REPLACE-BY-VCN-OCID>"
-    #     public_endpoint = false
-    #     api_nsg_ids            = ["<REPLACE-BY-NSG-IDS>"]
+    #     public_endpoint    = false
+    #     api_nsg_ids        = ["<REPLACE-BY-NSG-IDS>"]
     #     endpoint_subnet_id = "<REPLACE-BY-ENDPOINT-SUBNET-OCID>"
     #     services_subnet_id = ["<REPLACE-BY-SERVICES-SUBNET-OCID>"]
     #   }
@@ -71,17 +86,6 @@ clusters_configuration = {
     #     kube_secret_kms_key_id = null
     #   }
     # }
-    #only required parameters flannel cluster
-    OKE2 = {
-      name     = "<REPLACE-BY-CLUSTER-NAME>"
-      cni_type = "flannel"
-      networking = {
-        vcn_id             = "<REPLACE-BY-VCN-OCID>"
-        api_nsg_ids        = ["<REPLACE-BY-NSG-IDS>"]
-        endpoint_subnet_id = "<REPLACE-BY-ENDPOINT-SUBNET-OCID>"
-        services_subnet_id = ["<REPLACE-BY-SERVICES-SUBNET-OCID>"]
-      }
-    }
   }
 }
 
@@ -90,10 +94,28 @@ clusters_configuration = {
 
 workers_configuration = {
   default_cis_level           = "1"
+  default_compartment_id      = null
+  default_defined_tags        = {}
+  default_freeform_tags       = {}
   default_ssh_public_key_path = "~/.ssh/id_rsa.pub"
+  default_kms_key_id          = "<REPLACE-BY-IMG-KMS-KEY-OCID>"
   node_pools = {
-    #node pool configured for flannel cluster OKE1
-    # NODEPOOL1 = {
+    NODEPOOL1 = {
+      cluster_id = "OKE1"
+      name       = "<REPLACE-BY-NODE_POOL-NAME>"
+      size       = 3
+      networking = {
+        workers_nsg_ids   = ["<REPLACE-BY-NODES-NSG-OCID>"]
+        workers_subnet_id = "<REPLACE-BY-WORKER-SUBNET-OCID>"
+        pods_subnet_id    = "<REPLACE-BY-PODS-SUBNET-OCID>"
+        pods_nsg_ids      = ["<REPLACE-BY-PODS-NSG-OCID>"]
+      }
+      node_config_details = {
+        image      = "REPLACE-BY-IMAGE-OCID"
+        node_shape = "VM.Standard.E4.Flex"
+      }
+    }
+    # NODEPOOL2 = {
     #   cis_level           = "1"
     #   kubernets_version   = null
     #   cluster_id          = "OKE1"
@@ -104,8 +126,11 @@ workers_configuration = {
     #   initial_node_labels = null
     #   size                = 3
     #   networking = {
-    #     workers_nsg_ids          = ["<REPLACE-BY-NODES-NSG-OCID>"]
+    #     workers_nsg_ids   = ["<REPLACE-BY-NODES-NSG-OCID>"]
     #     workers_subnet_id = "<REPLACE-BY-WORKER-SUBNET-OCID>"
+    #     pods_subnet_id    = "<REPLACE-BY-PODS-SUBNET-OCID>"
+    #     pods_nsg_ids      = ["<REPLACE-BY-PODS-NSG-OCID>"]
+    #     max_pods_per_node = null
     #   }
     #   node_config_details = {
     #     ssh_public_key_path     = "~/.ssh/id_rsa.pub"
@@ -127,6 +152,7 @@ workers_configuration = {
     #       kms_key_id                = null
     #     }
     #     placement = [
+
     #       { availability_domain = 1
     #         fault_domain        = 1
     #       },
@@ -141,37 +167,14 @@ workers_configuration = {
     #       grace_duration = null
     #       force_delete   = false
     #     }
-    #   }
-    # }
-    # nodepools configured for flannel cluster OKE2
-    NODEPOOL2 = {
-      cluster_id = "OKE2"
-      name       = "<REPLACE-BY-NODE_POOL-NAME>"
-      size       = 3
-      networking = {
-        workers_nsg_ids   = ["<REPLACE-BY-NODES-NSG-OCID>"]
-        workers_subnet_id = "<REPLACE-BY-WORKER-SUBNET-OCID>"
-      }
-      node_config_details = {
-        node_shape = "VM.Standard.E4.Flex"
-      }
-    }
-    # NODEPOOL3 = {
-    #   cluster_id = "OKE2"
-    #   name       = "<REPLACE-BY-NODE_POOL-NAME>"
-    #   size       = 3
-    #   networking = {
-    #     workers_nsg_ids          = ["<REPLACE-BY-NODES-NSG-OCID>"]
-    #     workers_subnet_id = "<REPLACE-BY-WORKER-SUBNET-OCID>"
-    #   }
-    #   node_config_details = {
-    #     image      = "REPLACE-BY-IMAGE-OCID"
-    #     node_shape = "VM.Standard.E4.Flex"
+    #     node_cycling = {
+    #       enable_cycling  = false
+    #       max_surge       = null
+    #       max_unavailable = null
+    #     }
     #   }
     # }
   }
-
-
 }
 
 

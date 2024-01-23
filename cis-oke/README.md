@@ -13,7 +13,7 @@ Check the [examples](./examples/) folder for actual module usage.
 - [Module Functioning](#functioning)
   - [OKE](#oke)
   - [Node Pools](#node-pools)
-  - [External Dependencies](#ext-dep)
+  - [External Dependencies](#ext-dep) 
 - [Related Documentation](#related)
 - [Known Issues](#issues)
 
@@ -81,7 +81,7 @@ The clusters themselves are defined within the **clusters** attribute, In Terraf
 - **kubernetes_version** &ndash; (Optional) the kubernetes version. If not specified the latest version will be selected.
 - **name** &ndash; the cluster display name.
 - **is_enhanced** &ndash;(Optional) If the cluster is enhanced. It is designed to work only on Native CNI. If not specified, basic will be selected.
-- **cni_type** &ndash; (Optional) The CNI type of the cluster. Can be either flannel or native. If not specified, native will be selected.
+- **cni_type** &ndash; (Optional) The CNI type of the cluster. Can be either flannel or native. If not specified, flannel will be selected.
 - **defined_tags** &ndash; (Optional) clusters defined_tags. default_defined_tags is used if this is not defined.
 - **freeform_tags** &ndash; (Optional) clusters freeform_tags. default_freeform_tags is used if this is not defined.
 - **options** &ndash; (Optional) options attributes for the cluster.
@@ -100,15 +100,15 @@ The clusters themselves are defined within the **clusters** attribute, In Terraf
     - **defined_tags** &ndash; (Ooptional) LB defined_tags. default_defined_tags is used if this is not defined.
     - **freeform_tags** &ndash; (Optional) LB freeform_tags. default_freeform_tags is used if this is not defined.         
 - **networking** &ndash; (Optional) cluster networking settings.
-  - **vcn_id** &ndash;  the vcn where the cluster will be created.
+  - **vcn_id** &ndash;  the vcn where the cluster will be created. It can be assigned either a literal OCID or a reference (a key) to an OCID in *network_dependency* variable. See [External Dependencies](#ext-dep) for details.
   - **public_endpoint** &ndash; (Optional) if the api endpoint is public. default to false.
-  - **api_nsg_ids** &ndash; (Optional) the nsgs used by the api endpoint.
-  - **endpoint_subnet_id** &ndash;  the subnet for the api endpoint.
-  - **services_subnet_id** &ndash; (Optional) the subnet for the cluster service
+  - **api_nsg_ids** &ndash; (Optional) the nsgs used by the api endpoint. It can be assigned either a literal OCID or a reference (a key) to an OCID in *network_dependency* variable. See [External Dependencies](#ext-dep) for details.
+  - **endpoint_subnet_id** &ndash;  the subnet for the api endpoint. It can be assigned either a literal OCID or a reference (a key) to an OCID in *network_dependency* variable. See [External Dependencies](#ext-dep) for details.
+  - **services_subnet_id** &ndash; (Optional) the subnet for the cluster service. It can be assigned either a literal OCID or a reference (a key) to an OCID in *network_dependency* variable. See [External Dependencies](#ext-dep) for details.
 - **encryption** &ndash; (Optional) encryption settings
   - **image_policy_enabled** &ndash; (Optional) whether the image verification policy is enabled. default to false.
-  - **img_kms_key_id** &ndash; (Optional) the KMS key to assign as the master encryption key for images. default_img_kms_key_id is used if this is not defined.
-  - **kube_secret_kms_key_id** &ndash; (Optional) the KMS key to assign as the master encryption key for kube secrets. default_kube_secret_kms_key_id is used if this is not defined.
+  - **img_kms_key_id** &ndash; (Optional) the KMS key to assign as the master encryption key for images. default_img_kms_key_id is used if this is not defined. This attribute is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *kms_dependency* variable. See [External Dependencies](#ext-dep) for details.
+  - **kube_secret_kms_key_id** &ndash; (Optional) the KMS key to assign as the master encryption key for kube secrets. default_kube_secret_kms_key_id is used if this is not defined. This attribute is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *kms_dependency* variable. See [External Dependencies](#ext-dep) for details.
 
 
 
@@ -127,28 +127,27 @@ The defined **default_** attributes are the following:
 - **default_ssh_public_key_path** &ndash; (Optional) Default SSH public key path used to access all nodes. It can be overriden by the *ssh_public_key* attribute in each node pool.
 
 Node Pools are defined using the  **node_pools** attribute. In Terraform terms, it is a map of objects, where each object is referred by an identifying key. The following attributes are supported:
-- **compartment_id** &ndash; (Optional) The volume compartment. The *default_compartment_id* is used if undefined. This attribute is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *compartments_dependency* variable. See [External Dependencies](#ext-dep) for details.
 - **cis_level** &ndash; (Optional) The CIS OCI Benchmark profile level to apply. The *default_cis_level* is used if undefined.
 - **kubernetes_version** &ndash; (Optional) the kubernetes version for the node pool. it cannot be 2 versions older behind of the cluster version or newer. If not specified, the version of the cluster will be selected.
-- **cluster_id** &ndash; the cluster where the node pool will be created.
-- **compartment_id** &ndash; (Optional) the compartment where the node pool is created. default_compartment_ocid is used if this is not defined.
-- **name** &ndash; the node pool display nam
+- **cluster_id** &ndash; the cluster where the node pool will be created. It can be assigned either a literal OCID or a reference (a key) to a cluster from the **clusters_configuration**.
+- **compartment_id** &ndash; (Optional) the compartment where the node pool is created. If the Cluster and the Node Pools are created with the terraform code, both the attributes **compartment_id** and **default_compartment_id** are not required as the compartment for the Node Pool will be taken from the Cluster assigned to the Node Pool in the **cluster_id** attribute. It can be assigned either a literal OCID or a reference (a key) to an OCID in *compartments_dependency* variable. See [External Dependencies](#ext-dep) for details.
+- **name** &ndash; the node pool display name.
 - **defined_tags** &ndash; (Optional)  node pool defined_tags. default_defined_tags is used if this is not defined.
 - **freeform_tags** &ndash; (Optional) node pool freeform_tags. default_freeform_tags is used if this is not defined.
 - **initial_node_labels** &ndash; (Optional) a list of key/value pairs to add to nodes after they join the Kubernetes cluster.
 - **size** &ndash; (Optional) the number of nodes that should be in the node pool.
 - **networking** &ndash; node pool networking settings.
-  - **workers_nsg_ids** &ndash; (Optional) the nsgs to be used by the nodes.
-  - **workers_subnet_id** &ndash; the subnet for the nodes.
-  - **pods_subnet_id** &ndash; (Optional) the subnet for the pods. only applied to native CNI.
-  - **pods_nsg_ids** &ndash; (Optional) the nsgs to be used by the pods. only applied to native CNI.
+  - **workers_nsg_ids** &ndash; (Optional) the nsgs to be used by the nodes. It can be assigned either a literal OCID or a reference (a key) to an OCID in *network_dependency* variable. See [External Dependencies](#ext-dep) for details.
+  - **workers_subnet_id** &ndash; the subnet for the nodes. It can be assigned either a literal OCID or a reference (a key) to an OCID in *network_dependency* variable. See [External Dependencies](#ext-dep) for details.
+  - **pods_subnet_id** &ndash; (Optional) the subnet for the pods. only applied to native CNI. It can be assigned either a literal OCID or a reference (a key) to an OCID in *network_dependency* variable. See [External Dependencies](#ext-dep) for details.
+  - **pods_nsg_ids** &ndash; (Optional) the nsgs to be used by the pods. only applied to native CNI. It can be assigned either a literal OCID or a reference (a key) to an OCID in *network_dependency* variable. See [External Dependencies](#ext-dep) for details.
   - **max_pods_per_node** &ndash; (Optional) the maximum number of pods per node. only applied to native CNI.
 
 - **node_config_details** &ndash; the configuration of nodes in the node pool.
-  - **ssh_public_key_pat** &ndash; (Optional) the SSH public key path used to access the workers. if not specified default_ssh_public_key_path will be used.
+  - **ssh_public_key_path** &ndash; (Optional) the SSH public key path used to access the workers. if not specified default_ssh_public_key_path will be used.
   - **defined_tags** &ndash; (Optional) nodes defined_tags. default_defined_tags is used if this is not defined.
   - **freeform_tags** &ndash; (Optional) nodes freeform_tags. default_freeform_tags is used if this is not defined.
-  - **image** &ndash; (Optional) the image for the nodes. Can be specified as ocid or as an Oracle Linux Version. Example: "8.8". If not specified the latest Oracle Linux image will be selected.
+  - **image** &ndash; (Optional) the image for the nodes. Can be specified as an ocid or as an Oracle Linux Version. Example: "8.8". If not specified the latest Oracle Linux image will be selected.
   - **node_shape** &ndash; the shape of the nodes.
   - **capacity_reservation_id** &ndash; (Optional) the OCID of the compute capacity reservation in which to place the nodes.
   - **flex_shape_settings** &ndash; (Optional) flex shape settings
@@ -243,3 +242,4 @@ Example:
 │   30: resource "oci_containerengine_node_pool" "these" 
 ```
 
+2. When the **image** attribute is not specified, the most recent image available for the Node Pool using it''s kubernetes version will be selected, which means that every at every rerun, it will look for the most recent image and select it, hence modifying the  Node Pool, but the new image will be available only for the newly created/recreated nodes in the node pool.

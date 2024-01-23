@@ -13,7 +13,7 @@ data "oci_containerengine_cluster_option" "cluster_options" {
 
 data "oci_core_subnet" "subnet" {
   for_each  = var.clusters_configuration != null ? var.clusters_configuration["clusters"] : {}
-  subnet_id = length(regexall("^ocid1.*$", each.value.networking.endpoint_subnet_id)) > 0 ? each.value.networking.endpoint_subnet_id : var.network_dependency[each.value.networking.endpoint_subnet_id].id
+  subnet_id = length(regexall("^ocid1.*$", each.value.networking.endpoint_subnet_id)) > 0 ? each.value.networking.endpoint_subnet_id : var.network_dependency["subnets"][each.value.networking.endpoint_subnet_id].id
 }
 
 resource "oci_containerengine_cluster" "these" {
@@ -27,37 +27,37 @@ resource "oci_containerengine_cluster" "these" {
     ## Check 2: Kubernetes version validation.
     precondition {
       condition     = each.value.kubernetes_version != null ? contains(data.oci_containerengine_cluster_option.cluster_options[each.key].kubernetes_versions, each.value.kubernetes_version) : true
-      error_message = "VALIDATION FAILURE in kubernetes_version variable. Supported versions are: ${join(",", data.oci_containerengine_cluster_option.cluster_options[each.key].kubernetes_versions)}"
+      error_message = "VALIDATION FAILURE in cluster \"${each.key}\": Supported values for kubernetes_version are: ${join(",", data.oci_containerengine_cluster_option.cluster_options[each.key].kubernetes_versions)}"
     }
     ## Check 3: Network validation, only one cluster per vcn.
     precondition {
       condition     = length(local.found_vcn_duplicates) > 0 ? false : true
-      error_message = "VALIDATION FAILURE. Cannot specify the same VCN for more than 1 OKE Cluster. Duplicates found: ${local.found_vcn_duplicates}"
+      error_message = "VALIDATION FAILURE in cluster \"${each.key}\": Cannot specify the same VCN for more than 1 OKE Cluster. Duplicates found: ${local.found_vcn_duplicates}"
     }
     ## Check 4: CNI type validation.
     precondition {
       condition     = each.value.cni_type != null
-      error_message = " VALIDATION FAILURE in cni_type. Supported values are flannel or native."
+      error_message = " VALIDATION FAILURE in cluster \"${each.key}\": Supported values for cni_type are flannel or native."
     }
     ## Check 5: Network validation, private endpoint in private subnet.
     precondition {
       condition     = each.value.networking.public_endpoint == true ? data.oci_core_subnet.subnet[each.key].prohibit_internet_ingress == false ? true : false : true
-      error_message = "VALIDATION FAILURE in public_endpoint variable. Cannot specify public endpoint on a private subnet."
+      error_message = "VALIDATION FAILURE in cluster \"${each.key}\": Cannot specify public endpoint on a private subnet."
     }
   }
   compartment_id     = each.value.compartment_id != null ? (length(regexall("^ocid1.*$", each.value.compartment_id)) > 0 ? each.value.compartment_id : var.compartments_dependency[each.value.compartment_id].id) : (length(regexall("^ocid1.*$", var.clusters_configuration.default_compartment_id)) > 0 ? var.clusters_configuration.default_compartment_id : var.compartments_dependency[var.clusters_configuration.default_compartment_id].id)
   kubernetes_version = each.value.kubernetes_version != null ? each.value.kubernetes_version : reverse(data.oci_containerengine_cluster_option.cluster_options[each.key].kubernetes_versions)[0]
   name               = each.value.name
-  vcn_id             = length(regexall("^ocid1.*$", each.value.networking.vcn_id)) > 0 ? each.value.networking.vcn_id : var.network_dependency[each.value.networking.vcn_id].id
+  vcn_id             = length(regexall("^ocid1.*$", each.value.networking.vcn_id)) > 0 ? each.value.networking.vcn_id : var.network_dependency["vcns"][each.value.networking.vcn_id].id
   cluster_pod_network_options {
-    cni_type = lower(each.value.cni_type) == "flannel" ? "FLANNEL_OVERLAY" : "OCI_VCN_IP_NATIVE"
+    cni_type = lower(each.value.cni_type) == "native" ? "OCI_VCN_IP_NATIVE" : "FLANNEL_OVERLAY"
   }
   defined_tags  = each.value.defined_tags != null ? each.value.defined_tags : var.clusters_configuration.default_defined_tags
   freeform_tags = merge(local.cislz_module_tag, each.value.freeform_tags != null ? each.value.freeform_tags : var.clusters_configuration.default_freeform_tags)
   endpoint_config {
     is_public_ip_enabled = each.value.networking.public_endpoint != null ? each.value.networking.public_endpoint : false
-    nsg_ids              = each.value.networking.api_nsg_ids != null ? [for nsg in each.value.networking.api_nsg_ids : (length(regexall("^ocid1.*$", nsg))) > 0 ? nsg : var.network_dependency[nsg].id] : []
-    subnet_id            = length(regexall("^ocid1.*$", each.value.networking.endpoint_subnet_id)) > 0 ? each.value.networking.endpoint_subnet_id : var.network_dependency[each.value.networking.endpoint_subnet_id].id
+    nsg_ids              = each.value.networking.api_nsg_ids != null ? [for nsg in each.value.networking.api_nsg_ids : (length(regexall("^ocid1.*$", nsg))) > 0 ? nsg : var.network_dependency["network_security_groups"][nsg].id] : []
+    subnet_id            = length(regexall("^ocid1.*$", each.value.networking.endpoint_subnet_id)) > 0 ? each.value.networking.endpoint_subnet_id : var.network_dependency["subnets"][each.value.networking.endpoint_subnet_id].id
   }
   dynamic "image_policy_config" {
     for_each = each.value.encryption != null ? each.value.encryption.image_policy_enabled ? [1] : [] : []
@@ -89,7 +89,7 @@ resource "oci_containerengine_cluster" "these" {
       defined_tags  = each.value.options != null ? each.value.options.service_lb_config != null ? each.value.options.service_lb_config.defined_tags != null ? each.value.options.service_lb_config.defined_tags : var.clusters_configuration.default_defined_tags : var.clusters_configuration.default_defined_tags : var.clusters_configuration.default_defined_tags
       freeform_tags = merge(local.cislz_module_tag, each.value.options != null ? each.value.options.service_lb_config != null ? each.value.options.service_lb_config.freeform_tags != null ? each.value.options.service_lb_config.freeform_tags : var.clusters_configuration.default_freeform_tags : var.clusters_configuration.default_freeform_tags : var.clusters_configuration.default_freeform_tags)
     }
-    service_lb_subnet_ids = each.value.networking.services_subnet_id != null ? [for lb_sub in each.value.networking.services_subnet_id : (length(regexall("^ocid1.*$", lb_sub)) > 0 ? lb_sub : var.network_dependency[lb_sub].id)] : []
+    service_lb_subnet_ids = each.value.networking.services_subnet_id != null ? [for lb_sub in each.value.networking.services_subnet_id : (length(regexall("^ocid1.*$", lb_sub)) > 0 ? lb_sub : var.network_dependency["subnets"][lb_sub].id)] : []
   }
   type = each.value.is_enhanced != null ? each.value.is_enhanced == true ? "ENHANCED_CLUSTER" : "BASIC_CLUSTER" : "BASIC_CLUSTER"
 }
