@@ -36,7 +36,7 @@ resource "oci_containerengine_cluster" "these" {
     }
     ## Check 4: CNI type validation.
     precondition {
-      condition     = each.value.cni_type != null
+      condition     = lower(each.value.cni_type) == "flannel" || lower(each.value.cni_type) == "native"
       error_message = " VALIDATION FAILURE in cluster \"${each.key}\": Supported values for cni_type are flannel or native."
     }
     ## Check 5: Network validation, private endpoint in private subnet.
@@ -71,11 +71,11 @@ resource "oci_containerengine_cluster" "these" {
   kms_key_id = each.value.encryption != null ? (each.value.encryption.kube_secret_kms_key_id != null ? (length(regexall("^ocid1.*$", each.value.encryption.kube_secret_kms_key_id)) > 0 ? each.value.encryption.kube_secret_kms_key_id : var.kms_dependency[each.value.encryption.kube_secret_kms_key_id].id) : (var.clusters_configuration.default_kube_secret_kms_key_id != null ? (length(regexall("^ocid1.*$", var.clusters_configuration.default_kube_secret_kms_key_id)) > 0 ? var.clusters_configuration.default_kube_secret_kms_key_id : var.kms_dependency[var.clusters_configuration.default_kube_secret_kms_key_id].id) : null)) : (var.clusters_configuration.default_kube_secret_kms_key_id != null ? (length(regexall("^ocid1.*$", var.clusters_configuration.default_kube_secret_kms_key_id)) > 0 ? var.clusters_configuration.default_kube_secret_kms_key_id : var.kms_dependency[var.clusters_configuration.default_kube_secret_kms_key_id].id) : null)
   options {
     add_ons {
-      is_kubernetes_dashboard_enabled = each.value.options != null ? each.value.options.add_ons != null ? each.value.options.add_ons.dashboard_enabled != null ? each.value.options.add_ons.dashboard_enabled : false : false : false
-      is_tiller_enabled               = each.value.options != null ? each.value.options.add_ons != null ? each.value.options.add_ons.tiller_enabled != null ? each.value.options.add_ons.tiller_enabled : false : false : false
+      is_kubernetes_dashboard_enabled = each.value.options != null ? each.value.options.add_ons != null ? each.value.options.add_ons.dashboard_enabled : false : false
+      is_tiller_enabled               = each.value.options != null ? each.value.options.add_ons != null ? each.value.options.add_ons.tiller_enabled : false : false
     }
     admission_controller_options {
-      is_pod_security_policy_enabled = each.value.options != null ? each.value.options.admission_controller != null ? each.value.options.admission_controller.pod_policy_enabled != null ? each.value.options.admission_controller.pod_policy_enabled : false : false : false
+      is_pod_security_policy_enabled = each.value.options != null ? each.value.options.admission_controller != null ? each.value.options.admission_controller.pod_policy_enabled : false : false
     }
     kubernetes_network_config {
       pods_cidr     = each.value.options != null ? each.value.options.kubernetes_network_config != null ? each.value.options.kubernetes_network_config.pods_cidr != null ? each.value.options.kubernetes_network_config.pods_cidr : null : null : null
@@ -91,5 +91,5 @@ resource "oci_containerengine_cluster" "these" {
     }
     service_lb_subnet_ids = each.value.networking.services_subnet_id != null ? [for lb_sub in each.value.networking.services_subnet_id : (length(regexall("^ocid1.*$", lb_sub)) > 0 ? lb_sub : var.network_dependency["subnets"][lb_sub].id)] : []
   }
-  type = each.value.is_enhanced != null ? each.value.is_enhanced == true ? "ENHANCED_CLUSTER" : "BASIC_CLUSTER" : "BASIC_CLUSTER"
-}
+  type = each.value.is_enhanced == true ? "ENHANCED_CLUSTER" : "BASIC_CLUSTER"
+}  
