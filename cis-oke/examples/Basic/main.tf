@@ -6,3 +6,12 @@ module "oke" {
   clusters_configuration = var.clusters_configuration
   workers_configuration  = var.workers_configuration
 }
+
+module "operator_instance" {
+  source = "../../../cis-compute-storage/"
+  providers = {
+    oci = oci
+    oci.block_volumes_replication_region = oci
+  }
+  instances_configuration = var.instances_configuration
+}

@@ -56,6 +56,52 @@ workers_configuration = {
   }
 }
 
+instances_configuration = {
+  default_compartment_id = "<REPLACE-BY-COMPARTMENT-OCID>"
+  default_subnet_id = "<REPLACE-BY-OKE-OPERATOR-SUBNET-OCID>"
+  default_ssh_public_key_path = "~/.ssh/id_rsa.pub"
+  instances = {
+    INSTANCE-1 = {
+      shape = "VM.Standard.E4.Flex"
+      name  = "OKE operator instance"
+      placement = {
+        availability_domain = 1
+        fault_domain = 1
+      }
+      boot_volume = {
+        size = 120
+        preserve_on_instance_deletion = false
+      }
+      networking = {
+        hostname  = "oke-operator-instance"
+        network_security_groups = ["<REPLACE-BY-OKE-OPERATOR-NSG-OCID>"]
+      }
+      image = {
+        id = "ocid1.image.oc1.phx.aaaaaaaaygocsncspnm46b7c5pna7hwhrw5cvx5uydtx6mq2gaad37m6hi7a" # "Oracle-Linux-Cloud-Developer-8.7-2023.04.28-1" Platform image
+      }
+      cloud_agent = {
+        #disable_monitoring = true
+        #disable_management = true
+        plugins = [
+          {name = "Vulnerability Scanning", enabled = true},
+          {name = "Oracle Java Management Service", enabled = false},
+          {name = "Oracle Autonomous Linux", enabled = false},
+          {name = "Management Agent", enabled = true},
+          {name = "OS Management Service Agent", enabled = true}, # management plugin, impacted by disable_management attribute if not set.
+          {name = "Custom Logs Monitoring", enabled = true}, # monitoring plugin, impacted by disable_monitoring attribute if not set.
+          {name = "Compute RDMA GPU Monitoring", enabled = false},
+          {name = "Compute Instance Run Command", enabled = true}, # management plugin, impacted by disable_management attribute if not set.
+          {name = "Compute Instance Monitoring", enabled = true}, # monitoring plugin, impacted by disable_monitoring attribute if not set.
+          {name = "Compute HPC RDMA Auto-Configuration", enabled = false},
+          {name = "Compute HPC RDMA Authentication", enabled = false},
+          {name = "Block Volume Management", enabled = false},
+          {name = "Bastion", enabled = true}
+        ]
+      }
+    }
+  }
+}
+
 
 
 
