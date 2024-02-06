@@ -23,7 +23,6 @@ region               = "<your tenancy region>"     # The region name.
 #---------------------------------------
 
 clusters_configuration = {
-  default_cis_level              = "1"
   default_compartment_id         = "<REPLACE-BY-COMPARTMENT-OCID>"
   default_img_kms_key_id         = "<REPLACE-BY-IMG-KMS-KEY-OCID>"
   default_kube_secret_kms_key_id = "<REPLACE-BY-KUBE-SECRET-KMS-KEY-OCID>"
@@ -34,6 +33,7 @@ clusters_configuration = {
     #basic native cluster
     OKE1 = {
       name     = "<REPLACE-BY-CLUSTER-NAME>"
+      is_enhanced        = true
       cni_type = "native"
       networking = {
         vcn_id             = "<REPLACE-BY-VCN-OCID>"
@@ -90,16 +90,14 @@ clusters_configuration = {
 }
 
 workers_configuration = {
-  default_cis_level           = "1"
   default_compartment_id      = null
   default_defined_tags        = {}
   default_freeform_tags       = {}
-  default_ssh_public_key_path = "~/.ssh/id_rsa.pub"
-  default_kms_key_id          = "<REPLACE-BY-IMG-KMS-KEY-OCID>"
-  node_pools = {
-    NODEPOOL1 = {
+  virtual_node_pools = {
+    VIRTUALPOOL1 = {
       cluster_id = "OKE1"
       name       = "<REPLACE-BY-NODE_POOL-NAME>"
+      pod_shape = "Pod.Standard.E4.Flex"
       size       = 3
       networking = {
         workers_nsg_ids   = ["<REPLACE-BY-NODES-NSG-OCID>"]
@@ -107,49 +105,25 @@ workers_configuration = {
         pods_subnet_id    = "<REPLACE-BY-PODS-SUBNET-OCID>"
         pods_nsg_ids      = ["<REPLACE-BY-PODS-NSG-OCID>"]
       }
-      node_config_details = {
-        image      = "REPLACE-BY-IMAGE-OCID"
-        node_shape = "VM.Standard.E4.Flex"
-      }
     }
-    # NODEPOOL2 = {
-    #   cis_level           = "1"
-    #   kubernets_version   = null
+    # VIRTUALPOOL2 = {
     #   cluster_id          = "OKE1"
     #   compartment_id      = "<REPLACE-BY-COMPARTMENT-OCID>"
     #   name                = "<REPLACE-BY-NODE_POOL-NAME>"
     #   defined_tags        = null
     #   freeform_tags       = null
+    #   virtual_nodes_defined_tags = null
+    #   virtual_nodes_freeform_tags = null
     #   initial_node_labels = null
+    #   pod_shape = null
     #   size                = 3
     #   networking = {
     #     workers_nsg_ids   = ["<REPLACE-BY-NODES-NSG-OCID>"]
     #     workers_subnet_id = "<REPLACE-BY-WORKER-SUBNET-OCID>"
     #     pods_subnet_id    = "<REPLACE-BY-PODS-SUBNET-OCID>"
     #     pods_nsg_ids      = ["<REPLACE-BY-PODS-NSG-OCID>"]
-    #     max_pods_per_node = null
     #   }
-    #   node_config_details = {
-    #     ssh_public_key_path     = "~/.ssh/id_rsa.pub"
-    #     capacity_reservation_id = null
-    #     defined_tags            = null
-    #     freeform_tags           = null
-    #     image                   = "8.8"
-    #     node_shape              = "VM.Standard.E4.Flex"
-    #     flex_shape_settings = {
-    #       memory = null
-    #       ocpus  = null
-    #     }
-    #     boot_volume = {
-    #       size                 = null
-    #       preserve_boot_volume = false
-    #     }
-    #     encryption = {
-    #       enable_encrypt_in_transit = false
-    #       kms_key_id                = null
-    #     }
     #     placement = [
-
     #       { availability_domain = 1
     #         fault_domain        = 1
     #       },
@@ -160,16 +134,13 @@ workers_configuration = {
     #         fault_domain        = 2
     #       }
     #     ]
-    #     node_eviction = {
-    #       grace_duration = null
-    #       force_delete   = false
-    #     }
-    #     node_cycling = {
-    #       enable_cycling  = false
-    #       max_surge       = null
-    #       max_unavailable = null
-    #     }
-    #   }
+    #     taints = [
+    # {
+    #   effect = "NoSchedule"
+    #   key    = "env"
+    #   value  = "prod"
+    # }
+    #]
     # }
   }
 }

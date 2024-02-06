@@ -2,7 +2,7 @@
 
 ![Landing Zone logo](../landing_zone_300.png)
 
-This module manages Kubernetes Clusters and Node Pools in Oracle Cloud Infrastructure (OCI). These resources and their associated resources can be deployed together in the same configuration or separately. The module enforces Center for Internet Security (CIS) Benchmark recommendations for all supported resource types and provides features for strong cyber resilience posture. Additionally, the module supports bringing in external dependencies that managed resources depend on, including compartments, subnets, network security groups, encryption keys, and others. 
+This module manages Kubernetes Clusters, Node Pools and Virtual Node Pools in Oracle Cloud Infrastructure (OCI). These resources and their associated resources can be deployed together in the same configuration or separately. The module enforces Center for Internet Security (CIS) Benchmark recommendations for all supported resource types and provides features for strong cyber resilience posture. Additionally, the module supports bringing in external dependencies that managed resources depend on, including compartments, subnets, network security groups, encryption keys, and others. 
 
 Check [module specification](./SPEC.md) for a full description of module requirements, supported variables, managed resources and outputs.
 
@@ -13,6 +13,7 @@ Check the [examples](./examples/) folder for actual module usage.
 - [Module Functioning](#functioning)
   - [OKE](#oke)
   - [Node Pools](#node-pools)
+  - [Virtual Node Pools](#virtual-node-pools)
   - [External Dependencies](#ext-dep) 
 - [Related Documentation](#related)
 - [Known Issues](#issues)
@@ -61,7 +62,7 @@ This module relies on [Terraform Optional Object Type Attributes feature](https:
 
 The module defines two top level attributes used to manage kubernetes clusters and node pools: 
 - **clusters_configuration** &ndash; for managing Kubernetes Clusters.
-- **workers_configuration** &ndash; for managing Node pools.
+- **workers_configuration** &ndash; for managing Node Pools and Virtual Node Pools.
 
 ### <a name="oke">OKE</a>
 
@@ -111,22 +112,20 @@ The clusters themselves are defined within the **clusters** attribute, In Terraf
   - **kube_secret_kms_key_id** &ndash; (Optional) the KMS key to assign as the master encryption key for kube secrets. default_kube_secret_kms_key_id is used if this is not defined. This attribute is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *kms_dependency* variable. See [External Dependencies](#ext-dep) for details.
 
 
-
-
-
-### <a name="node-pools">Node Pools</a>
-
-Node Pools are managed using the **workers_configuration** object. It contains a set of attributes starting with the prefix **default_** and an attribute named **node_pools** .The **default_** attribute values are applied to all node pools, unless overriden at the storage unit level.
+### <a name="Workers">Workers</a>
+Workers are managed using the **workers_configuration** object.  It contains a set of attributes starting with the prefix **default_** and two attributes named **node_pools** and **virtual_node_pools**. The **default_** attribute values are applied to all node pools and some of them to all virtual node pools.
 The defined **default_** attributes are the following:
 
-- **default_compartment_id** &ndash; (Optional) The default compartment for all node pools. It can be overriden by *compartment_id* attribute in each node pool. This attribute is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *compartments_dependency* variable. See [External Dependencies](#ext-dep) for details.
-- **default_kms_key_id** &ndash; (Optional) The default encryption key for nodes. It can be overriden by *kms_key_id* attribute in each unit. This attribute is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *kms_dependency* variable. See [External Dependencies](#ext-dep) for details.
+- **default_compartment_id** &ndash; (Optional) The default compartment for all node pools and virtual node pools. It can be overriden by *compartment_id* attribute in each node pool or virtual pool. This attribute is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *compartments_dependency* variable. See [External Dependencies](#ext-dep) for details.
+- **default_kms_key_id** &ndash; (Optional) The default encryption key for nodes in node pools. It can be overriden by *kms_key_id* attribute in each unit. This attribute is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *kms_dependency* variable. See [External Dependencies](#ext-dep) for details.
 - **default_cis_level** &ndash; (Optional) The default CIS OCI Benchmark profile level for all node pools. Level "2" enforces usage of customer managed keys for encryption. Default is "1". It can be overriden by *cis_level* attribute in each unit.
-- **default_defined_tags** &ndash; (Optional) The default defined tags for all node pools. It can be overriden by *defined_tags* attribute in each unit.
-- **default_freeform_tags** &ndash; (Optional) the default freeform tags for all node pools. It can be overriden by *freeform_tags* attribute in each unit.
+- **default_defined_tags** &ndash; (Optional) The default defined tags for all node pools and virtual node pools. It can be overriden by *defined_tags* attribute in each unit.
+- **default_freeform_tags** &ndash; (Optional) the default freeform tags for all node pools and virtual node pools. It can be overriden by *freeform_tags* attribute in each unit.
 - **default_ssh_public_key_path** &ndash; (Optional) Default SSH public key path used to access all nodes. It can be overriden by the *ssh_public_key* attribute in each node pool.
+- **default_initial_node_labels** &ndash; (Optional) The default initial node labels for all node pools and virtual node pools, a list of key/value pairs to add to nodes after they join the Kubernetes cluster.
 
-Node Pools are defined using the  **node_pools** attribute. In Terraform terms, it is a map of objects, where each object is referred by an identifying key. The following attributes are supported:
+#### <a name="node-pools">Node Pools</a>
+Node Pools are defined using the optional **node_pools** attribute. In Terraform terms, it is a map of objects, where each object is referred by an identifying key. The following attributes are supported:
 - **cis_level** &ndash; (Optional) The CIS OCI Benchmark profile level to apply. The *default_cis_level* is used if undefined.
 - **kubernetes_version** &ndash; (Optional) the kubernetes version for the node pool. it cannot be 2 versions older behind of the cluster version or newer. If not specified, the version of the cluster will be selected.
 - **cluster_id** &ndash; the cluster where the node pool will be created. It can be assigned either a literal OCID or a reference (a key) to a cluster from the **clusters_configuration**.
@@ -174,6 +173,32 @@ Node Pools are defined using the  **node_pools** attribute. In Terraform terms, 
     - **enable_cycling** &ndash; (Optional) whether to enable node cycling. Default is false.
     - **max_surge** &ndash; (Optional) maximum additional new compute instances that would be temporarily created and added to nodepool during the cycling nodepool process. OKE supports both integer and percentage input. Defaults to 1, Ranges from 0 to Nodepool size or 0% to 100%.
     - **max_unavailable** &ndash; (Optional) maximum active nodes that would be terminated from nodepool during the cycling nodepool process. OKE supports both integer and percentage input. Defaults to 0, Ranges from 0 to Nodepool size or 0% to 100%.
+
+
+#### <a name="virtual-node-pools">Virtual Node Pools</a>
+Virtual Node Pools are defined using the optional **virtual_node_pools** attribute. In Terraform terms, it is a map of objects, where each object is referred by an identifying key. The following attributes are supported:
+- **cluster_id** &ndash; the cluster where the virtual node pool will be created. It can be assigned either a literal OCID or a reference (a key) to a cluster from the **clusters_configuration**.
+- **compartment_id** &ndash; (Optional) the compartment where the virtual node pool is created. If the Cluster and the Virtual Node Pools are created with the terraform code, both the attributes **compartment_id** and **default_compartment_id** are not required as the compartment for the Virtual Node Pool will be taken from the Cluster assigned to the Virtual Node Pool in the **cluster_id** attribute. It can be assigned either a literal OCID or a reference (a key) to an OCID in *compartments_dependency* variable. See [External Dependencies](#ext-dep) for details.
+- **name** &ndash; the virtual node pool display name.
+- **defined_tags** &ndash; (Optional) virtual node pool defined_tags. default_defined_tags is used if this is not defined.
+- **freeform_tags** &ndash; (Optional) virtual node pool freeform_tags. default_freeform_tags is used if this is not defined.
+- **virtual_nodes_defined_tags** &ndash; (Optional) defined_tags that apply to virtual nodes. default_defined_tags is used if this is not defined.
+- **virtual_nodes_freeform_tags** &ndash; (Optional) freeform_tags that apply to virtual nodes. default_freeform_tags is used if this is not defined.
+- **initial_node_labels** &ndash; (Optional) a list of key/value pairs to add to virtual nodes after they join the Kubernetes cluster.
+- **size** &ndash; (Optional) the number of nodes that should be in the virtual node pool.
+- **pod_shape** &ndash; the shape to be assigned for the pods. At the moment this terraform code was created, the shapes available are: Pod.Standard.A1.Flex, Pod.Standard.E3.Flex, Pod.Standard.E4.Flex. 
+- **networking** &ndash; virtual node pool networking settings.
+  - **workers_nsg_ids** &ndash; (Optional) the nsgs to be used by the virtual nodes. It can be assigned either a literal OCID or a reference (a key) to an OCID in *network_dependency* variable. See [External Dependencies](#ext-dep) for details.
+  - **workers_subnet_id** &ndash; the subnet for the virtual nodes. It can be assigned either a literal OCID or a reference (a key) to an OCID in *network_dependency* variable. See [External Dependencies](#ext-dep) for details.
+  - **pods_subnet_id** &ndash; (Optional) the subnet for the pods. It can be assigned either a literal OCID or a reference (a key) to an OCID in *network_dependency* variable. See [External Dependencies](#ext-dep) for details.
+  - **pods_nsg_ids** &ndash; (Optional) the nsgs to be used by the pods. It can be assigned either a literal OCID or a reference (a key) to an OCID in *network_dependency* variable. See [External Dependencies](#ext-dep) for details.
+  - **placement** &ndash; (Optional) placement settings.
+    - **availability_domain** &ndash; (Optional) the virtual nodes availability domain. Default is 1.
+    - **fault_domain** &ndash; (Optional) the virtual nodes fault domain. Default is 1.
+  - **taints** &ndash; (Optional) taints will be applied to the Virtual Nodes for Kubernetes scheduling.
+    - **effect** &ndash; (Optional) the effect of the pair.
+    - **key** &ndash; (Optional) the key of the pair.
+    - **value** &ndash; (Optional) the value of the pair.
 
 
 ### <a name="ext-dep">External Dependencies</a>
@@ -243,3 +268,10 @@ Example:
 ```
 
 2. When the **image** attribute is not specified, the most recent image available for the Node Pool using it''s kubernetes version will be selected, which means that every at every rerun, it will look for the most recent image and select it, hence modifying the  Node Pool, but the new image will be available only for the newly created/recreated nodes in the node pool.
+
+### Virtual Pool
+Some of the features avaialble for Node Pools are not supported in Virtual Node Pools. For detailed list check the [documentation](https://docs.public.oneportal.content.oci.oraclecloud.com/en-us/iaas/Content/ContEng/Tasks/contengcomparingvirtualwithmanagednodes_topic.htm).
+Some examples:
+1. Flannel and other third party CNI plugins are not supported. Virtual nodes only support the OCI VCN-Native Pod Networking CNI plugin.
+2. Persistent volume claims (PVCs) are not supported.
+4. Network providers that support NetworkPolicy resources alongside the CNI plugin used in the cluster (such as Calico and Cilium) are not supported.

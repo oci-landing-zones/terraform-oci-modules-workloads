@@ -1,5 +1,12 @@
-# Copyright (c) 2023, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2023 Oracle and/or its affiliates.
 # Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
+
+variable "tenancy_ocid" {}
+variable "region" { description = "Your tenancy region" }
+variable "user_ocid" { default = "" }
+variable "fingerprint" { default = "" }
+variable "private_key_path" { default = "" }
+variable "private_key_password" { default = "" }
 
 variable "clusters_configuration" {
   description = "Cluster configuration attributes."
@@ -7,26 +14,26 @@ variable "clusters_configuration" {
     default_compartment_id         = optional(string),      # the default compartment where all resources are defined. It's overriden by the compartment_ocid attribute within each object.
     default_img_kms_key_id         = optional(string)       # the default KMS key to assign as the master encryption key for images. It's overriden by the img_kms_key_id attribute within each object.
     default_kube_secret_kms_key_id = optional(string)       # the default KMS key to assign as the master encryption key for kubernetes secrets. It's overriden by the kube_secret_kms_key_id attribute within each object.
-    default_cis_level              = optional(string, "1")  # The CIS OCI Benchmark profile level. Level "1" is be practical and prudent. Level "2" is intended for environments where security is more critical than manageability and usability. Default is "1".
+    default_cis_level              = optional(string)       # The CIS OCI Benchmark profile level. Level "1" is be practical and prudent. Level "2" is intended for environments where security is more critical than manageability and usability. Default is "1".
     default_defined_tags           = optional(map(string)), # the default defined tags. It's overriden by the defined_tags attribute within each object.
     default_freeform_tags          = optional(map(string)), # the default freeform tags. It's overriden by the freeform_tags attribute within each object.
 
     clusters = map(object({ # the clusters to manage in this configuration.
-      cis_level          = optional(string, "1")
-      compartment_id     = optional(string)            # the compartment where the cluster is created. default_compartment_ocid is used if this is not defined.
-      kubernetes_version = optional(string)            # the kubernetes version. If not specified the latest version will be selected.
-      name               = string                      # the cluster display name.
-      is_enhanced        = optional(bool, false)       # if the cluster is enhanced. It is designed to work only on Native CNI. Default is false.
-      cni_type           = optional(string, "flannel") # the CNI type of the cluster. Can be either "flannel" or "native". Default is "flannel".
-      defined_tags       = optional(map(string))       # clusters defined_tags. default_defined_tags is used if this is not defined.
-      freeform_tags      = optional(map(string))       # clusters freeform_tags. default_freeform_tags is used if this is not defined.
-      options = optional(object({                      # optional attributes for the cluster.
-        add_ons = optional(object({                    # configurable cluster addons.
-          dashboard_enabled = optional(bool, false)    # if the dashboard is enabled. Default to false.
-          tiller_enabled    = optional(bool, false)    # if the tiller is enabled. Default to false.
+      cis_level          = optional(string)
+      compartment_id     = optional(string)      # the compartment where the cluster is created. default_compartment_ocid is used if this is not defined.
+      kubernetes_version = optional(string)      # the kubernetes version. If not specified the latest version will be selected.
+      name               = string                # the cluster display name.
+      is_enhanced        = optional(bool)        # if the cluster is enhanced. It is designed to work only on Native CNI. If not specified, basic will be selected.
+      cni_type           = optional(string)      # the CNI type of the cluster. Can be either flannel or native. If not specified, native will be selected.
+      defined_tags       = optional(map(string)) # clusters defined_tags. default_defined_tags is used if this is not defined.
+      freeform_tags      = optional(map(string)) # clusters freeform_tags. default_freeform_tags is used if this is not defined.
+      options = optional(object({                # optional attributes for the cluster.
+        add_ons = optional(object({              # configurable cluster addons.
+          dashboard_enabled = optional(bool)     # if the dashboard is enabled. Default to false.
+          tiller_enabled    = optional(bool)     # if the tiller is enabled. Default to false.
         }))
-        admission_controller = optional(object({     # configurable cluster admission controllers. 
-          pod_policy_enabled = optional(bool, false) # if the pod policy is enabled. Default to false.
+        admission_controller = optional(object({ # configurable cluster admission controllers. 
+          pod_policy_enabled = optional(bool)    # if the pod policy is enabled. Default to false.
         }))
         kubernetes_network_config = optional(object({ # pods and services network configuration for kubernetes.
           pods_cidr     = optional(string)            # the CIDR block for Kubernetes pods. Optional, defaults to 10.244.0.0/16.
@@ -48,17 +55,22 @@ variable "clusters_configuration" {
         api_nsg_ids        = optional(list(string)) # the nsgs used by the api endpoint.
         endpoint_subnet_id = string                 # the subnet for the api endpoint.
         services_subnet_id = optional(list(string)) # the subnets for the services(Load Balancers).
+
       })
 
       encryption = optional(object({              # encryption settings
         image_policy_enabled   = optional(bool)   # whether the image verification policy is enabled. default to false.
         img_kms_key_id         = optional(string) # the KMS key to assign as the master encryption key for images. default_img_kms_key_id is used if this is not defined.
         kube_secret_kms_key_id = optional(string) # # the KMS key to assign as the master encryption key for kube secrets. default_kube_secret_kms_key_id is used if this is not defined.
+
       }))
+
     }))
   })
   default = null
+
 }
+
 
 variable "workers_configuration" {
   description = "Worker Nodes configuration attributes"
@@ -123,7 +135,7 @@ variable "workers_configuration" {
           max_unavailable = optional(string) # maximum active nodes that would be terminated from nodepool during the cycling nodepool process. OKE supports both integer and percentage input. Defaults to 0, Ranges from 0 to Nodepool size or 0% to 100%.
         }))
       })
-    })), {})
+    })))
 
     virtual_node_pools = optional(map(object({
       cluster_id                  = string                # the cluster where the virtual node pool will be created.
@@ -154,39 +166,7 @@ variable "workers_configuration" {
         key    = optional(string)     # the key of the pair.
         value  = optional(string)     # the value of the pair.
       })))
-    })), {})
+    })))
   })
   default = null
 }
-
-variable "enable_output" {
-  description = "Whether Terraform should enable the module output."
-  type        = bool
-  default     = true
-}
-
-variable "module_name" {
-  description = "The module name."
-  type        = string
-  default     = "cis-oke"
-}
-
-variable "compartments_dependency" {
-  description = "A map of objects containing the externally managed compartments this module may depend on. All map objects must have the same type and must contain at least an 'id' attribute (representing the compartment OCID) of string type."
-  type        = map(any)
-  default     = null
-}
-
-variable "network_dependency" {
-  description = "A map of objects containing the externally managed network resources this module may depend on. All map objects must have the same type and must contain at least an 'id' attribute (representing the network resource OCID) of string type."
-  type        = map(any)
-  default     = null
-}
-
-variable "kms_dependency" {
-  description = "A map of objects containing the externally managed encryption keys this module may depend on. All map objects must have the same type and must contain at least an 'id' attribute (representing the key OCID) of string type."
-  type        = map(any)
-  default     = null
-}
-
-

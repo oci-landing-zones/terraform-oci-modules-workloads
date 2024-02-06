@@ -10,3 +10,8 @@ output "node_pools" {
   description = "The OKE Node Pools"
   value       = var.enable_output ? oci_containerengine_node_pool.these : null
 }
+
+output "virtual_node_pools" {
+  description = "The OKE Virtual Node Pools"
+  value       = var.enable_output ? oci_containerengine_virtual_node_pool.these : null
+}

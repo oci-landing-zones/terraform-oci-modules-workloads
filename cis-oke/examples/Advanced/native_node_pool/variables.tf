@@ -75,24 +75,25 @@ variable "clusters_configuration" {
 variable "workers_configuration" {
   description = "Worker Nodes configuration attributes"
   type = object({
-    #defaults
-    default_cis_level           = optional(string)       # the CIS OCI Benchmark profile level. Level "1" is be practical and prudent. Level "2" is intended for environments where security is more critical than manageability and usability. Default is "1".
+    default_cis_level           = optional(string, "1")  # the CIS OCI Benchmark profile level. Level "1" is be practical and prudent. Level "2" is intended for environments where security is more critical than manageability and usability. Default is "1".
     default_compartment_id      = optional(string)       # the default compartment where all resources are defined. It's overriden by the compartment_ocid attribute within each object.
     default_defined_tags        = optional(map(string)), # the default defined tags. It's overriden by the defined_tags attribute within each object.
     default_freeform_tags       = optional(map(string)), # the default freeform tags. It's overriden by the freeform_tags attribute within each object.
     default_ssh_public_key_path = optional(string)       # the default SSH public key path used to access the workers.
     default_kms_key_id          = optional(string)       # the default KMS key to assign as the master encryption key. It's overriden by the kms_key_id attribute within each object.
-    node_pools = map(object({                            # the node pools to manage in this configuration.
-      cis_level          = optional(string)
-      kubernetes_version = optional(string) # the kubernetes version for the node pool. it cannot be 2 versions older behind of the cluster version or newer. If not specified, the version of the cluster will be selected.
-      cluster_id         = string           # the cluster where the node pool will be created.
-      compartment_id     = optional(string) # the compartment where the node pool is created. default_compartment_ocid is used if this is not defined.
-      name               = string           # the node pool display name.
+    default_initial_node_labels = optional(map(string))  # the default initial node labels, a list of key/value pairs to add to nodes after they join the Kubernetes cluster.
 
-      defined_tags        = optional(map(string))  # node pool defined_tags. default_defined_tags is used if this is not defined.
-      freeform_tags       = optional(map(string))  # node pool freeform_tags. default_freeform_tags is used if this is not defined.
-      initial_node_labels = optional(map(string))  # a list of key/value pairs to add to nodes after they join the Kubernetes cluster.
-      size                = optional(number)       # the number of nodes that should be in the node pool.
+    node_pools = optional(map(object({ # the node pools to manage in this configuration.
+      cis_level           = optional(string, "1")
+      kubernetes_version  = optional(string)      # the kubernetes version for the node pool. it cannot be 2 versions older behind of the cluster version or newer. If not specified, the version of the cluster will be selected.
+      cluster_id          = string                # the cluster where the node pool will be created.
+      compartment_id      = optional(string)      # the compartment where the node pool is created. default_compartment_ocid is used if this is not defined.
+      name                = string                # the node pool display name.
+      defined_tags        = optional(map(string)) # node pool defined_tags. default_defined_tags is used if this is not defined.
+      freeform_tags       = optional(map(string)) # node pool freeform_tags. default_freeform_tags is used if this is not defined.
+      initial_node_labels = optional(map(string)) # a list of key/value pairs to add to nodes after they join the Kubernetes cluster.
+      size                = optional(number)      # the number of nodes that should be in the node pool.
+
       networking = object({                        # node pool networking settings.
         workers_nsg_ids   = optional(list(string)) # the nsgs to be used by the nodes.
         workers_subnet_id = string                 # the subnet for the nodes.
@@ -100,6 +101,7 @@ variable "workers_configuration" {
         pods_nsg_ids      = optional(list(string)) # the nsgs to be used by the pods. only applied to native CNI.
         max_pods_per_node = optional(number)       # the maximum number of pods per node. only applied to native CNI.
       })
+
       node_config_details = object({                    # the configuration of nodes in the node pool.
         ssh_public_key_path     = optional(string)      # the SSH public key path used to access the workers. if not specified default_ssh_public_key_path will be used.
         defined_tags            = optional(map(string)) # nodes defined_tags. default_defined_tags is used if this is not defined.
@@ -108,12 +110,12 @@ variable "workers_configuration" {
         node_shape              = string                # the shape of the nodes.
         capacity_reservation_id = optional(string)      # the OCID of the compute capacity reservation in which to place the compute instance.
         flex_shape_settings = optional(object({         # flex shape settings
-          memory = optional(number)                     # the nodes memory for Flex shapes. Default is 16GB.
-          ocpus  = optional(number)                     # the nodes ocpus number for Flex shapes. Default is 1.
+          memory = optional(number, 16)                 # the nodes memory for Flex shapes. Default is 16GB.
+          ocpus  = optional(number, 1)                  # the nodes ocpus number for Flex shapes. Default is 1.
         }))
-        boot_volume = optional(object({           # the boot volume settings.
-          size                 = optional(number) # the boot volume size.Default is 60.
-          preserve_boot_volume = optional(bool)   # whether to preserve the boot volume after the nodes are terminated.
+        boot_volume = optional(object({                # the boot volume settings.
+          size                 = optional(number, 60)  # the boot volume size.Default is 60.
+          preserve_boot_volume = optional(bool, false) # whether to preserve the boot volume after the nodes are terminated.
         }))
         encryption = optional(object({                 # the encryption settings.
           enable_encrypt_in_transit = optional(bool)   # whether to enable the encrypt in transit. Default is false.
@@ -132,10 +134,39 @@ variable "workers_configuration" {
           max_surge       = optional(string) # maximum additional new compute instances that would be temporarily created and added to nodepool during the cycling nodepool process. OKE supports both integer and percentage input. Defaults to 1, Ranges from 0 to Nodepool size or 0% to 100%.
           max_unavailable = optional(string) # maximum active nodes that would be terminated from nodepool during the cycling nodepool process. OKE supports both integer and percentage input. Defaults to 0, Ranges from 0 to Nodepool size or 0% to 100%.
         }))
+      })
+    })))
 
+    virtual_node_pools = optional(map(object({
+      cluster_id                  = string                # the cluster where the virtual node pool will be created.
+      compartment_id              = optional(string)      # the compartment where the virtual node pool is created. default_compartment_ocid is used if this is not defined.
+      name                        = string                # the virtual node pool display name.
+      defined_tags                = optional(map(string)) # virtual node pool defined_tags. default_defined_tags is used if this is not defined.
+      freeform_tags               = optional(map(string)) # virtual node pool freeform_tags. default_freeform_tags is used if this is not defined.
+      virtual_nodes_defined_tags  = optional(map(string)) # defined_tags that apply to virtual nodes. default_defined_tags is used if this is not defined.
+      virtual_nodes_freeform_tags = optional(map(string)) # freeform_tags that apply to virtual nodes. default_freeform_tags is used if this is not defined.
+      initial_node_labels         = optional(map(string)) # a list of key/value pairs to add to virtual nodes after they join the Kubernetes cluster.
+      size                        = optional(number)      # the number of virtual nodes that should be in the virtual node pool.
+      pod_shape                   = string                # the shape assigned to pods. It can be one of Pod.Standard.A1.Flex, Pod.Standard.E3.Flex, Pod.Standard.E4.Flex.
+
+      networking = object({                        # virtual node pool networking settings.
+        workers_nsg_ids   = optional(list(string)) # the nsgs to be used by the virtual nodes.
+        workers_subnet_id = string                 # the subnet for the virtual nodes.
+        pods_subnet_id    = string                 # the subnet for the pods.
+        pods_nsg_ids      = optional(list(string)) # the nsgs to be used by the pods.
       })
 
-    }))
+      placement = optional(list(object({       # placement settings.
+        availability_domain = optional(number) # the virtual nodes availability domain. Default is 1.
+        fault_domain        = optional(number) # the virtual nodes fault domain. Default is 1.
+      })))
+
+      taints = optional(list(object({ # the taints will be applied to the Virtual Nodes for Kubernetes scheduling.
+        effect = optional(string)     # the effect of the pair.
+        key    = optional(string)     # the key of the pair.
+        value  = optional(string)     # the value of the pair.
+      })))
+    })))
   })
   default = null
 }
