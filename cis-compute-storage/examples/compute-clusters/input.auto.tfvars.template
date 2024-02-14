@@ -1,0 +1,62 @@
+# Copyright (c) 2023 Oracle and/or its affiliates.
+# Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
+
+#---------------------------------------
+# Tenancy Connectivity Variables
+#---------------------------------------
+
+# cislzteam
+tenancy_ocid         = "ocid1.tenancy.oc1..aaaaaaaahbsqqoq6hngruus5z4e3zclij32obawvlsxsrz4culbvq5k5p2ia"
+user_ocid            = "ocid1.user.oc1..aaaaaaaai27yv6a7jyl4qkmkgudtspxfm65imcevxoed4rvslposjsnpqvqa" # tenancy admin
+fingerprint          = "17:3b:ee:6a:47:a5:8a:09:11:e8:b4:08:c9:ca:f8:b9"
+private_key_path     = "../../../creds/cislzteam/tenancy-admin_cislzteam.pem"
+private_key_password = ""
+region               = "us-phoenix-1"
+
+#---------------------------------------
+# Input variable
+#---------------------------------------
+
+
+rdma_clusters_configuration = {
+  default_compartment_id = "ocid1.compartment.oc1..aaaaaaaaahlsmi7dkcexyao5rny7byfqrkceno53uausov25okhwygmj4w2q"
+  clusters = {
+    "COMPUTE-CLUSTER" = {
+      type = "compute"
+      name = "basic-compute-cluster"
+      availability_domain = 3
+    }
+  }
+}
+
+instances_configuration = {
+  default_compartment_id = "ocid1.compartment.oc1..aaaaaaaaahlsmi7dkcexyao5rny7byfqrkceno53uausov25okhwygmj4w2q" 
+  default_subnet_id = "ocid1.subnet.oc1.phx.aaaaaaaasavhndsmqfzxkaifk2v5qv46tjkygmleyygrxgjl6wsksnhywjcq" 
+  default_ssh_public_key_path = "~/.ssh/id_rsa.pub"
+  instances = {
+    COMPUTE-CLUSTER-INSTANCE = {
+      shape = "BM.Optimized3.36"
+      name  = "BM.Optimized3.36-instance"
+      placement = {
+        availability_domain = 3
+        fault_domain = 3
+        compute_cluster_id = "COMPUTE-CLUSTER"
+      }
+      boot_volume = {
+        size = 120
+        preserve_on_instance_deletion = false
+      }
+      networking = {
+        hostname  = "bm-optimized3-36-instance"
+        network_security_groups = ["ocid1.networksecuritygroup.oc1.phx.aaaaaaaaqbsj3tqlzaefdoyhoz54uxlryd3sh2lag4cnvaj2hfk5pav7woua"]
+      }
+      image = {
+        name = "Oracle Linux 7 STIG" # Marketplace image
+        publisher_name = "Oracle Linux"
+      }
+    }
+  }
+}
+
+
+
