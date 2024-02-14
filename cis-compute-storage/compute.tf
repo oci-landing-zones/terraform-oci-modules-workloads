@@ -92,6 +92,7 @@ resource "oci_core_instance" "these" {
     compartment_id       = each.value.compartment_id != null ? (length(regexall("^ocid1.*$", each.value.compartment_id)) > 0 ? each.value.compartment_id : var.compartments_dependency[each.value.compartment_id].id) : (length(regexall("^ocid1.*$", var.instances_configuration.default_compartment_id)) > 0 ? var.instances_configuration.default_compartment_id : var.compartments_dependency[var.instances_configuration.default_compartment_id].id)
     availability_domain  = data.oci_identity_availability_domains.ads[each.key].availability_domains[(each.value.placement != null ? each.value.placement.availability_domain : 1) - 1].name
     fault_domain         = format("FAULT-DOMAIN-%s", each.value.placement != null ? each.value.placement.fault_domain : 1)
+    compute_cluster_id   = each.value.placement != null ? (each.value.placement.compute_cluster_id != null ? (contains(keys(oci_core_compute_cluster.these),each.value.placement.compute_cluster_id) ? oci_core_compute_cluster.these[each.value.placement.compute_cluster_id].id : (length(regexall("^ocid1.*$", each.value.placement.compute_cluster_id)) > 0 ? each.value.placement.compute_cluster_id : null)) : null) : null
     shape                = each.value.shape
     display_name         = each.value.name
     preserve_boot_volume = each.value.boot_volume != null ? each.value.boot_volume.preserve_on_instance_deletion : true

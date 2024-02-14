@@ -26,6 +26,7 @@ variable "instances_configuration" {
       placement = optional(object({ # placement settings
         availability_domain  = optional(number,1) # the instance availability domain. Default is 1.
         fault_domain         = optional(number,1) # the instance fault domain. Default is 1.
+        compute_cluster_id   = optional(string)   # the RDMA compute cluster the instance belongs to. 
       }))
       boot_volume = optional(object({ # boot volume settings
         type = optional(string,"paravirtualized") # boot volume emulation type. Valid values: "paravirtualized" (default for platform images), "scsi", "iscsi", "ide", "vfio".
@@ -185,6 +186,73 @@ variable "storage_configuration" {
         defined_tags  = optional(map(string)) # snapshot policy defined_tags. default_defined_tags is used if this is not defined.
         freeform_tags = optional(map(string)) # snapshot policy freeform_tags. default_freeform_tags is used if this is not defined.
       })))
+    }))
+  })
+  default = null
+}
+
+variable "rdma_clusters_configuration" {
+  description = "RDMA clusters configuration attributes."
+  type = object({
+    default_compartment_id         = optional(string),      # the default compartment where all resources are defined. It's overriden by the compartment_ocid attribute within each object.
+    default_cis_level              = optional(string)       # The CIS OCI Benchmark profile level. Level "1" is be practical and prudent. Level "2" is intended for environments where security is more critical than manageability and usability. Default is "1".
+    default_defined_tags           = optional(map(string)), # the default defined tags. It's overriden by the defined_tags attribute within each object.
+    default_freeform_tags          = optional(map(string)), # the default freeform tags. It's overriden by the freeform_tags attribute within each object.
+
+    clusters = map(object({                                     # the clusters to manage in this configuration.
+      type                 = optional(string,"cluster_network") # the cluster type. Valid values: "cluster_network", "compute_cluster".
+      compartment_id       = optional(string)                   # the compartment where the cluster is created. default_compartment_ocid is used if this is not defined.
+      availability_domain  = optional(number,1)                 # the availability domain for cluster instances. Default is 1.
+      name                 = string                             # the cluster display name.
+      defined_tags         = optional(map(string))              # clusters defined_tags. default_defined_tags is used if this is not defined.
+      freeform_tags        = optional(map(string))              # clusters freeform_tags. default_freeform_tags is used if this is not defined.
+      cluster_network_settings = optional(object({            # cluster network settings. Only applicable if type is "cluster_network".
+        instance_configuration_id = string                    # the instance configuration id to use in this cluster.
+        instance_pool = optional(object({                     # Cluster instance pool settings.
+          name  = optional(string)                            # The instance pool name.
+          size  = optional(number,1)                          # The number of instances in the instance pool. 
+        }))
+        networking = object({
+          subnet_id = string                          # The subnet where instances primary VNIC is placed.
+          ipv6_enable = optional(bool,false)          # Whether IPv6 is enabled for instances primary VNIC.
+          ipv6_subnet_cidrs = optional(list(string),[])  # A list of IPv6 subnet CIDR ranges from which the primary VNIC is assigned an IPv6 address. Only applicable if ipv6_enable for primary VNIC is true.
+          secondary_vnic_settings = optional(object({ # Secondary VNIC settings
+            subnet_id = string                            # The subnet where instances secondary VNIC are created.
+            name = optional(string)                       # The secondary VNIC name.
+            ipv6_enable = optional(bool,false)            # Whether IPv6 is enabled for the secondary VNIC.
+            ipv6_subnet_cidrs = optional(list(string),[]) # A list of IPv6 subnet CIDR ranges from which the secondary VNIC is assigned an IPv6 address. Only applicable if ipv6_enable for secondary VNIC is true.
+          }))
+        })  
+      }))  
+    }))
+  })
+  default = null
+}
+
+variable "rdma_cluster_instances_configuration" {
+  description = "RDMA cluster instances configuration attributes"
+  type = object({
+    #defaults
+    default_cis_level           = optional(string)       # the CIS OCI Benchmark profile level. Level "1" is be practical and prudent. Level "2" is intended for environments where security is more critical than manageability and usability. Default is "1".
+    default_compartment_id      = optional(string)       # the default compartment where all resources are defined. It's overriden by the compartment_ocid attribute within each object.
+    default_defined_tags        = optional(map(string)), # the default defined tags. It's overriden by the defined_tags attribute within each object.
+    default_freeform_tags       = optional(map(string)), # the default freeform tags. It's overriden by the freeform_tags attribute within each object.
+    #default_ssh_public_key_path = optional(string)       # the default SSH public key path used to access the workers.
+    #default_kms_key_id          = optional(string)       # the default KMS key to assign as the master encryption key. It's overriden by the kms_key_id attribute within each object.
+    configurations = map(object({                         # the instance configurations to manage in this configuration.
+      cis_level            = optional(string)
+      compartment_id       = optional(string) # the compartment where the instance configuration is created. default_compartment_id is used if this is not defined.
+      name                 = optional(string) # the instance configuration display name.
+      instance_type        = optional(string,"compute")
+      instance_details     = optional(object({ # The instance details to use as the configuration template. If provided, an instance is created and used as template for all instances in the cluster instance pool.
+        shape          = optional(string,"BM.Optimized3.36") # the instance shape.
+        source_type    = optional(string,"image")
+        image_id       = optional(string) # the image id used to boot the instance.
+        compartment_id = optional(string) # the instance compartment. It defaults to the configuration compartment_id if undefined.
+      }))
+      template_instance_id = optional(string)       # the existing instance id to use as the configuration template for all instances in the cluster instance pool.
+      defined_tags         = optional(map(string))  # instance configuration defined_tags. default_defined_tags is used if this is not defined.
+      freeform_tags        = optional(map(string))  # instance configuration freeform_tags. default_freeform_tags is used if this is not defined.
     }))
   })
   default = null
