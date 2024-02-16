@@ -1,5 +1,12 @@
-# Copyright (c) 2023, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2023 Oracle and/or its affiliates.
 # Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
+
+variable "tenancy_ocid" {}
+variable "region" { description = "Your tenancy region" }
+variable "user_ocid" { default = "" }
+variable "fingerprint" { default = "" }
+variable "private_key_path" { default = "" }
+variable "private_key_password" { default = "" }
 
 variable "clusters_configuration" {
   description = "Cluster configuration attributes."
@@ -10,8 +17,7 @@ variable "clusters_configuration" {
     default_cis_level              = optional(string, "1")  # The CIS OCI Benchmark profile level. Level "1" is be practical and prudent. Level "2" is intended for environments where security is more critical than manageability and usability. Default is "1".
     default_defined_tags           = optional(map(string)), # the default defined tags. It's overriden by the defined_tags attribute within each object.
     default_freeform_tags          = optional(map(string)), # the default freeform tags. It's overriden by the freeform_tags attribute within each object.
-
-    clusters = map(object({ # the clusters to manage in this configuration.
+    clusters = map(object({                                 # the clusters to manage in this configuration.
       cis_level          = optional(string, "1")
       compartment_id     = optional(string)            # the compartment where the cluster is created. default_compartment_ocid is used if this is not defined.
       kubernetes_version = optional(string)            # the kubernetes version. If not specified the latest version will be selected.
@@ -41,7 +47,6 @@ variable "clusters_configuration" {
           freeform_tags = optional(map(string)) # LB freeform_tags. default_freeform_tags is used if this is not defined.
         }))
       }))
-
       networking = object({                         # cluster networking settings.
         vcn_id             = string                 # the vcn where the cluster will be created.
         public_endpoint    = optional(bool)         # if the api endpoint is public. default to false.
@@ -71,18 +76,16 @@ variable "workers_configuration" {
     default_ssh_public_key_path = optional(string)       # the default SSH public key path used to access the workers.
     default_kms_key_id          = optional(string)       # the default KMS key to assign as the master encryption key. It's overriden by the kms_key_id attribute within each object.
     default_initial_node_labels = optional(map(string))  # the default initial node labels, a list of key/value pairs to add to nodes after they join the Kubernetes cluster.
-
-    node_pools = optional(map(object({ # the node pools to manage in this configuration.
+    node_pools = optional(map(object({                   # the node pools to manage in this configuration.
       cis_level           = optional(string, "1")
-      kubernetes_version  = optional(string)      # the kubernetes version for the node pool. it cannot be 2 versions older behind of the cluster version or newer. If not specified, the version of the cluster will be selected.
-      cluster_id          = string                # the cluster where the node pool will be created.
-      compartment_id      = optional(string)      # the compartment where the node pool is created. default_compartment_ocid is used if this is not defined.
-      name                = string                # the node pool display name.
-      defined_tags        = optional(map(string)) # node pool defined_tags. default_defined_tags is used if this is not defined.
-      freeform_tags       = optional(map(string)) # node pool freeform_tags. default_freeform_tags is used if this is not defined.
-      initial_node_labels = optional(map(string)) # a list of key/value pairs to add to nodes after they join the Kubernetes cluster.
-      size                = optional(number)      # the number of nodes that should be in the node pool.
-
+      kubernetes_version  = optional(string)       # the kubernetes version for the node pool. it cannot be 2 versions older behind of the cluster version or newer. If not specified, the version of the cluster will be selected.
+      cluster_id          = string                 # the cluster where the node pool will be created.
+      compartment_id      = optional(string)       # the compartment where the node pool is created. default_compartment_ocid is used if this is not defined.
+      name                = string                 # the node pool display name.
+      defined_tags        = optional(map(string))  # node pool defined_tags. default_defined_tags is used if this is not defined.
+      freeform_tags       = optional(map(string))  # node pool freeform_tags. default_freeform_tags is used if this is not defined.
+      initial_node_labels = optional(map(string))  # a list of key/value pairs to add to nodes after they join the Kubernetes cluster.
+      size                = optional(number)       # the number of nodes that should be in the node pool.
       networking = object({                        # node pool networking settings.
         workers_nsg_ids   = optional(list(string)) # the nsgs to be used by the nodes.
         workers_subnet_id = string                 # the subnet for the nodes.
@@ -90,7 +93,6 @@ variable "workers_configuration" {
         pods_nsg_ids      = optional(list(string)) # the nsgs to be used by the pods. only applied to native CNI.
         max_pods_per_node = optional(number)       # the maximum number of pods per node. only applied to native CNI.
       })
-
       node_config_details = object({                    # the configuration of nodes in the node pool.
         ssh_public_key_path     = optional(string)      # the SSH public key path used to access the workers. if not specified default_ssh_public_key_path will be used.
         defined_tags            = optional(map(string)) # nodes defined_tags. default_defined_tags is used if this is not defined.
@@ -124,7 +126,7 @@ variable "workers_configuration" {
           max_unavailable = optional(string) # maximum active nodes that would be terminated from nodepool during the cycling nodepool process. OKE supports both integer and percentage input. Defaults to 0, Ranges from 0 to Nodepool size or 0% to 100%.
         }))
       })
-    })), {})
+    })))
 
     virtual_node_pools = optional(map(object({
       cluster_id                  = string                # the cluster where the virtual node pool will be created.
@@ -137,57 +139,66 @@ variable "workers_configuration" {
       initial_node_labels         = optional(map(string)) # a list of key/value pairs to add to virtual nodes after they join the Kubernetes cluster.
       size                        = optional(number)      # the number of virtual nodes that should be in the virtual node pool.
       pod_shape                   = string                # the shape assigned to pods. It can be one of Pod.Standard.A1.Flex, Pod.Standard.E3.Flex, Pod.Standard.E4.Flex.
-
-      networking = object({                        # virtual node pool networking settings.
-        workers_nsg_ids   = optional(list(string)) # the nsgs to be used by the virtual nodes.
-        workers_subnet_id = string                 # the subnet for the virtual nodes.
-        pods_subnet_id    = string                 # the subnet for the pods.
-        pods_nsg_ids      = optional(list(string)) # the nsgs to be used by the pods.
+      networking = object({                               # virtual node pool networking settings.
+        workers_nsg_ids   = optional(list(string))        # the nsgs to be used by the virtual nodes.
+        workers_subnet_id = string                        # the subnet for the virtual nodes.
+        pods_subnet_id    = string                        # the subnet for the pods.
+        pods_nsg_ids      = optional(list(string))        # the nsgs to be used by the pods.
       })
-
       placement = optional(list(object({       # placement settings.
         availability_domain = optional(number) # the virtual nodes availability domain. Default is 1.
         fault_domain        = optional(number) # the virtual nodes fault domain. Default is 1.
       })))
-
       taints = optional(list(object({ # the taints will be applied to the Virtual Nodes for Kubernetes scheduling.
         effect = optional(string)     # the effect of the pair.
         key    = optional(string)     # the key of the pair.
         value  = optional(string)     # the value of the pair.
       })))
-    })), {})
+    })))
   })
   default = null
 }
 
-variable "enable_output" {
-  description = "Whether Terraform should enable the module output."
-  type        = bool
-  default     = true
+### Bastion variables
+variable "bastions_configuration" {
+  description = "Bastion configuration attributes."
+  type = object({
+    default_compartment_id        = optional(string)       # the default compartment where all resources are defined. It's overriden by the compartment_ocid attribute within each object.
+    default_defined_tags          = optional(map(string))  # the default defined tags. It's overriden by the defined_tags attribute within each object.
+    default_freeform_tags         = optional(map(string))  # the default freeform tags. It's overriden by the freeform_tags attribute within each object.
+    default_subnet_id             = optional(string)       # the default subnet_id. It`s overriden by the subnet_id attribute in each object.
+    default_cidr_block_allow_list = optional(list(string)) # the default cidr block allow list. It`s overriden by the cidr_block_allow_list attribute in each object.
+    bastions = map(object({
+      bastion_type               = optional(string, "standard") # type of bastion. Allowed value is "STANDARD".
+      compartment_id             = optional(string)             # the compartment where the bastion is created. default_compartment_ocid is used if this is not defined.
+      subnet_id                  = optional(string)             # the subnet id where the bastion will be created. default_subnet_id is used if this is not defined.
+      defined_tags               = optional(map(string))        # bastions defined_tags. default_defined_tags is used if this is not defined.
+      freeform_tags              = optional(map(string))        # bastions freeform_tags. default_freeform_tags is used if this is not defined.
+      cidr_block_allow_list      = optional(list(string))       # list of cidr blocks that will be able to connect to bastion. default_cidr_block_allow_list is used if this is not defined.
+      enable_dns_proxy           = optional(bool, true)         # bool to enable dns_proxy on the bastion.
+      max_session_ttl_in_seconds = optional(number)             # maximum allowd time to live for a session on the bastion.
+      name                       = string                       # bastion name
+    }))
+  })
+  default = null
 }
 
-variable "module_name" {
-  description = "The module name."
-  type        = string
-  default     = "cis-oke"
+variable "sessions_configuration" {
+  description = "Sessions configuration attributes."
+  type = object({
+    default_ssh_public_key = optional(string) # the default ssh_public_key path. It's overriden by the ssh_public_key attribute within each object.
+    default_session_type   = optional(string) # the default session_type. It's overriden by the session_type attribute within each object.
+    sessions = map(object({
+      bastion_id             = string           # the ocid or the key of Bastion where the session will be created.
+      ssh_public_key         = optional(string) # the ssh_public_key path used by the session to connect to target. The default_ssh_public_key is used if this is not defined.
+      ssh_private_key        = optional(string) # the ssh_private_key path used by terraform to generate the command to connect to the target resource.
+      session_type           = optional(string) # session type of the session. Supported values are MANAGED_SSH and PORT_FORWARDING. The default_session_type is used if this is not defined.
+      target_resource        = string           # Either the FQDN, OCID or IP of the target resource to connect the session to.
+      target_user            = optional(string) # User of the target that will be used by session. It is required only with MANAGED_SSH. 
+      target_port            = number           # Port number that will be used by the session.
+      session_ttl_in_seconds = optional(number) # Session time to live
+      session_name           = string           # Session name
+    }))
+  })
+  default = null
 }
-
-variable "compartments_dependency" {
-  description = "A map of objects containing the externally managed compartments this module may depend on. All map objects must have the same type and must contain at least an 'id' attribute (representing the compartment OCID) of string type."
-  type        = map(any)
-  default     = null
-}
-
-variable "network_dependency" {
-  description = "A map of objects containing the externally managed network resources this module may depend on. All map objects must have the same type and must contain at least an 'id' attribute (representing the network resource OCID) of string type."
-  type        = map(any)
-  default     = null
-}
-
-variable "kms_dependency" {
-  description = "A map of objects containing the externally managed encryption keys this module may depend on. All map objects must have the same type and must contain at least an 'id' attribute (representing the key OCID) of string type."
-  type        = map(any)
-  default     = null
-}
-
-

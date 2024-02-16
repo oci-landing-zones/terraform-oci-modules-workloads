@@ -1,0 +1,83 @@
+# Copyright (c) 2023 Oracle and/or its affiliates.
+# Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
+
+#--------------------------------------------------------------------------------------------------------------------------------------
+# 1. Rename this file to <project-name>.auto.tfvars, where <project-name> is a name of your choice.
+# 2. Provide values for "Tenancy Connectivity Variables".
+# 3. Replace <REPLACE-BY-*> placeholders with appropriate values.
+#--------------------------------------------------------------------------------------------------------------------------------------
+
+#---------------------------------------
+# Tenancy Connectivity Variables
+#---------------------------------------
+
+tenancy_ocid         = "<tenancy OCID>"            # Get this from OCI Console (after logging in, go to top-right-most menu item and click option "Tenancy: <your tenancy name>").
+user_ocid            = "<user OCID>"               # Get this from OCI Console (after logging in, go to top-right-most menu item and click option "My profile").
+fingerprint          = "<PEM key fingerprint>"     # The fingerprint can be gathered from your user account. In the "My profile page, click "API keys" on the menu in left hand side.
+private_key_path     = "<path to the private key>" # This is the full path on your local system to the API signing private key.
+private_key_password = ""                          # This is the password that protects the private key, if any.
+region               = "<your tenancy region>"     # The region name.
+
+#---------------------------------------
+# Input variable
+#---------------------------------------
+
+clusters_configuration = {
+  default_compartment_id         = "<REPLACE-BY-COMPARTMENT-OCID>"
+  default_img_kms_key_id         = "<REPLACE-BY-IMG-KMS-KEY-OCID>"
+  default_kube_secret_kms_key_id = "<REPLACE-BY-KUBE-SECRET-KMS-KEY-OCID>"
+  default_defined_tags           = {}
+  default_freeform_tags          = {}
+  clusters = {
+    OKE1 = {
+      name        = "<REPLACE-BY-CLUSTER-NAME>"
+      cni_type    = "native"
+      is_enhanced = false
+      networking = {
+        vcn_id             = "<REPLACE-BY-VCN-OCID>"
+        api_nsg_ids        = ["<REPLACE-BY-NSG-IDS>"]
+        endpoint_subnet_id = "<REPLACE-BY-ENDPOINT-SUBNET-OCID>"
+        services_subnet_id = ["<REPLACE-BY-SERVICES-SUBNET-OCID>"]
+      }
+    }
+  }
+}
+
+workers_configuration = {
+  default_compartment_id      = null
+  default_defined_tags        = {}
+  default_freeform_tags       = {}
+  default_ssh_public_key_path = "~/.ssh/id_rsa.pub"
+  default_kms_key_id          = "<REPLACE-BY-IMG-KMS-KEY-OCID>"
+  node_pools = {
+    NODEPOOL1 = {
+      cluster_id = "OKE1"
+      name       = "<REPLACE-BY-NODE_POOL-NAME>"
+      size       = 3
+      networking = {
+        workers_nsg_ids   = ["<REPLACE-BY-NODES-NSG-OCID>"]
+        workers_subnet_id = "<REPLACE-BY-WORKER-SUBNET-OCID>"
+        pods_subnet_id    = "<REPLACE-BY-PODS-SUBNET-OCID>"
+        pods_nsg_ids      = ["<REPLACE-BY-PODS-NSG-OCID>"]
+      }
+      node_config_details = {
+        image      = "REPLACE-BY-IMAGE-OCID"
+        node_shape = "VM.Standard.E4.Flex"
+      }
+    }
+    #  virtual_node_pools = {
+    #   VIRTUALPOOL1 = {
+    #     cluster_id = "OKE1"
+    #     name       = "<REPLACE-BY-NODE_POOL-NAME>"
+    #     pod_shape = "Pod.Standard.E4.Flex"
+    #     size       = 3
+    #     networking = {
+    #       workers_nsg_ids   = ["<REPLACE-BY-NODES-NSG-OCID>"]
+    #       workers_subnet_id = "<REPLACE-BY-WORKER-SUBNET-OCID>"
+    #       pods_subnet_id    = "<REPLACE-BY-PODS-SUBNET-OCID>"
+    #       pods_nsg_ids      = ["<REPLACE-BY-PODS-NSG-OCID>"]
+    #     }
+    #   }
+    #  }
+  }
+}

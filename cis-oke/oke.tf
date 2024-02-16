@@ -60,11 +60,11 @@ resource "oci_containerengine_cluster" "these" {
     subnet_id            = length(regexall("^ocid1.*$", each.value.networking.endpoint_subnet_id)) > 0 ? each.value.networking.endpoint_subnet_id : var.network_dependency["subnets"][each.value.networking.endpoint_subnet_id].id
   }
   dynamic "image_policy_config" {
-    for_each = each.value.encryption != null ? each.value.encryption.image_policy_enabled ? [1] : [] : []
+    for_each = each.value.image_signing != null ? each.value.image_signing.image_policy_enabled ? [1] : [] : []
     content {
-      is_policy_enabled = each.value.encryption.image_policy_enabled
+      is_policy_enabled = each.value.image_signing.image_policy_enabled
       key_details {
-        kms_key_id = each.value.encryption != null ? (each.value.encryption.img_kms_key_id != null ? (length(regexall("^ocid1.*$", each.value.encryption.img_kms_key_id)) > 0 ? each.value.encryption.img_kms_key_id : var.kms_dependency[each.value.encryption.img_kms_key_id].id) : (var.clusters_configuration.default_img_kms_key_id != null ? (length(regexall("^ocid1.*$", var.clusters_configuration.default_img_kms_key_id)) > 0 ? var.clusters_configuration.default_img_kms_key_id : var.kms_dependency[var.clusters_configuration.default_img_kms_key_id].id) : null)) : (var.clusters_configuration.default_img_kms_key_id != null ? (length(regexall("^ocid1.*$", var.clusters_configuration.default_img_kms_key_id)) > 0 ? var.clusters_configuration.default_img_kms_key_id : var.kms_dependency[var.clusters_configuration.default_img_kms_key_id].id) : null)
+        kms_key_id = each.value.image_signing != null ? (each.value.image_signing.img_kms_key_id != null ? (length(regexall("^ocid1.*$", each.value.image_signing.img_kms_key_id)) > 0 ? each.value.image_signing.img_kms_key_id : var.kms_dependency[each.value.image_signing.img_kms_key_id].id) : (var.clusters_configuration.default_img_kms_key_id != null ? (length(regexall("^ocid1.*$", var.clusters_configuration.default_img_kms_key_id)) > 0 ? var.clusters_configuration.default_img_kms_key_id : var.kms_dependency[var.clusters_configuration.default_img_kms_key_id].id) : null)) : (var.clusters_configuration.default_img_kms_key_id != null ? (length(regexall("^ocid1.*$", var.clusters_configuration.default_img_kms_key_id)) > 0 ? var.clusters_configuration.default_img_kms_key_id : var.kms_dependency[var.clusters_configuration.default_img_kms_key_id].id) : null)
       }
     }
   }
@@ -92,4 +92,4 @@ resource "oci_containerengine_cluster" "these" {
     service_lb_subnet_ids = each.value.networking.services_subnet_id != null ? [for lb_sub in each.value.networking.services_subnet_id : (length(regexall("^ocid1.*$", lb_sub)) > 0 ? lb_sub : var.network_dependency["subnets"][lb_sub].id)] : []
   }
   type = each.value.is_enhanced == true ? "ENHANCED_CLUSTER" : "BASIC_CLUSTER"
-}  
+}

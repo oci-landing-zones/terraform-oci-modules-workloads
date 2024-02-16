@@ -11,7 +11,7 @@ Check the [examples](./examples/) folder for actual module usage.
 - [Features](#features)
 - [Requirements](#requirements)
 - [Module Functioning](#functioning)
-  - [OKE](#oke)
+  - [OKE Clusters](#oke)
   - [Node Pools](#node-pools)
   - [Virtual Node Pools](#virtual-node-pools)
   - [External Dependencies](#ext-dep) 
@@ -64,7 +64,7 @@ The module defines two top level attributes used to manage kubernetes clusters a
 - **clusters_configuration** &ndash; for managing Kubernetes Clusters.
 - **workers_configuration** &ndash; for managing Node Pools and Virtual Node Pools.
 
-### <a name="oke">OKE</a>
+### <a name="oke">OKE Clusters</a>
 
 Kubernetes Clusters are managed using the **clusters_configuration** object. It contains a set of attributes starting with the prefix **default_** and one attribute named **clusters**. The **default_** attribute values are applied to all clusters within **clusters**, unless overriden at the cluster level.
 
@@ -107,10 +107,10 @@ The clusters themselves are defined within the **clusters** attribute, In Terraf
   - **endpoint_subnet_id** &ndash;  the subnet for the api endpoint. It can be assigned either a literal OCID or a reference (a key) to an OCID in *network_dependency* variable. See [External Dependencies](#ext-dep) for details.
   - **services_subnet_id** &ndash; (Optional) the subnet for the cluster service. It can be assigned either a literal OCID or a reference (a key) to an OCID in *network_dependency* variable. See [External Dependencies](#ext-dep) for details.
 - **encryption** &ndash; (Optional) encryption settings
+  - **kube_secret_kms_key_id** &ndash; (Optional) the KMS key to assign as the master encryption key for kube secrets. default_kube_secret_kms_key_id is used if this is not defined. This attribute is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *kms_dependency* variable. See [External Dependencies](#ext-dep) for details.
+- **image_signing** &ndash; (Optional) image signing ecryption settings
   - **image_policy_enabled** &ndash; (Optional) whether the image verification policy is enabled. default to false.
   - **img_kms_key_id** &ndash; (Optional) the KMS key to assign as the master encryption key for images. default_img_kms_key_id is used if this is not defined. This attribute is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *kms_dependency* variable. See [External Dependencies](#ext-dep) for details.
-  - **kube_secret_kms_key_id** &ndash; (Optional) the KMS key to assign as the master encryption key for kube secrets. default_kube_secret_kms_key_id is used if this is not defined. This attribute is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *kms_dependency* variable. See [External Dependencies](#ext-dep) for details.
-
 
 ### <a name="Workers">Workers</a>
 Workers are managed using the **workers_configuration** object.  It contains a set of attributes starting with the prefix **default_** and two attributes named **node_pools** and **virtual_node_pools**. The **default_** attribute values are applied to all node pools and some of them to all virtual node pools.
@@ -152,28 +152,22 @@ Node Pools are defined using the optional **node_pools** attribute. In Terraform
   - **flex_shape_settings** &ndash; (Optional) flex shape settings
     - **memory** &ndash; (Optional) the nodes memory for Flex shapes. Default is 16GB.
     - **ocpus** &ndash; (Optional) the nodes ocpus number for Flex shapes. Default is 1.
-
   - **boot_volume** &ndash; (Optional) the boot volume settings.
     - **size** &ndash; (Optional) the boot volume size.Default is 60.
     - **preserve_boot_volume** &ndash; (Optional) whether to preserve the boot volume after the nodes are terminated.
-
   - **encryption** &ndash; (Optional) the encryption settings.
     - **enable_encrypt_in_transit** &ndash; (Optional) whether to enable the encrypt in transit. Default is false.
     - **kms_key_id** &ndash; (Optional) the KMS key to assign as the master encryption key. default_kms_key_id is used if this is not defined.
-
   - **placement** &ndash; (Optional) placement settings.
     - **availability_domain** &ndash; (Optional) the nodes availability domain. Default is 1.
     - **fault_domain** &ndash; (Optional) the nodes fault domain. Default is 1.
-
   - **node_eviction** &ndash; (Optional) node eviction settings.
     - **grace_duration** &ndash; (Optional) duration after which OKE will give up eviction of the pods on the node. Can be specified in seconds. Default is 60 minutes.
     - **force_delete** &ndash; (Optional) whether the nodes should be deleted if you cannot evict all the pods in grace period.
-
   - **node_cycling** &ndash; (Optional) node cycling settings. Available only for Enhanced clusters.
     - **enable_cycling** &ndash; (Optional) whether to enable node cycling. Default is false.
     - **max_surge** &ndash; (Optional) maximum additional new compute instances that would be temporarily created and added to nodepool during the cycling nodepool process. OKE supports both integer and percentage input. Defaults to 1, Ranges from 0 to Nodepool size or 0% to 100%.
     - **max_unavailable** &ndash; (Optional) maximum active nodes that would be terminated from nodepool during the cycling nodepool process. OKE supports both integer and percentage input. Defaults to 0, Ranges from 0 to Nodepool size or 0% to 100%.
-
 
 #### <a name="virtual-node-pools">Virtual Node Pools</a>
 Virtual Node Pools are defined using the optional **virtual_node_pools** attribute. In Terraform terms, it is a map of objects, where each object is referred by an identifying key. The following attributes are supported:
@@ -220,12 +214,16 @@ Example:
 Example:
 ```
 {
-  "APP-SUBNET" : {
-    "id" : "ocid1.subnet.oc1.iad.aaaaaaaax...e7a"
-  }, 
-  "APP-NSG" : {
-    "id" : "ocid1.networksecuritygroup.oc1.iad.aaaaaaaa...xlq"
-  }
+  "subnets" : {
+    "APP-SUBNET" : {
+      "id" : "ocid1.subnet.oc1.iad.aaaaaaaax...e7a"
+    }
+  },
+  "network_security_groups" : {  
+    "APP-NSG" : {
+      "id" : "ocid1.networksecuritygroup.oc1.iad.aaaaaaaa...xlq"
+    }
+  }  
 } 
 ```  
 - **kms_dependency** &ndash; A map of objects containing the externally managed encryption keys this module may depend on. All map objects must have the same type and must contain at least an *id* attribute with the encryption key OCID.

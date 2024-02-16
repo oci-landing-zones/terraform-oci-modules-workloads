@@ -1,0 +1,57 @@
+# Copyright (c) 2023 Oracle and/or its affiliates.
+# Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
+
+#--------------------------------------------------------------------------------------------------------------------------------------
+# 1. Rename this file to <project-name>.auto.tfvars, where <project-name> is a name of your choice.
+# 2. Provide values for "Tenancy Connectivity Variables".
+# 3. Replace <REPLACE-BY-*> placeholders with appropriate values.
+#--------------------------------------------------------------------------------------------------------------------------------------
+
+#---------------------------------------
+# Tenancy Connectivity Variables
+#---------------------------------------
+
+# tenancy_ocid         = "<tenancy OCID>"            # Get this from OCI Console (after logging in, go to top-right-most menu item and click option "Tenancy: <your tenancy name>").
+# user_ocid            = "<user OCID>"               # Get this from OCI Console (after logging in, go to top-right-most menu item and click option "My profile").
+# fingerprint          = "<PEM key fingerprint>"     # The fingerprint can be gathered from your user account. In the "My profile page, click "API keys" on the menu in left hand side.
+# private_key_path     = "<path to the private key>" # This is the full path on your local system to the API signing private key.
+# private_key_password = ""                          # This is the password that protects the private key, if any.
+# region               = "<your tenancy region>"     # The region name.
+
+
+#---------------------------------------
+# Input variable
+#---------------------------------------
+
+clusters_configuration = {
+  default_compartment_id = "<REPLACE-BY-COMPARTMENT-OCID>"
+  clusters = {
+    OKE1 = {
+      name     = "<REPLACE-BY-CLUSTER-NAME>"
+      networking = {
+        vcn_id             = "<REPLACE-BY-VCN-OCID>"
+        api_nsg_ids        = ["<REPLACE-BY-NSG-IDS>"]
+        endpoint_subnet_id = "<REPLACE-BY-ENDPOINT-SUBNET-OCID>"
+        services_subnet_id = ["<REPLACE-BY-SERVICES-SUBNET-OCID>"]
+      }
+    }
+  }
+}
+
+workers_configuration = {
+  default_ssh_public_key_path = "~/.ssh/id_rsa.pub"
+  node_pools = {
+    NODEPOOL1 = {
+      cluster_id = "OKE1"
+      name       = "<REPLACE-BY-NODE_POOL-NAME>"
+      size       = 3
+      networking = {
+        workers_nsg_ids   = ["<REPLACE-BY-NODES-NSG-OCID>"]
+        workers_subnet_id = "<REPLACE-BY-WORKER-SUBNET-OCID>"
+      }
+      node_config_details = {
+        node_shape = "VM.Standard.E4.Flex"
+      }
+    }
+  }
+}
