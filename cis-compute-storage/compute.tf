@@ -135,8 +135,8 @@ resource "oci_core_instance" "these" {
       content {
         type = each.value.platform_type
         is_secure_boot_enabled = coalesce(each.value.cis_level,var.instances_configuration.default_cis_level,"1") == "2" ? true : (each.value.boot_volume != null ? (split(".",each.value.shape)[0] == "VM" && each.value.boot_volume.measured_boot == true ? each.value.boot_volume.measured_boot : each.value.boot_volume.secure_boot) : false)
-        is_measured_boot_enabled = coalesce(each.value.cis_level,var.instances_configuration.default_cis_level,"1") == "2" ? true : (each.value.boot_volume != null ? each.value.boot_volume.measured_boot : false)
-        is_trusted_platform_module_enabled = coalesce(each.value.cis_level,var.instances_configuration.default_cis_level,"1") == "2" ? true : (each.value.boot_volume != null ? (split(".",each.value.shape)[0] == "VM" && each.value.boot_volume.measured_boot == true ? each.value.boot_volume.measured_boot : each.value.boot_volume.trusted_platform_module) : false)
+        is_measured_boot_enabled = each.value.boot_volume != null ? each.value.boot_volume.measured_boot : false
+        is_trusted_platform_module_enabled = each.value.boot_volume != null ? (split(".",each.value.shape)[0] == "VM" && each.value.boot_volume.measured_boot == true ? each.value.boot_volume.measured_boot : each.value.boot_volume.trusted_platform_module) : false
         is_memory_encryption_enabled = each.value.encryption != null ? each.value.encryption.encrypt_data_in_use : false
       }
     }  
