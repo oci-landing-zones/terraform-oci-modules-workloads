@@ -17,6 +17,42 @@ region               = "us-phoenix-1"
 # Input variables
 #---------------------------------------
 
+# This variable defines the RDMA clusters configuration. 
+# The clusters attribute allows for the definition of an arbitrary number of clusters.
+rdma_clusters_configuration = {
+  default_compartment_id = "ocid1.compartment.oc1..aaaaaaaaahlsmi7dkcexyao5rny7byfqrkceno53uausov25okhwygmj4w2q"
+  clusters = {
+    "CLUSTER-NETWORK" = {
+      name = "basic-cluster-network"
+      type = "cluster_network"
+      availability_domain = 2
+      cluster_network_settings = {
+        instance_configuration_id = "INSTANCE-CONFIG"
+        instance_pool = {
+          size = 1
+        }
+        networking = {
+          subnet_id = "ocid1.subnet.oc1.phx.aaaaaaaasavhndsmqfzxkaifk2v5qv46tjkygmleyygrxgjl6wsksnhywjcq"
+          ipv6_enable = true
+        }
+      }
+    }  
+  }
+}
+
+# This variable defines the instances configuration that clusters are built on.
+# The configurations attribute allows for the definition of an arbitrary number of configurations.
+# Each configuration must provide a template_instance_id attribute, which value must be the key of a Compute instance within the instances_configuration variable above.
+rdma_cluster_instances_configuration = {
+  default_compartment_id = "ocid1.compartment.oc1..aaaaaaaaahlsmi7dkcexyao5rny7byfqrkceno53uausov25okhwygmj4w2q"
+  configurations = {
+    INSTANCE-CONFIG = {
+      name = "rdma-cluster-instance-configuration"
+      template_instance_id = "CLUSTER-NETWORK-INSTANCE" #"ocid1.instance.oc1.phx.anyhqljsvv4q7oac3nmmhqgwxb7dki5s3vnyupoc6i2rctrkzxbuf3hovrjq"
+    }
+  }
+}
+
 # This variable defines the Compute instances used as templates for the cluster.
 # The instances attribute allows for the definition of an arbitrary number on Compute instances.
 # Cluster networks require that Compute instance shapes is one of: "BM.Optimized3.36", "BM.HPC2.36", "BM.GPU.A100-v2.8", "BM.GPU4.8"
@@ -45,41 +81,5 @@ instances_configuration = {
         publisher_name = "Oracle Linux"
       }
     }
-  }
-}
-
-# This variable defines the instances configuration that clusters are built on.
-# The configurations attribute allows for the definition of an arbitrary number of configurations.
-# Each configuration must provide a template_instance_id attribute, which value must be the key of a Compute instance within the instances_configuration variable above.
-rdma_cluster_instances_configuration = {
-  default_compartment_id = "ocid1.compartment.oc1..aaaaaaaaahlsmi7dkcexyao5rny7byfqrkceno53uausov25okhwygmj4w2q"
-  configurations = {
-    INSTANCE-CONFIG = {
-      name = "rdma-cluster-instance-configuration"
-      template_instance_id = "CLUSTER-NETWORK-INSTANCE" #"ocid1.instance.oc1.phx.anyhqljsvv4q7oac3nmmhqgwxb7dki5s3vnyupoc6i2rctrkzxbuf3hovrjq"
-    }
-  }
-}
-
-# This variable defines the RDMA clusters configuration. 
-# The clusters attribute allows for the definition of an arbitrary number of clusters.
-rdma_clusters_configuration = {
-  default_compartment_id = "ocid1.compartment.oc1..aaaaaaaaahlsmi7dkcexyao5rny7byfqrkceno53uausov25okhwygmj4w2q"
-  clusters = {
-    "CLUSTER-NETWORK" = {
-      name = "basic-cluster-network"
-      type = "cluster_network"
-      availability_domain = 2
-      cluster_network_settings = {
-        instance_configuration_id = "INSTANCE-CONFIG"
-        instance_pool = {
-          size = 1
-        }
-        networking = {
-          subnet_id = "ocid1.subnet.oc1.phx.aaaaaaaasavhndsmqfzxkaifk2v5qv46tjkygmleyygrxgjl6wsksnhywjcq"
-          ipv6_enable = true
-        }
-      }
-    }  
   }
 }
