@@ -6,7 +6,7 @@ This repository contains Terraform modules for managing workload resources in OC
 
 The following modules are available:
 - [CIS Compute & Storage](./cis-compute-storage/)
-- OKE (Oracle Kubernetes Engine) - soon
+- OKE (Container Engine for Kubernetes) - soon
 - Databases - soon
 
 Helper modules:
