@@ -11,6 +11,7 @@ Check the [examples](./examples/) folder for actual module usage.
 - [Features](#features)
 - [Requirements](#requirements)
 - [Module Functioning](#functioning)
+  - [Aspects Driven by CIS Profile Levels](#cis-levels)
   - [Compute](#compute)
   - [Block Volumes](#block-volumes)
   - [File Storage](#file-storage)
@@ -25,7 +26,7 @@ Check the [examples](./examples/) folder for actual module usage.
 The following security features are currently supported by the module:
 
 ### <a name="compute-features">Compute</a>
-- CIS profile level drives data at rest encryption configuration, Secure Boot (shielded instances) and legacy metadata endpoint availability (CIS Profile level "2" disables the endpoint).
+- CIS profile level drives data at rest encryption, in-transit encryption, secure boot (Shielded instances) and legacy v1 Metadata service endpoint availability.
 - Boot volumes encryption with customer managed keys from OCI Vault service.
 - In-transit encryption for boot volumes and attached block volumes.
 - Data in-use encryption for platform images ([Confidential computing](https://docs.oracle.com/en-us/iaas/Content/Compute/References/confidential_compute.htm)).
@@ -103,18 +104,35 @@ The module defines two top level attributes used to manage instances and storage
 - **instances_configuration** &ndash; for managing Compute instances.
 - **storage_configuration** &ndash; for managing storage, including Block Volumes and File System Storage.
 
+### <a name="cis-levels">Aspects Driven by CIS Profile Levels</a>
+
+The CIS Benchmark profile levels drive some aspects of Compute and Storage. In this module, the profile levels are defined via the *default_cis_level* attribute at the configuration level or via the *cis_level* attribute at the object (resource) level.
+
+#### For Compute:
+##### CIS profile level "1": 
+  - in-transit encryption is enforced.
+
+##### CIS profile level "2": 
+  - encryption at rest with customer managed keys is enforced.
+  - secure boot (Shielded instance) is enforced. 
+  - legacy v1 Metadata service endpoint is disabled.
+
+#### For Block Volumes and File Storage:
+##### CIS profile level "2": 
+  - encryption at rest with customer managed keys is enforced.
+
 ### <a name="compute">Compute</a>
 
-Compute instances are managed using the **instances_configuration** object. It contains a set of attributes starting with the prefix **default_** and one attribute named **instances**. The **default_** attribute values are applied to all instances within **instances**, unless overriden at the instance level.
+Compute instances are managed using the **instances_configuration** object. It contains a set of attributes starting with the prefix **default_** and one attribute named **instances**. The **default_** attribute values are applied to all instances within **instances**, unless overridden at the instance level.
 
 The *default_* attributes are the following:
-- **default_compartment_id** &ndash; Default compartment for all instances. It can be overriden by *compartment_id* attribute in each instance. This attribute is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *compartments_dependency* variable. See [External Dependencies](#ext-dep) for details.
-- **default_subnet_id** &ndash; (Optional) Default subnet for all instances. It can be overriden by *subnet_id* attribute in each instance. This attribute is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *network_dependency* variable. See [External Dependencies](#ext-dep) for details.
-- **default_ssh_public_key_path** &ndash; (Optional) Default SSH public key path used to access all instances. It can be overriden by the *ssh_public_key* attribute in each instance.
-- **default_kms_key_id** &ndash; (Optional) Default encryption key for all instances. It can be overriden by *kms_key_id* attribute in each instance. This attribute is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *kms_dependency* variable. See [External Dependencies](#ext-dep) for details.
-- **default_cis_level** &ndash; (Optional) Default CIS OCI Benchmark profile level for all instances. Level "2" enforces usage of customer managed keys for boot volume encryption. Default is "1". It can be overriden by *cis_level* attribute in each instance.
-- **default_defined_tags** &ndash; (Optional) Default defined tags for all instances. It can be overriden by *defined_tags* attribute in each instance.
-- **default_freeform_tags** &ndash; (Optional) Default freeform tags for all instances. It can be overriden by *freeform_tags* attribute in each instance.
+- **default_compartment_id** &ndash; Default compartment for all instances. It can be overridden by *compartment_id* attribute in each instance. This attribute is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *compartments_dependency* variable. See [External Dependencies](#ext-dep) for details.
+- **default_subnet_id** &ndash; (Optional) Default subnet for all instances. It can be overridden by *subnet_id* attribute in each instance. This attribute is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *network_dependency* variable. See [External Dependencies](#ext-dep) for details.
+- **default_ssh_public_key_path** &ndash; (Optional) Default SSH public key path used to access all instances. It can be overridden by the *ssh_public_key* attribute in each instance.
+- **default_kms_key_id** &ndash; (Optional) Default encryption key for all instances. It can be overridden by *kms_key_id* attribute in each instance. This attribute is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *kms_dependency* variable. See [External Dependencies](#ext-dep) for details.
+- **default_cis_level** &ndash; (Optional) Default CIS OCI Benchmark profile level for all instances. Level "2" enforces usage of customer managed keys for boot volume encryption. Default is "1". It can be overridden by *cis_level* attribute in each instance.
+- **default_defined_tags** &ndash; (Optional) Default defined tags for all instances. It can be overridden by *defined_tags* attribute in each instance.
+- **default_freeform_tags** &ndash; (Optional) Default freeform tags for all instances. It can be overridden by *freeform_tags* attribute in each instance.
 
 The instances themselves are defined within the **instances** attribute, In Terraform terms, it is a map of objects. where each object is referred by an identifying key. The supported attributes are listed below. For better usability, most attributes are grouped in logical blocks. They are properly indented in the list.
 - **compartment_id** &ndash; (Optional) The instance compartment. *default_compartment_id* is used if undefined. This attribute is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *compartments_dependency* variable. See [External Dependencies](#ext-dep) for details.
@@ -263,14 +281,14 @@ Additionally, in-transit encryption is only available to paravirtualized volumes
 
 ### <a name="storage">Storage</a>
 
-Storage is managed using the **storage_configuration** object. It contains a set of attributes starting with the prefix **default_** and two attribute named **block_volumes** and **file_storage**. The **default_** attribute values are applied to all storage units within **block_volumes** and **file_storage**, unless overriden at the storage unit level.
+Storage is managed using the **storage_configuration** object. It contains a set of attributes starting with the prefix **default_** and two attribute named **block_volumes** and **file_storage**. The **default_** attribute values are applied to all storage units within **block_volumes** and **file_storage**, unless overridden at the storage unit level.
 
 The defined **default_** attributes are the following:
-- **default_compartment_id** &ndash; (Optional) The default compartment for all storage units. It can be overriden by *compartment_id* attribute in each unit. This attribute is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *compartments_dependency* variable. See [External Dependencies](#ext-dep) for details.
-- **default_kms_key_id** &ndash; (Optional) The default encryption key for all storage units. It can be overriden by *kms_key_id* attribute in each unit. This attribute is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *kms_dependency* variable. See [External Dependencies](#ext-dep) for details.
-- **default_cis_level** &ndash; (Optional) The default CIS OCI Benchmark profile level for all storage units. Level "2" enforces usage of customer managed keys for storage encryption. Default is "1". It can be overriden by *cis_level* attribute in each unit.
-- **default_defined_tags** &ndash; (Optional) The default defined tags for all storage units. It can be overriden by *defined_tags* attribute in each unit.
-- **default_freeform_tags** &ndash; (Optional) the default freeform tags for all storage units. It can be overriden by *freeform_tags* attribute in each unit.
+- **default_compartment_id** &ndash; (Optional) The default compartment for all storage units. It can be overridden by *compartment_id* attribute in each unit. This attribute is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *compartments_dependency* variable. See [External Dependencies](#ext-dep) for details.
+- **default_kms_key_id** &ndash; (Optional) The default encryption key for all storage units. It can be overridden by *kms_key_id* attribute in each unit. This attribute is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *kms_dependency* variable. See [External Dependencies](#ext-dep) for details.
+- **default_cis_level** &ndash; (Optional) The default CIS OCI Benchmark profile level for all storage units. Level "2" enforces usage of customer managed keys for storage encryption. Default is "1". It can be overridden by *cis_level* attribute in each unit.
+- **default_defined_tags** &ndash; (Optional) The default defined tags for all storage units. It can be overridden by *defined_tags* attribute in each unit.
+- **default_freeform_tags** &ndash; (Optional) the default freeform tags for all storage units. It can be overridden by *freeform_tags* attribute in each unit.
 
 #### <a name="block-volumes">Block Volumes</a>
 Block volumes are defined using the optional **block_volumes** attribute. In Terraform terms, it is a map of objects, where each object is referred by an identifying key. The following attributes are supported:
@@ -493,7 +511,7 @@ For more information on mounting block volumes without consistent device path se
 
 
 #### <a name="file-storage">File Storage</a>
-The **file_storage** attribute defines the file systems, mount targets and snapshot policies for OCI File Storage service. The optional attribute **default_subnet_id** applies to all mount targets, unless overriden by **subnet_id** attribute in each mount target. Attribute **subnet_id** is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *network_dependency* variable. See [External Dependencies](#ext-dep) for details.
+The **file_storage** attribute defines the file systems, mount targets and snapshot policies for OCI File Storage service. The optional attribute **default_subnet_id** applies to all mount targets, unless overridden by **subnet_id** attribute in each mount target. Attribute **subnet_id** is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *network_dependency* variable. See [External Dependencies](#ext-dep) for details.
 
 ##### <a name="file-systems">File Systems</a>
 File systems are defined using the optional attribute **file_systems**. A Terraform map of objects, where each object is referred by an identifying key. The following attributes are supported:
