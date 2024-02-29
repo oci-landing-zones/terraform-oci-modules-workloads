@@ -25,7 +25,7 @@ Check the [examples](./examples/) folder for actual module usage.
 The following security features are currently supported by the module:
 
 ### <a name="compute-features">Compute</a>
-- CIS profile level drives data at rest encryption configuration.
+- CIS profile level drives data at rest encryption configuration, Secure Boot (shielded instances) and legacy metadata endpoint availability (CIS Profile level "2" disables the endpoint).
 - Boot volumes encryption with customer managed keys from OCI Vault service.
 - In-transit encryption for boot volumes and attached block volumes.
 - Data in-use encryption for platform images ([Confidential computing](https://docs.oracle.com/en-us/iaas/Content/Compute/References/confidential_compute.htm)).
@@ -179,13 +179,24 @@ The instances themselves are defined within the **instances** attribute, In Terr
 - **flex_shape_settings** &ndash; (Optional) Flex shape settings.
   - **memory** &ndash; (Optional) The instance memory for Flex shapes. Default is 16 (in GB).
   - **ocpus** &ndash; (Optional) The number of OCPUs for Flex shapes. Default is 1.
-- **cloud_agent** &ndash; (Optional) Cloud Agent settings. Oracle Cloud Agent is supported on current platform images and on custom images that are based on current platform images. See [Oracle Cloud Agent documentation](https://docs.oracle.com/en-us/iaas/Content/Compute/Tasks/manage-plugins.htm) for important information.
+- **cloud_agent** &ndash; (Optional) Cloud Agent settings. Oracle Cloud Agent is supported on current platform images and on custom images that are based on current platform images. See [Cloud Agent Requirements](#cloud-agent-requirements) for basic requirements.
   - **disable_management** &ndash; (Optional) Whether the management plugins should be disabled. These plugins are enabled by default in the Compute service. The management plugins are "OS Management Service Agent" and "Compute Instance Run Command".
   - **disable_monitoring** &ndash; (Optional) Whether the monitoring plugins should be disabled. These plugins are enabled by default in the Compute service. The monitoring plugins are "Compute Instance Monitoring" and "Custom Logs Monitoring".
   - **plugins** &ndash; (Optional) The list of plugins to manage. Each plugin has a name and a boolean flag that enables it.
     - **name** &ndash; The plugin name. **It must be a valid plugin name**. The plugin names are available in [Oracle Cloud Agent documentation](https://docs.oracle.com/en-us/iaas/Content/Compute/Tasks/manage-plugins.htm) and in [compute-only example](./examples/compute-only/input.auto.tfvars.template) as well.
     - **enabled** &ndash; Whether or not the plugin should be enabled. In order to disable a previously enabled plugin, set this value to false. Simply removing the plugin from the list will not disable it.
 
+#### <a name="cloud-agent-requirements">Cloud Agent Requirements</a>
+##### IAM Policy Requirements
+The ability to enable/disable/start/stop plugins require the following policy statements for the executing user, as documented in the [Requirements](#requirements) section above.
+```
+Allow group <GROUP-NAME> to manage instance-family in compartment <INSTANCE-COMPARTMENT-NAME>
+Allow group <GROUP-NAME> to read instance-agent-plugins in compartment <INSTANCE-COMPARTMENT-NAME> 
+```
+##### Network Requirements
+The subnet where the instance is deployed must have access to Oracle Services Network. Make sure there is a network route and an egress security rule to *all regional services In Oracle Services Network* through the VCN Service Gateway.
+
+Please see [Oracle Cloud Agent documentation](https://docs.oracle.com/en-us/iaas/Content/Compute/Tasks/manage-plugins.htm) for other important information.
 
 #### <a name="platform-features">Enabling Platform Features</a>
 The module currently supports [Confidential computing](https://docs.oracle.com/en-us/iaas/Content/Compute/References/confidential_compute.htm) and [Shielded instances](https://docs.oracle.com/en-us/iaas/Content/Compute/References/shielded-instances.htm), which cannot be enabled at the same time.
