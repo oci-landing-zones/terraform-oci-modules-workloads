@@ -115,7 +115,7 @@ resource "oci_core_instance" "these" {
       subnet_id        = each.value.networking != null ? (each.value.networking.subnet_id != null ? (length(regexall("^ocid1.*$", each.value.networking.subnet_id)) > 0 ? each.value.networking.subnet_id : var.network_dependency["subnets"][each.value.networking.subnet_id].id) : (length(regexall("^ocid1.*$", var.instances_configuration.default_subnet_id)) > 0 ? var.instances_configuration.default_subnet_id : var.network_dependency["subnets"][var.instances_configuration.default_subnet_id].id)) : (length(regexall("^ocid1.*$", var.instances_configuration.default_subnet_id)) > 0 ? var.instances_configuration.default_subnet_id : var.network_dependency["subnets"][var.instances_configuration.default_subnet_id].id)
       hostname_label   = each.value.networking != null ? (coalesce(each.value.networking.hostname,lower(replace(each.value.name," ","")))) : lower(replace(each.value.name," ",""))
       nsg_ids          = each.value.networking != null ? [for nsg in coalesce(each.value.networking.network_security_groups,[]) : (length(regexall("^ocid1.*$", nsg)) > 0 ? nsg : var.network_dependency["network_security_groups"][nsg].id)] : null
-      skip_source_dest_check = coalesce(each.value.cis_level,var.instances_configuration.default_cis_level,"1") == "1" ? true : (each.value.networking != null ? each.value.networking.skip_source_dest_check : false)
+      skip_source_dest_check = each.value.networking != null ? each.value.networking.skip_source_dest_check : false
     }
     source_details {
       boot_volume_size_in_gbs = each.value.boot_volume != null ? each.value.boot_volume.size : 50
