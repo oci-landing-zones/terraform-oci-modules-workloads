@@ -1,3 +1,13 @@
+# February 29, 2024 Release Notes - 0.1.3
+
+## Updates
+### CIS Compute & Storage Module
+1. Compute aligns with CIS Benchmark 2.0.0: in additional to encryption at rest, CIS profile level now drives in-transit encryption, secure Boot (Shielded instances), and the availability of legacy Metadata service endpoint.
+    - CIS profile level 1 enables in-transit encryption.
+    - CIS profile level 2 enables secure boot and disables legacy Metadata service endpoint.
+    
+2. [Cloud Agent Requirements](./cis-compute-storage/README.md#cloud-agent-requirements) documented.
+
 # October 30, 2023 Release Notes - 0.1.2
 
 ## Updates
@@ -24,7 +34,7 @@ Compute module can configure instances with secondary VNICs and secondary IPs pe
 1. [Initial Release](#0-1-0-initial)
 
 ### <a name="0-1-0-initial">Initial Release</a>
-Modules for Compute, Storage, Plaform Images and Marketplace Images
+Modules for Compute, Storage, Platform Images and Marketplace Images
 
 #### [Compute](./cis-compute-storage/)
 - CIS profile level drives data at rest encryption configuration.

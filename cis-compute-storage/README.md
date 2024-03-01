@@ -11,6 +11,7 @@ Check the [examples](./examples/) folder for actual module usage.
 - [Features](#features)
 - [Requirements](#requirements)
 - [Module Functioning](#functioning)
+  - [Aspects Driven by CIS Profile Levels](#cis-levels)
   - [Compute](#compute)
   - [Block Volumes](#block-volumes)
   - [File Storage](#file-storage)
@@ -25,7 +26,7 @@ Check the [examples](./examples/) folder for actual module usage.
 The following security features are currently supported by the module:
 
 ### <a name="compute-features">Compute</a>
-- CIS profile level drives data at rest encryption configuration.
+- CIS profile level drives data at rest encryption, in-transit encryption, secure boot (Shielded instances) and legacy v1 Metadata service endpoint availability.
 - Boot volumes encryption with customer managed keys from OCI Vault service.
 - In-transit encryption for boot volumes and attached block volumes.
 - Data in-use encryption for platform images ([Confidential computing](https://docs.oracle.com/en-us/iaas/Content/Compute/References/confidential_compute.htm)).
@@ -103,18 +104,35 @@ The module defines two top level attributes used to manage instances and storage
 - **instances_configuration** &ndash; for managing Compute instances.
 - **storage_configuration** &ndash; for managing storage, including Block Volumes and File System Storage.
 
+### <a name="cis-levels">Aspects Driven by CIS Profile Levels</a>
+
+The CIS Benchmark profile levels drive some aspects of Compute and Storage. In this module, the profile levels are defined via the *default_cis_level* attribute at the configuration level or via the *cis_level* attribute at the object (resource) level.
+
+#### For Compute:
+##### CIS profile level "1": 
+  - in-transit encryption is enforced.
+
+##### CIS profile level "2": 
+  - encryption at rest with customer managed keys is enforced.
+  - secure boot (Shielded instance) is enforced. 
+  - legacy v1 Metadata service endpoint is disabled.
+
+#### For Block Volumes and File Storage:
+##### CIS profile level "2": 
+  - encryption at rest with customer managed keys is enforced.
+
 ### <a name="compute">Compute</a>
 
-Compute instances are managed using the **instances_configuration** object. It contains a set of attributes starting with the prefix **default_** and one attribute named **instances**. The **default_** attribute values are applied to all instances within **instances**, unless overriden at the instance level.
+Compute instances are managed using the **instances_configuration** object. It contains a set of attributes starting with the prefix **default_** and one attribute named **instances**. The **default_** attribute values are applied to all instances within **instances**, unless overridden at the instance level.
 
 The *default_* attributes are the following:
-- **default_compartment_id** &ndash; Default compartment for all instances. It can be overriden by *compartment_id* attribute in each instance. This attribute is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *compartments_dependency* variable. See [External Dependencies](#ext-dep) for details.
-- **default_subnet_id** &ndash; (Optional) Default subnet for all instances. It can be overriden by *subnet_id* attribute in each instance. This attribute is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *network_dependency* variable. See [External Dependencies](#ext-dep) for details.
-- **default_ssh_public_key_path** &ndash; (Optional) Default SSH public key path used to access all instances. It can be overriden by the *ssh_public_key* attribute in each instance.
-- **default_kms_key_id** &ndash; (Optional) Default encryption key for all instances. It can be overriden by *kms_key_id* attribute in each instance. This attribute is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *kms_dependency* variable. See [External Dependencies](#ext-dep) for details.
-- **default_cis_level** &ndash; (Optional) Default CIS OCI Benchmark profile level for all instances. Level "2" enforces usage of customer managed keys for boot volume encryption. Default is "1". It can be overriden by *cis_level* attribute in each instance.
-- **default_defined_tags** &ndash; (Optional) Default defined tags for all instances. It can be overriden by *defined_tags* attribute in each instance.
-- **default_freeform_tags** &ndash; (Optional) Default freeform tags for all instances. It can be overriden by *freeform_tags* attribute in each instance.
+- **default_compartment_id** &ndash; Default compartment for all instances. It can be overridden by *compartment_id* attribute in each instance. This attribute is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *compartments_dependency* variable. See [External Dependencies](#ext-dep) for details.
+- **default_subnet_id** &ndash; (Optional) Default subnet for all instances. It can be overridden by *subnet_id* attribute in each instance. This attribute is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *network_dependency* variable. See [External Dependencies](#ext-dep) for details.
+- **default_ssh_public_key_path** &ndash; (Optional) Default SSH public key path used to access all instances. It can be overridden by the *ssh_public_key* attribute in each instance.
+- **default_kms_key_id** &ndash; (Optional) Default encryption key for all instances. It can be overridden by *kms_key_id* attribute in each instance. This attribute is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *kms_dependency* variable. See [External Dependencies](#ext-dep) for details.
+- **default_cis_level** &ndash; (Optional) Default CIS OCI Benchmark profile level for all instances. Level "2" enforces usage of customer managed keys for boot volume encryption. Default is "1". It can be overridden by *cis_level* attribute in each instance.
+- **default_defined_tags** &ndash; (Optional) Default defined tags for all instances. It can be overridden by *defined_tags* attribute in each instance.
+- **default_freeform_tags** &ndash; (Optional) Default freeform tags for all instances. It can be overridden by *freeform_tags* attribute in each instance.
 
 The instances themselves are defined within the **instances** attribute, In Terraform terms, it is a map of objects. where each object is referred by an identifying key. The supported attributes are listed below. For better usability, most attributes are grouped in logical blocks. They are properly indented in the list.
 - **compartment_id** &ndash; (Optional) The instance compartment. *default_compartment_id* is used if undefined. This attribute is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *compartments_dependency* variable. See [External Dependencies](#ext-dep) for details.
@@ -179,13 +197,24 @@ The instances themselves are defined within the **instances** attribute, In Terr
 - **flex_shape_settings** &ndash; (Optional) Flex shape settings.
   - **memory** &ndash; (Optional) The instance memory for Flex shapes. Default is 16 (in GB).
   - **ocpus** &ndash; (Optional) The number of OCPUs for Flex shapes. Default is 1.
-- **cloud_agent** &ndash; (Optional) Cloud Agent settings. Oracle Cloud Agent is supported on current platform images and on custom images that are based on current platform images. See [Oracle Cloud Agent documentation](https://docs.oracle.com/en-us/iaas/Content/Compute/Tasks/manage-plugins.htm) for important information.
+- **cloud_agent** &ndash; (Optional) Cloud Agent settings. Oracle Cloud Agent is supported on current platform images and on custom images that are based on current platform images. See [Cloud Agent Requirements](#cloud-agent-requirements) for basic requirements.
   - **disable_management** &ndash; (Optional) Whether the management plugins should be disabled. These plugins are enabled by default in the Compute service. The management plugins are "OS Management Service Agent" and "Compute Instance Run Command".
   - **disable_monitoring** &ndash; (Optional) Whether the monitoring plugins should be disabled. These plugins are enabled by default in the Compute service. The monitoring plugins are "Compute Instance Monitoring" and "Custom Logs Monitoring".
   - **plugins** &ndash; (Optional) The list of plugins to manage. Each plugin has a name and a boolean flag that enables it.
     - **name** &ndash; The plugin name. **It must be a valid plugin name**. The plugin names are available in [Oracle Cloud Agent documentation](https://docs.oracle.com/en-us/iaas/Content/Compute/Tasks/manage-plugins.htm) and in [compute-only example](./examples/compute-only/input.auto.tfvars.template) as well.
     - **enabled** &ndash; Whether or not the plugin should be enabled. In order to disable a previously enabled plugin, set this value to false. Simply removing the plugin from the list will not disable it.
 
+#### <a name="cloud-agent-requirements">Cloud Agent Requirements</a>
+##### IAM Policy Requirements
+The ability to enable/disable/start/stop plugins require the following policy statements for the executing user, as documented in the [Requirements](#requirements) section above.
+```
+Allow group <GROUP-NAME> to manage instance-family in compartment <INSTANCE-COMPARTMENT-NAME>
+Allow group <GROUP-NAME> to read instance-agent-plugins in compartment <INSTANCE-COMPARTMENT-NAME> 
+```
+##### Network Requirements
+The subnet where the instance is deployed must have access to Oracle Services Network. Make sure there is a network route and an egress security rule to *all regional services In Oracle Services Network* through the VCN Service Gateway.
+
+Please see [Oracle Cloud Agent documentation](https://docs.oracle.com/en-us/iaas/Content/Compute/Tasks/manage-plugins.htm) for other important information.
 
 #### <a name="platform-features">Enabling Platform Features</a>
 The module currently supports [Confidential computing](https://docs.oracle.com/en-us/iaas/Content/Compute/References/confidential_compute.htm) and [Shielded instances](https://docs.oracle.com/en-us/iaas/Content/Compute/References/shielded-instances.htm), which cannot be enabled at the same time.
@@ -193,6 +222,7 @@ The module currently supports [Confidential computing](https://docs.oracle.com/e
 - Confidential computing is only available for the shapes listed in [Compute Shapes that Support Confidential Computing](https://docs.oracle.com/en-us/iaas/Content/Compute/References/confidential_compute.htm#confidential_compute__coco_supported_shapes).
 - Shielded instances usage is controlled by *platform_type*, *boot_volume.secure_boot*, *boot_volume.measured_boot* and *boot_volume.trusted_platform_module* attributes. For supported VM shapes, *boot_volume.measured_boot* value is used to set both *boot_volume.secure_boot* and *boot_volume.trusted_platform_module* attributes. 
 - Shielded instances are only available for the shapes and images listed in [Supported Shapes and Images](https://docs.oracle.com/en-us/iaas/Content/Compute/References/shielded-instances.htm#supported-shapes).
+- Shielded instances are automatically enabled if CIS Profile level is "2" (either via *cis_level* or *default_cis_level* attributes).
 
 #### <a name="platform-images">Obtaining OCI Platform Images Information</a>
 Helper module [platform-images](../platform-images/) aids in finding OCI Platform instances based on a search string. See [this example](../platform-images/examples/platform-images/) for finding images containing "Linux-8" in their names. It outputs information as shown below.
@@ -251,14 +281,14 @@ Additionally, in-transit encryption is only available to paravirtualized volumes
 
 ### <a name="storage">Storage</a>
 
-Storage is managed using the **storage_configuration** object. It contains a set of attributes starting with the prefix **default_** and two attribute named **block_volumes** and **file_storage**. The **default_** attribute values are applied to all storage units within **block_volumes** and **file_storage**, unless overriden at the storage unit level.
+Storage is managed using the **storage_configuration** object. It contains a set of attributes starting with the prefix **default_** and two attribute named **block_volumes** and **file_storage**. The **default_** attribute values are applied to all storage units within **block_volumes** and **file_storage**, unless overridden at the storage unit level.
 
 The defined **default_** attributes are the following:
-- **default_compartment_id** &ndash; (Optional) The default compartment for all storage units. It can be overriden by *compartment_id* attribute in each unit. This attribute is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *compartments_dependency* variable. See [External Dependencies](#ext-dep) for details.
-- **default_kms_key_id** &ndash; (Optional) The default encryption key for all storage units. It can be overriden by *kms_key_id* attribute in each unit. This attribute is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *kms_dependency* variable. See [External Dependencies](#ext-dep) for details.
-- **default_cis_level** &ndash; (Optional) The default CIS OCI Benchmark profile level for all storage units. Level "2" enforces usage of customer managed keys for storage encryption. Default is "1". It can be overriden by *cis_level* attribute in each unit.
-- **default_defined_tags** &ndash; (Optional) The default defined tags for all storage units. It can be overriden by *defined_tags* attribute in each unit.
-- **default_freeform_tags** &ndash; (Optional) the default freeform tags for all storage units. It can be overriden by *freeform_tags* attribute in each unit.
+- **default_compartment_id** &ndash; (Optional) The default compartment for all storage units. It can be overridden by *compartment_id* attribute in each unit. This attribute is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *compartments_dependency* variable. See [External Dependencies](#ext-dep) for details.
+- **default_kms_key_id** &ndash; (Optional) The default encryption key for all storage units. It can be overridden by *kms_key_id* attribute in each unit. This attribute is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *kms_dependency* variable. See [External Dependencies](#ext-dep) for details.
+- **default_cis_level** &ndash; (Optional) The default CIS OCI Benchmark profile level for all storage units. Level "2" enforces usage of customer managed keys for storage encryption. Default is "1". It can be overridden by *cis_level* attribute in each unit.
+- **default_defined_tags** &ndash; (Optional) The default defined tags for all storage units. It can be overridden by *defined_tags* attribute in each unit.
+- **default_freeform_tags** &ndash; (Optional) the default freeform tags for all storage units. It can be overridden by *freeform_tags* attribute in each unit.
 
 #### <a name="block-volumes">Block Volumes</a>
 Block volumes are defined using the optional **block_volumes** attribute. In Terraform terms, it is a map of objects, where each object is referred by an identifying key. The following attributes are supported:
@@ -481,7 +511,7 @@ For more information on mounting block volumes without consistent device path se
 
 
 #### <a name="file-storage">File Storage</a>
-The **file_storage** attribute defines the file systems, mount targets and snapshot policies for OCI File Storage service. The optional attribute **default_subnet_id** applies to all mount targets, unless overriden by **subnet_id** attribute in each mount target. Attribute **subnet_id** is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *network_dependency* variable. See [External Dependencies](#ext-dep) for details.
+The **file_storage** attribute defines the file systems, mount targets and snapshot policies for OCI File Storage service. The optional attribute **default_subnet_id** applies to all mount targets, unless overridden by **subnet_id** attribute in each mount target. Attribute **subnet_id** is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *network_dependency* variable. See [External Dependencies](#ext-dep) for details.
 
 ##### <a name="file-systems">File Systems</a>
 File systems are defined using the optional attribute **file_systems**. A Terraform map of objects, where each object is referred by an identifying key. The following attributes are supported:
