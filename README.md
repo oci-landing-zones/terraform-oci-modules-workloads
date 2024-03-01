@@ -6,8 +6,7 @@ This repository contains Terraform modules for managing workload resources in OC
 
 The following modules are available:
 - [CIS Compute & Storage](./cis-compute-storage/)
-- OKE (Container Engine for Kubernetes) - soon
-- Databases - soon
+- OKE (Oracle Kubernetes Engine) - soon
 
 Helper modules:
 - [Platform Images](./platform-images/) - aids in finding OCI Platform images. Use it to obtain image information for provisioning a Compute instance.
@@ -23,6 +22,7 @@ This repository is part of a broader collection of repositories containing modul
 - [Governance](https://github.com/oracle-quickstart/terraform-oci-cis-landing-zone-governance)
 - [Security](https://github.com/oracle-quickstart/terraform-oci-cis-landing-zone-security)
 - [Observability & Monitoring](https://github.com/oracle-quickstart/terraform-oci-cis-landing-zone-observability)
+- [Secure Workloads](https://github.com/oracle-quickstart/terraform-oci-secure-workloads) - current repository
 
 The modules in this collection are designed for flexibility, are straightforward to use, and enforce CIS OCI Foundations Benchmark recommendations when possible.
 
