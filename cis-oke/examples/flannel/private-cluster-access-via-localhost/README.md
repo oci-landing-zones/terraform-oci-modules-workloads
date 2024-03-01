@@ -2,11 +2,11 @@
 
 ## Introduction
 
-This example shows how to deploy Kubernetes Clusters and Node Pools in OCI using the [cis-oke module](../../../). It deploys one Flannel CNI OKE Cluster, one Node Pool, one Bastion Service and one Bastion Session for application management with the characteristics described below.
+This example shows how to deploy OKE clusters and node pools in OCI using the [cis-oke module](https://github.com/oracle-quickstart/terraform-oci-secure-workloads/tree/main/cis-oke). It deploys one Flannel-based OKE Cluster, one node pool, one Bastion service and one Bastion session for application management with the characteristics described below.
 
 ### Pre-Requisite
 
-The OKE cluster, the Node Pool and the Bastion Service depend on a pre existing Virtual Cloud Network (VCN). A VCN built specifically for this deployment is available in  [flannel_external network example](https://orahub.oci.oraclecorp.com/nace-shared-services/terraform-oci-cis-landing-zone-networking/-/tree/main/examples/oke-examples/flannel_external).
+The OKE cluster, the node pool and the Bastion service depend on a pre-existing Virtual Cloud Network (VCN). A VCN built specifically for this deployment is available in [flannel_external network example](https://github.com/oracle-quickstart/terraform-oci-cis-landing-zone-networking/tree/main/examples/oke-examples/flannel_external).
 
 ### Resources Deployed by this Example
 
@@ -29,9 +29,9 @@ Bastion Service (BASTION-1):
 - The Bastion type is standard.
 
 Bastion Session (SESSION-1):
-- It will be created under BASTION-1 Bastion Service.
-- It has the **PORT_FORWARDING** type to allow port forward to the OKE API Endpoint.
-- It targets the api endpoint on OKE1 Cluster on port 6443.
+- It will be created under BASTION-1 Bastion service.
+- It has the **PORT_FORWARDING** type to allow port forwarding to the OKE API endpoint.
+- It targets the OKE1 cluster's API endpoint on port 6443.
 
 See [input.auto.tfvars.template](./input.auto.tfvars.template) for the variables configuration.
 
@@ -41,7 +41,7 @@ See [input.auto.tfvars.template](./input.auto.tfvars.template) for the variables
 2. Within *\<project-name\>.auto.tfvars*, provide tenancy connectivity information and adjust the input variables, by making the appropriate substitutions:
    - Replace \<REPLACE-BY-\*\> placeholders with appropriate values. 
    
-Refer to [cis-oke module README.md](../../../README.md) for overall attributes usage.
+Refer to [cis-oke module README.md](https://github.com/oracle-quickstart/terraform-oci-secure-workloads/tree/main/cis-oke/README.md) for overall attributes usage.
 
 3. In this folder, run the typical Terraform workflow:
 ```
@@ -50,16 +50,23 @@ terraform plan -out plan.out
 terraform apply plan.out
 ```
 
-## Managing Kubernetes Applications
+## Accessing the Cluster
 
 Managing Kubernetes applications in OCI includes the ability to invoke OKE API endpoint and (in some rare cases) SSH'ing into Worker nodes. 
-Invoking the OKE API endpoint and accessing Worker nodes differs depending on whether they are in a private or public subnet. This example assumes the API endpoint and Worker nodes are in private subnets and are invoked/accessed via a Bastion Service endpoint that is deployed in the Operator subnet, which is also private. 
+Invoking the OKE API endpoint and accessing Worker nodes differs depending on whether they are in a private or public subnet. This example assumes the API endpoint and Worker nodes are in private subnets and are invoked/accessed via a Bastion Service endpoint that is deployed in the Bastion subnet, which is also private. 
 
-The code will automatically create a **kubeconfig** file in the root folder, required in order to access the API.
+The code automatically creates a Kube config file in the root folder, required for accessing the API endpoint.
 
-To create the connection to the OKE Cluster API endpoint, use the connection string provided by the **sessions** output, that would look like:
+To connect to the API endpoint, in a terminal, execute the command provided in the **sessions** output, that would look like:
 ```
 ssh -i ~/.ssh/id_rsa -N -L 6443:10.0.x.x:6443 -p 22 ocid1.bastionsession.oc1...@host.bastion.eu-frankfurt-1.oci.oraclecloud.com
 ```
 
-After that open another terminal and you have to set the KUBECONFIG export the **kubeconfig** file that was created in the root terraform code folder.```Example: export KUBECONFIG =<fulll-path-to-kubeconfig>```
+Following that, in another terminal, set the KUBECONFIG environment variable to the Kube config file that was created in the root terraform code folder. Example: ```export KUBECONFIG = <full-path-to-kubeconfig>```
+
+You are now all set to use *kubectl* tool to manage your OKE applications. As an example, you can try deploying a sample application, check it and delete it: 
+```
+> kubectl create -f https://k8s.io/examples/application/deployment.yaml
+> kubectl get deployments
+> kubectl delete -f https://k8s.io/examples/application/deployment.yaml
+```
