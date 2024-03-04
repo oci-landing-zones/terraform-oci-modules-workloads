@@ -42,12 +42,12 @@ variable "clusters_configuration" {
         }))
       }))
 
-      networking = object({                         # cluster networking settings.
-        vcn_id             = string                 # the vcn where the cluster will be created.
-        public_endpoint    = optional(bool)         # if the api endpoint is public. default to false.
-        api_nsg_ids        = optional(list(string)) # the nsgs used by the api endpoint.
-        endpoint_subnet_id = string                 # the subnet for the api endpoint.
-        services_subnet_id = optional(list(string)) # the subnets for the services(Load Balancers).
+      networking = object({                             # cluster networking settings.
+        vcn_id                 = string                 # the vcn where the cluster will be created.
+        is_api_endpoint_public = optional(bool)         # if the api endpoint is public. default to false.
+        api_endpoint_nsg_ids   = optional(list(string)) # the nsgs used by the api endpoint.
+        api_endpoint_subnet_id = string                 # the subnet for the api endpoint.
+        services_subnet_id     = optional(list(string)) # the subnets for the services(Load Balancers).
       })
       encryption = optional(object({              # encryption settings
         kube_secret_kms_key_id = optional(string) # # the KMS key to assign as the master encryption key for kube secrets. default_kube_secret_kms_key_id is used if this is not defined.

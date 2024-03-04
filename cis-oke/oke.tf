@@ -13,7 +13,7 @@ data "oci_containerengine_cluster_option" "cluster_options" {
 
 data "oci_core_subnet" "subnet" {
   for_each  = var.clusters_configuration != null ? var.clusters_configuration["clusters"] : {}
-  subnet_id = length(regexall("^ocid1.*$", each.value.networking.endpoint_subnet_id)) > 0 ? each.value.networking.endpoint_subnet_id : var.network_dependency["subnets"][each.value.networking.endpoint_subnet_id].id
+  subnet_id = length(regexall("^ocid1.*$", each.value.networking.api_endpoint_subnet_id)) > 0 ? each.value.networking.api_endpoint_subnet_id : var.network_dependency["subnets"][each.value.networking.api_endpoint_subnet_id].id
 }
 
 resource "oci_containerengine_cluster" "these" {
@@ -41,7 +41,7 @@ resource "oci_containerengine_cluster" "these" {
     }
     ## Check 5: Network validation, private endpoint in private subnet.
     precondition {
-      condition     = each.value.networking.public_endpoint == true ? data.oci_core_subnet.subnet[each.key].prohibit_internet_ingress == false ? true : false : true
+      condition     = each.value.networking.is_api_endpoint_public == true ? data.oci_core_subnet.subnet[each.key].prohibit_internet_ingress == false ? true : false : true
       error_message = "VALIDATION FAILURE in cluster \"${each.key}\": Cannot specify public endpoint on a private subnet."
     }
   }
@@ -55,9 +55,9 @@ resource "oci_containerengine_cluster" "these" {
   defined_tags  = each.value.defined_tags != null ? each.value.defined_tags : var.clusters_configuration.default_defined_tags
   freeform_tags = merge(local.cislz_module_tag, each.value.freeform_tags != null ? each.value.freeform_tags : var.clusters_configuration.default_freeform_tags)
   endpoint_config {
-    is_public_ip_enabled = each.value.networking.public_endpoint != null ? each.value.networking.public_endpoint : false
-    nsg_ids              = each.value.networking.api_nsg_ids != null ? [for nsg in each.value.networking.api_nsg_ids : (length(regexall("^ocid1.*$", nsg))) > 0 ? nsg : var.network_dependency["network_security_groups"][nsg].id] : []
-    subnet_id            = length(regexall("^ocid1.*$", each.value.networking.endpoint_subnet_id)) > 0 ? each.value.networking.endpoint_subnet_id : var.network_dependency["subnets"][each.value.networking.endpoint_subnet_id].id
+    is_public_ip_enabled = each.value.networking.is_api_endpoint_public != null ? each.value.networking.is_api_endpoint_public : false
+    nsg_ids              = each.value.networking.api_endpoint_nsg_ids != null ? [for nsg in each.value.networking.api_endpoint_nsg_ids : (length(regexall("^ocid1.*$", nsg))) > 0 ? nsg : var.network_dependency["network_security_groups"][nsg].id] : []
+    subnet_id            = length(regexall("^ocid1.*$", each.value.networking.api_endpoint_subnet_id)) > 0 ? each.value.networking.api_endpoint_subnet_id : var.network_dependency["subnets"][each.value.networking.api_endpoint_subnet_id].id
   }
   dynamic "image_policy_config" {
     for_each = each.value.image_signing != null ? each.value.image_signing.image_policy_enabled ? [1] : [] : []
