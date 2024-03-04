@@ -2,11 +2,11 @@
 
 ## Introduction
 
-This example shows how to deploy Kubernetes clusters and node pools in OCI using the [cis-oke module](https://github.com/oracle-quickstart/terraform-oci-secure-workloads/tree/main/cis-oke). It deploys one Flannel CNI OKE cluster and one node pool with the characteristics described below.
+This example shows how to deploy Kubernetes clusters and node pools in OCI using the [cis-oke module](https://github.com/oracle-quickstart/terraform-oci-secure-workloads/tree/main/cis-oke). It deploys Flannel-based basic OKE cluster and one node pool with the characteristics described below. No cluster access automation is provided.
 
 ### Pre-Requisite
 
-The OKE cluster and the Node Pool depend on a pre existing Virtual Cloud Network (VCN). A VCN built specifically for this deployment is available in [flannel_external network example](https://github.com/oracle-quickstart/terraform-oci-cis-landing-zone-networking/tree/main/examples/oke-examples/flannel_external).
+The OKE cluster and the Node Pool depend on a pre existing Virtual Cloud Network (VCN). A VCN built specifically for this deployment is available in [flannel network example](https://github.com/oracle-quickstart/terraform-oci-cis-landing-zone-networking/tree/main/examples/oke-examples/flannel).
 
 ### Resources Deployed by this Example
 

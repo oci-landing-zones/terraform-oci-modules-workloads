@@ -29,10 +29,10 @@ clusters_configuration = {
     OKE1 = {
       name = "OKE1"
       networking = {
-        vcn_id             = "<REPLACE-BY-VCN-OCID>"
-        api_nsg_ids        = ["<REPLACE-BY-API-NSG-IDS>"]
-        endpoint_subnet_id = "<REPLACE-BY-ENDPOINT-SUBNET-OCID>"
-        services_subnet_id = ["<REPLACE-BY-SERVICES-SUBNET-OCID>"]
+        vcn_id                 = "<REPLACE-BY-VCN-OCID>"
+        api_endpoint_nsg_ids   = ["<REPLACE-BY-API-ENDPOINT-NSG-IDS>"]
+        api_endpoint_subnet_id = "<REPLACE-BY-API-ENDPOINT-SUBNET-OCID>"
+        services_subnet_id     = ["<REPLACE-BY-SERVICES-SUBNET-OCID>"]
       }
     }
   }
@@ -59,25 +59,25 @@ workers_configuration = {
 bastions_configuration = {
     bastions = { 
       BASTION-1 = {
-        bastion_type                          = "STANDARD"
-        compartment_id                        = "<REPLACE-BY-COMPARTMENT-OCID>"
-        subnet_id                             = "<REPLACE-BY-OPERATOR-SUBNET-OCID>"
-        cidr_block_allow_list                 = ["<REPLACE-BY-CIDR-BLOCK>"]
-        name                                  = "<REPLACE-BY-BASTION-NAME>"
+        bastion_type          = "STANDARD"
+        compartment_id        = "<REPLACE-BY-COMPARTMENT-OCID>"
+        subnet_id             = "<REPLACE-BY-OPERATOR-SUBNET-OCID>"
+        cidr_block_allow_list = ["<REPLACE-BY-CIDR-BLOCK>"] # Try to be as much specific as possible, and avoid entering "0.0.0.0\0".
+        name                  = "FlannelOkeClusterBastionByTerraform"
     }
   }
 }
 
 sessions_configuration = {
     sessions = {
-      SESSION-1 = {
-        bastion_id             = "BASTION-1"
-        ssh_public_key         = "<REPLACE-BY-SSH-PUBLIC-KEY-PATH>"
-        ssh_private_key        = "<REPLACE-BY-SSH-PRIVATE-KEY-PATH>"
-        session_type           = "PORT_FORWARDING"
-        target_resource        = "OKE1"
-        target_port            = "6443"
-        session_name           = "<REPLACE-BY-SESSION-NAME>"
+      PORT-FORWARDING-SESSION = {
+        bastion_id      = "BASTION-1"
+        ssh_public_key  = "<REPLACE-BY-SSH-PUBLIC-KEY-PATH>"
+        ssh_private_key = "<REPLACE-BY-SSH-PRIVATE-KEY-PATH>"
+        session_type    = "PORT_FORWARDING"
+        target_resource = "OKE1"
+        target_port     = "6443"
+        session_name    = "PortForwardingSessionByTerraform"
       }
   }
 }

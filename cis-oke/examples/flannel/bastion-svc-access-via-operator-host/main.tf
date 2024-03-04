@@ -17,7 +17,7 @@ module "operator_instance" {
 }
 
 module "bastion" {
-  source                 = "../../../../../terraform-oci-cis-landing-zone-security/bastion-service/"
+  source                 = "../../../../../terraform-oci-cis-landing-zone-security/bastion/"
   bastions_configuration = var.bastions_configuration
   sessions_configuration = var.sessions_configuration
   instances_dependency   = module.operator_instance.instances
@@ -41,7 +41,7 @@ data "local_file" "existing" {
   filename = "${path.module}/install_kubectl.sh"
 }
 
-resource "null_resource" "install_kubectl" { # This null resource is used to install the kubectl and set the Operator instance OCI authentication to Instance Principal.
+resource "null_resource" "install_kubectl-1" { # This null resource is used to install the kubectl and set the Operator instance OCI authentication to Instance Principal.
   for_each = var.sessions_configuration["sessions"]
   provisioner "local-exec" {
     command = "${module.bastion.sessions[0][each.key]} -y -x '${data.local_file.existing.content}'"
