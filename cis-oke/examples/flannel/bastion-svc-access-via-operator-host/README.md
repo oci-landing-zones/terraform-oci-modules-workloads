@@ -2,51 +2,63 @@
 
 ## Introduction
 
-This example shows how to deploy OKE clusters and node pools in OCI using the [cis-oke module](https://github.com/oracle-quickstart/terraform-oci-secure-workloads/tree/main/cis-oke). It deploys one Flannel-based basic OKE Cluster, one node pool, one Bastion service endpoint, one Bastion session, and one Compute instance with the characteristics described below. Once the cluster is provisioned, cluster access is automatically enabled from the provisioned Compute instance, which is accessible via the OCI Bastion service endpoint. We refer to this Compute instance as the OKE operator host.
+This example shows how to deploy OKE clusters and node pools in OCI using the [cis-oke module](https://github.com/oracle-quickstart/terraform-oci-secure-workloads/tree/main/cis-oke). It deploys one Flannel-based basic OKE Cluster, one node pool, one Bastion service endpoint, one Bastion session, and one Compute instance with the characteristics described below. 
 
-### Pre-Requisite
+Once the cluster is provisioned, cluster access is automatically enabled from the provisioned Compute instance, which is accessible via the OCI Bastion service endpoint. We refer to this Compute instance as the OKE operator host.
 
-The OKE cluster and the Node Pool depend on a pre existing Virtual Cloud Network (VCN). A VCN built specifically for this deployment is available in [flannel network example](https://github.com/oracle-quickstart/terraform-oci-cis-landing-zone-networking/tree/main/examples/oke-examples/flannel).
+### Pre-Requisites
 
-The Operator Instance has to be an Instance Principal in order to access the OKE API Endpoint. Meaning a dynamic group and policies needs to be in place before executing the terraform code.
-- Dynamic group matching rule: ```instance.compartment.id='ocid1.compartment...'```
-- Policies: ```Allow dynamic-group <<your-dynamic-group-name>> to manage cluster-family in compartment <<your-compartment-name>>```
-            ```Allow dynamic-group <<your-dynamic-group-name>> to manage virtual-network-family in compartment <<your-compartment-name>>```
+#### Networking
+The OKE cluster and the node pool depend on a pre existing Virtual Cloud Network (VCN). A VCN built specifically for this deployment is available in [flannel network example](https://github.com/oracle-quickstart/terraform-oci-cis-landing-zone-networking/tree/main/examples/oke-examples/flannel).
+
+Additionally, the operator host requires an instance principal credential properly authorized for managing the OKE cluster. That means a dynamic group and a policy are required.
+
+#### IAM Dynamic Group and Policy
+##### Dynamic Group Matching Rule
+```
+instance.compartment.id='<COMPUTE-INSTANCE-COMPARTMENT-OCID>'
+```
+
+##### Dynamic Group Policy
+```
+Allow dynamic-group <DYNAMIC-GROUP-NAME> to use cluster-family in compartment <CLUSTER-COMPARTMENT-NAME>
+```
+
+Both resources are automated by the [OKE Operator Host IAM example](../oke-operator-host-iam/).
+
 
 ### Resources Deployed by this Example
 
-OKE Cluster (OKE1):
-- It will have the latest kubernetes version by default.
-- It will have the flannel CNI by default.
-- It will have a private api endpoint by default.
+OKE cluster (OKE1):
+- of *basic* type;
+- set with the latest Kubernetes version;
+- with Flannel CNI;
+- with a private API endpoint.
 
-Node Pool (NODEPOOL1):
-- The node pool will be created in OKE Cluster.
-- The nodes will be created in the same compartment as the OKE Cluster.
-- The nodes will have the same kubernetes version as the OKE Cluster.
-- The node pool will have three worker nodes.
-- The nodes will use the "VM.Standard.E4.Flex" shape as defined by the *node_shape* attribute.
-- The nodes will have 16 GB memory and 1 OCPU by default.
-- The nodes boot volume size will be 60GB and will be terminated when the nodes are destroyed by default.
-- The nodes will be placed as following: node 1 in availability domain 1 (AD 1) and fault domain 1 (FD 1), node 2 in AD 1 and FD 2, and lastly,node 3 will be placed in AD 1 and FD 3 by default.
+Node pool (NODEPOOL1):
+- created in the same compartment as the cluster;
+- with the same Kubernetes version as the cluster;
+- with one worker node (it is set by *workers_configuration.node_pools.NODEPOOL1.size* attribute);
+- node has the "VM.Standard.E4.Flex" shape;
+- node has 16 GB memory and 1 OCPU by default;
+- node boot volume size is 60GB and is terminated when the node is destroyed.
 
-Compute Instance (INSTANCE-1):
-- The instance is based on "VM.Standard.E4.Flex" shape, as defined by the *shape* attribute.
-- The instance is based on the "Oracle-Linux-Cloud-Developer-8.7-2023.04.28-1" platform image, as defined by *image.id* attribute. Use the [platform-images module](../../../../platform-images/) to find Platform images information based on a search filter.
-- The instance will **not** have the boot volume preserved on termination, as defined by *boot_volume.preserve_on_instance_deletion* attribute.
-- The instance boot volume is set to be backed up per Oracle-managed *bronze* backup policy (enforced by the module by default).
-- The instance has a few Cloud Agent plugins enabled, as defined by *cloud_agent.plugins* attribute. Particularly important to this use case is the Bastion plugin, that enables the instance to accept SSH connections from OCI Bastion service.
+Compute instance (INSTANCE-1), a.k.a. operator host:
+- based on "VM.Standard.E4.Flex" shape, as defined by the *shape* attribute.
+- based on the "Oracle-Linux-Cloud-Developer-8.7-2023.04.28-1" platform image, as defined by *image.id* attribute. Use the [platform-images module](https://github.com/oracle-quickstart/terraform-oci-secure-workloads/tree/main/platform-images) to find Platform images information based on a search filter.
+- it does **not** have the boot volume preserved on termination, as defined by *boot_volume.preserve_on_instance_deletion* attribute.
+- the boot volume is set to be backed up per Oracle-managed *bronze* backup policy (enforced by the module by default).
+- the instance enables the Cloud Agent Bastion plugin, enabling it to accept SSH connections from OCI Bastion service.
 
-Bastion Service (BASTION-1):
-- The Bastion should be in the same subnet as the Compute Instance.
+Bastion Service endpoint (BASTION-1):
+- created in the same subnet as the Compute Instance.
 
-Bastion Session (SESSION-1):
-- It will be created under BASTION-1 Bastion Service.
-- It has the **MANAGED_SSH** type to allow ssh connection to the operator instance.
+Bastion session (SESSION-1):
+- of **MANAGED_SSH** type, allowing SSH connectivity to the operator host.
 
 See [input.auto.tfvars.template](./input.auto.tfvars.template) for the variables configuration.
 
-## Using this example
+## Using this Example
 1. Rename *input.auto.tfvars.template* to *\<project-name\>.auto.tfvars*, where *\<project-name\>* is any name of your choice.
 
 2. Within *\<project-name\>.auto.tfvars*, provide tenancy connectivity information and adjust the input variables, by making the appropriate substitutions:

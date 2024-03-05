@@ -21,7 +21,6 @@ Check the [examples](./examples/) folder for actual module usage.
 ## <a name="features">Features</a>
 The following security features are currently supported by the module:
 
-
 ### <a name="oke-features">OKE</a>
 - CIS profile level drives data at rest encryption configuration.
 - Image encryption with customer managed keys from OCI Vault service.
@@ -33,7 +32,6 @@ The following security features are currently supported by the module:
 - In-transit encryption for boot volumes and attached block volumes.
 
 
-
 ## <a name="requirements">Requirements</a>
 ### IAM Permissions
 
@@ -42,14 +40,14 @@ This module requires the following OCI IAM permissions in the compartments where
 For deploying Kubernetes Clusters:
 ```
 Allow group <GROUP-NAME> to manage instance-family in compartment <OKE-COMPARTMENT-NAME> 
-Allow group <group-name> to use subnets in compartment <OKE-COMPARTMENT-NAME> 
-Allow group <group-name> to manage virtual-network-family in compartment <OKE-COMPARTMENT-NAME> 
-Allow group <group-name> to inspect compartments in compartment <OKE-COMPARTMENT-NAME> 
-Allow group <group-name> to use vnics in compartment <OKE-COMPARTMENT-NAME> 
-Allow group <group-name> to use network-security-groups  in compartment <OKE-COMPARTMENT-NAME> 
-Allow group <group-name> to use private-ips  in compartment <OKE-COMPARTMENT-NAME> 
-Allow group <group-name> to manage public-ips  in compartment <OKE-COMPARTMENT-NAME> 
-Allow group <group-name> to manage cluster-family in compartment <OKE-COMPARTMENT-NAME> 
+Allow group <GROUP-NAME> to use subnets in compartment <OKE-COMPARTMENT-NAME> 
+Allow group <GROUP-NAME> to manage virtual-network-family in compartment <OKE-COMPARTMENT-NAME> 
+Allow group <GROUP-NAME> to inspect compartments in compartment <OKE-COMPARTMENT-NAME> 
+Allow group <GROUP-NAME> to use vnics in compartment <OKE-COMPARTMENT-NAME> 
+Allow group <GROUP-NAME> to use network-security-groups  in compartment <OKE-COMPARTMENT-NAME> 
+Allow group <GROUP-NAME> to use private-ips  in compartment <OKE-COMPARTMENT-NAME> 
+Allow group <GROUP-NAME> to manage public-ips  in compartment <OKE-COMPARTMENT-NAME> 
+Allow group <GROUP-NAME> to manage cluster-family in compartment <OKE-COMPARTMENT-NAME> 
 ```
 
 For more information about OKE Policies [click here](https://docs.oracle.com/en-us/iaas/Content/ContEng/Concepts/contengpolicyconfig.htm#Policy_Configuration_for_Cluster_Creation_and_Deployment).
@@ -102,13 +100,13 @@ The clusters themselves are defined within the **clusters** attribute, In Terraf
     - **freeform_tags** &ndash; (Optional) LB freeform_tags. default_freeform_tags is used if this is not defined.         
 - **networking** &ndash; (Optional) cluster networking settings.
   - **vcn_id** &ndash;  the vcn where the cluster will be created. It can be assigned either a literal OCID or a reference (a key) to an OCID in *network_dependency* variable. See [External Dependencies](#ext-dep) for details.
-  - **public_endpoint** &ndash; (Optional) if the api endpoint is public. default to false.
-  - **api_nsg_ids** &ndash; (Optional) the nsgs used by the api endpoint. It can be assigned either a literal OCID or a reference (a key) to an OCID in *network_dependency* variable. See [External Dependencies](#ext-dep) for details.
-  - **endpoint_subnet_id** &ndash;  the subnet for the api endpoint. It can be assigned either a literal OCID or a reference (a key) to an OCID in *network_dependency* variable. See [External Dependencies](#ext-dep) for details.
+  - **is_api_endpoint_public** &ndash; (Optional) if the OKE API endpoint is public. Default to false.
+  - **api_endpoint_nsg_ids** &ndash; (Optional) the NSGss used by the OKE API endpoint. It can be assigned either a literal OCID or a reference (a key) to an OCID in *network_dependency* variable. See [External Dependencies](#ext-dep) for details.
+  - **api_endpoint_subnet_id** &ndash;  the subnet for the OKE API endpoint. It can be assigned either a literal OCID or a reference (a key) to an OCID in *network_dependency* variable. See [External Dependencies](#ext-dep) for details.
   - **services_subnet_id** &ndash; (Optional) the subnet for the cluster service. It can be assigned either a literal OCID or a reference (a key) to an OCID in *network_dependency* variable. See [External Dependencies](#ext-dep) for details.
 - **encryption** &ndash; (Optional) encryption settings
   - **kube_secret_kms_key_id** &ndash; (Optional) the KMS key to assign as the master encryption key for kube secrets. default_kube_secret_kms_key_id is used if this is not defined. This attribute is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *kms_dependency* variable. See [External Dependencies](#ext-dep) for details.
-- **image_signing** &ndash; (Optional) image signing ecryption settings
+- **image_signing** &ndash; (Optional) image signing encryption settings
   - **image_policy_enabled** &ndash; (Optional) whether the image verification policy is enabled. default to false.
   - **img_kms_key_id** &ndash; (Optional) the KMS key to assign as the master encryption key for images. default_img_kms_key_id is used if this is not defined. This attribute is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *kms_dependency* variable. See [External Dependencies](#ext-dep) for details.
 

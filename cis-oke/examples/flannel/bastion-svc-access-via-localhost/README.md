@@ -2,7 +2,9 @@
 
 ## Introduction
 
-This example shows how to deploy OKE clusters and node pools in OCI using the [cis-oke module](https://github.com/oracle-quickstart/terraform-oci-secure-workloads/tree/main/cis-oke). It deploys one Flannel-based basic OKE Cluster, one node pool, one Bastion service endpoint and one Bastion session for application management with the characteristics described below. Once the cluster is provisioned, cluster access is automatically enabled from localhost via the OCI Bastion service endpoint.
+This example shows how to deploy OKE clusters and node pools in OCI using the [cis-oke module](https://github.com/oracle-quickstart/terraform-oci-secure-workloads/tree/main/cis-oke). It deploys one Flannel-based basic OKE Cluster, one node pool, one Bastion service endpoint and one Bastion session for application management with the characteristics described below. 
+
+Once the cluster is provisioned, cluster access is automatically enabled from localhost via the OCI Bastion service endpoint.
 
 ### Pre-Requisite
 
@@ -10,30 +12,30 @@ The OKE cluster and the Node Pool depend on a pre existing Virtual Cloud Network
 
 ### Resources Deployed by this Example
 
-OKE Cluster (OKE1):
+OKE cluster (OKE1):
 - of *basic* type;
 - set with the latest Kubernetes version;
 - with Flannel CNI;
 - with a private API endpoint.
 
-Node Pool (NODEPOOL1):
+Node pool (NODEPOOL1):
 - created in the same compartment as the cluster;
 - with the same Kubernetes version as the cluster;
 - with one worker node (it is set by *workers_configuration.node_pools.NODEPOOL1.size* attribute);
 - node has the "VM.Standard.E4.Flex" shape;
 - node has 16 GB memory and 1 OCPU by default;
-- node boot volume size is 60GB and is terminated when the node is destroyed;
+- node boot volume size is 60GB and is terminated when the node is destroyed.
 
-Bastion Service (BASTION-1):
+Bastion service (BASTION-1):
 - of *standard* type.
 
-Bastion Session (SESSION-1):
+Bastion session (SESSION-1):
 - of **PORT_FORWARDING** type, allowing port forwarding to the OKE API endpoint;
-- targets the OKE1 cluster API endpoint on port 6443.
+- targeting the OKE1 cluster API endpoint on port 6443.
 
 See [input.auto.tfvars.template](./input.auto.tfvars.template) for the variables configuration.
 
-## Using this example
+## Using this Example
 1. Rename *input.auto.tfvars.template* to *\<project-name\>.auto.tfvars*, where *\<project-name\>* is any name of your choice.
 
 2. Within *\<project-name\>.auto.tfvars*, provide tenancy connectivity information and adjust the input variables, by making the appropriate substitutions:
