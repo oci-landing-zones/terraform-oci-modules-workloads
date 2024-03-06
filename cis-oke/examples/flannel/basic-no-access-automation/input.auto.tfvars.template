@@ -29,10 +29,10 @@ clusters_configuration = {
     OKE1 = {
       name     = "<REPLACE-BY-CLUSTER-NAME>"
       networking = {
-        vcn_id             = "<REPLACE-BY-VCN-OCID>"
-        api_nsg_ids        = ["<REPLACE-BY-NSG-IDS>"]
-        endpoint_subnet_id = "<REPLACE-BY-ENDPOINT-SUBNET-OCID>"
-        services_subnet_id = ["<REPLACE-BY-SERVICES-SUBNET-OCID>"]
+        vcn_id                 = "<REPLACE-BY-VCN-OCID>"
+        api_endpoint_nsg_ids   = ["<REPLACE-BY-NSG-IDS>"]
+        api_endpoint_subnet_id = "<REPLACE-BY-ENDPOINT-SUBNET-OCID>"
+        services_subnet_id     = ["<REPLACE-BY-SERVICES-SUBNET-OCID>"]
       }
     }
   }
