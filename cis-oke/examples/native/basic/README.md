@@ -2,11 +2,17 @@
 
 ## Introduction
 
-This example shows how to deploy Kubernetes Clusters and Node Pools/Virtual Node Pools in OCI using the [cis-oke module](../../). It deploys one Native CNI OKE Cluster and one Node Pool with the characteristics described below.
+This example shows how to deploy Kubernetes clusters and node pools in OCI using the [cis-oke module](https://github.com/oracle-quickstart/terraform-oci-secure-workloads/tree/main/cis-oke). It deploys Native-based basic OKE cluster and one node pool with the characteristics described below. 
+
+This example provides no cluster access automation. Automating access to the cluster can be implemented with the [OCI Bastion service module](https://github.com/oracle-quickstart/terraform-oci-cis-landing-zone-security/tree/main/bastion). See the [available examples](https://github.com/oracle-quickstart/terraform-oci-cis-landing-zone-security/tree/main/bastion/examples).
+
+As alternatives to this example, the following examples are available with full cluster access automation:
+   1. [OKE Native with Localhost Access Example](../private-cluster-access-via-localhost/), where the OKE cluster is managed from a host external to OCI (like the user laptop). 
+   2. [OKE Native with Operator Access Example](../private-cluster-access-via-operator/), where the OKE cluster is managed from a Compute instance deployed in OCI. 
 
 ### Pre-Requisite
 
-The OKE cluster and the Node Pool depend on a pre existing Virtual Cloud Network (VCN). A VCN built specifically for this deployment is available in [native_external network example](https://orahub.oci.oraclecorp.com/nace-shared-services/terraform-oci-cis-landing-zone-networking/-/tree/main/examples/oke-examples/native_external).
+The OKE cluster and the Node Pool depend on a pre existing Virtual Cloud Network (VCN). A VCN built specifically for this deployment is available in [native network example](https://github.com/oracle-quickstart/terraform-oci-cis-landing-zone-networking/tree/main/examples/oke-examples/native).
 
 ### Resources Deployed by this Example
 
@@ -56,19 +62,16 @@ terraform plan -out plan.out
 terraform apply plan.out
 ```
 
-## Managing Kubernetes Applications
+## Accessing the Cluster
 
-Managing Kubernetes applications in OCI includes the ability to invoke OKE API endpoint and (in some rare cases) SSH'ing into Worker nodes. 
-Invoking the OKE API endpoint and accessing Worker nodes differs depending on whether they are in a private or public subnet:
+Managing Kubernetes applications in OCI includes the ability to invoke OKE API endpoint and SSH'ing into worker nodes. 
+As the endpoint and worker nodes are in private subnets, access can be enabled through the OCI Bastion service or via a jump host that is deployed in a public subnet. 
 
-### Public
-- API endpoint
-   The Cluster access can be enabled by setting up the kubeconfig file. [More information](https://docs.oracle.com/en-us/iaas/Content/ContEng/Tasks/contengdownloadkubeconfigfile.htm).
-- Workers
-   The ssh access to worker nodes is enabled by adding your public ssh key on them. [More information](https://docs.oracle.com/en-us/iaas/Content/ContEng/Tasks/contengconnectingworkernodesusingssh.htm).  
-### Private
-- API endpoint
-   The Cluster access can be enabled by setting up a Bastion Service with a port forwarding Bastion session.[More information](https://docs.oracle.com/en-us/iaas/Content/ContEng/Tasks/contengsettingupbastion.htm).
-- Workers
-   The ssh access to worker nodes is enabled by setting up a Bastion Service with a managed Bastion session.[More information](https://docs.oracle.com/en-us/iaas/Content/ContEng/Tasks/contengsettingupbastion.htm).
+### Access via OCI Bastion Service
+- **OKE API endpoint**: Cluster access is enabled by configuring a *kubeconfig* file and setting up the OCI Bastion service endpoint with a Port Forwarding session. [More information](https://docs.oracle.com/en-us/iaas/Content/ContEng/Tasks/contengsettingupbastion.htm). 
+- **Worker nodes**: SSH access to worker nodes (\*) is enabled by setting up OCI Bastion service endpoint with a Managed SSH session. [More information](https://docs.oracle.com/en-us/iaas/Content/ContEng/Tasks/contengsettingupbastion.htm).
+
+Utilize the [OCI Bastion service module](https://github.com/oracle-quickstart/terraform-oci-cis-landing-zone-security/tree/main/bastion) to automate OCI Bastion service.
+
+(\*) SSH access to worker nodes via the OCI Bastion service requires the Cloud Agent Bastion plugin enabled in the worker nodes.
 

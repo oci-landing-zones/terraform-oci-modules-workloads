@@ -17,11 +17,11 @@ module "operator_instance" {
 }
 
 module "bastion" {
-  source                 = "../../../../../terraform-oci-cis-landing-zone-security/bastion-service/"
+  depends_on             = [module.oke]
+  source                 = "../../../../../terraform-oci-cis-landing-zone-security/bastion/"
   bastions_configuration = var.bastions_configuration
   sessions_configuration = var.sessions_configuration
   instances_dependency   = module.operator_instance.instances
-
 }
 
 data "oci_containerengine_cluster_kube_config" "kube_config" {
@@ -33,7 +33,10 @@ data "oci_containerengine_cluster_kube_config" "kube_config" {
 resource "null_resource" "add_kubeconfig" { # This null resource is used to add the kube config on the Operator instance using the Bastion Session.
   for_each = var.sessions_configuration["sessions"]
   provisioner "local-exec" {
-    command = "${module.bastion.sessions[0][each.key]} -y -x 'echo \"${join(",", [for cluster in data.oci_containerengine_cluster_kube_config.kube_config : tostring(cluster.content)])}\" >> ~/.kube/config'"
+    command = "${module.bastion.sessions[0][each.key]} -y -o StrictHostKeyChecking=no -x 'mkdir ~/.kube/'"
+  }
+  provisioner "local-exec" {
+    command = "${module.bastion.sessions[0][each.key]} -y -o StrictHostKeyChecking=no -x 'echo \"${join(",", [for cluster in data.oci_containerengine_cluster_kube_config.kube_config : tostring(cluster.content)])}\" >> ~/.kube/config'"
   }
 }
 
@@ -44,6 +47,6 @@ data "local_file" "existing" {
 resource "null_resource" "install_kubectl" { # This null resource is used to install the kubectl and set the Operator instance OCI authentication to Instance Principal.
   for_each = var.sessions_configuration["sessions"]
   provisioner "local-exec" {
-    command = "${module.bastion.sessions[0][each.key]} -y -x '${data.local_file.existing.content}'"
+    command = "${module.bastion.sessions[0][each.key]} -y -o StrictHostKeyChecking=no -x '${data.local_file.existing.content}'"
   }
 }

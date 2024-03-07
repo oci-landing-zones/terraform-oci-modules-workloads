@@ -2,16 +2,27 @@
 
 ## Introduction
 
-This example shows how to deploy Kubernetes Clusters and Node Pools in OCI using the [cis-oke module](../../../). It deploys one Native CNI OKE Cluster, one Node Pool, one Bastion Service, one Bastion Session and one Compute instance (operator host) for application management with the characteristics described below.
+This example shows how to deploy OKE clusters and node pools in OCI using the [cis-oke module](https://github.com/oracle-quickstart/terraform-oci-secure-workloads/tree/main/cis-oke). It deploys one Native-based basic OKE Cluster, one node pool, one Bastion service endpoint, one Bastion session, and one Compute instance with the characteristics described below. 
 
-### Pre-Requisite
+Once the cluster is provisioned, cluster access is automatically enabled from the provisioned Compute instance, which is accessible via the OCI Bastion service endpoint. We refer to this Compute instance as the OKE operator host.
 
-The OKE cluster, the Node Pool,Bastion Service and the Compute instance depend on a pre existing Virtual Cloud Network (VCN). A VCN built specifically for this deployment is available in [native_operator network example](https://orahub.oci.oraclecorp.com/nace-shared-services/terraform-oci-cis-landing-zone-networking/-/tree/main/examples/oke-examples/native_operator).
+### Pre-Requisites
 
-The Operator Instance has to be an Instance Principal in order to access the OKE API Endpoint. Meaning a dynamic group and policies needs to be in place before executing the terraform code.
-- Dynamic group matching rule: ```instance.compartment.id='ocid1.compartment...'```
-- Policies: ```Allow dynamic-group <<your-dynamic-group-name>> to manage cluster-family in compartment <<your-compartment-name>>```
-            ```Allow dynamic-group <<your-dynamic-group-name>> to manage virtual-network-family in compartment <<your-compartment-name>>```
+#### Networking
+The OKE cluster and the node pool depend on a pre existing Virtual Cloud Network (VCN). A VCN built specifically for this deployment is available in [native network example](https://github.com/oracle-quickstart/terraform-oci-cis-landing-zone-networking/tree/main/examples/oke-examples/native).
+
+Additionally, the operator host requires an instance principal credential properly authorized for managing the OKE cluster. That means a dynamic group and a policy are required.
+
+#### IAM Dynamic Group and Policy
+##### Dynamic Group Matching Rule
+```
+instance.compartment.id='<COMPUTE-INSTANCE-COMPARTMENT-OCID>'
+```
+
+##### Dynamic Group Policy
+```
+Allow dynamic-group <DYNAMIC-GROUP-NAME> to use cluster-family in compartment <CLUSTER-COMPARTMENT-NAME>
+```
 
 ### Resources Deployed by this Example
 
@@ -76,15 +87,27 @@ terraform plan -out plan.out
 terraform apply plan.out
 ```
 
-## Managing Kubernetes Applications
+## Accessing the Cluster
 
-Managing Kubernetes applications in OCI includes the ability to invoke OKE API endpoint and (in some rare cases) SSH'ing into Worker nodes. 
-Invoking the OKE API endpoint and accessing Worker nodes differs depending on whether they are in a private or public subnet. This example assumes the API endpoint and Worker nodes are in private subnets, and are invoked/accessed via a Compute instance that is deployed in the Operator subnet, which is also private. This Compute instance can be accessed via an OCI Bastion service endpoint deployed also in the Operator subnet.
+Managing Kubernetes applications in OCI includes the ability to invoke OKE API endpoint and SSH'ing into Worker nodes. 
+Invoking the OKE API endpoint and accessing Worker nodes differs depending on whether they are in a private or public subnet. This example assumes the API endpoint and worker nodes are in private subnets and are invoked/accessed via an OCI Bastion Service endpoint that is deployed in the *access* subnet, which is also private. This Compute instance (operator host) is accessed via an OCI Bastion service endpoint also deployed in the *access* subnet.
 
-The code will automatically connect to the operator instance using the bastion session to configure the kube config, install kubectl and set the instance OCI CLI authentication to Instance Principal.
+The code automatically connects to the operator host using the Bastion service session to configure the *kubeconfig* file, install *kubectl* tool and set the instance with instance principal authentication.
 
-To create the connection to the Operator instance, use the connection string provided by the **sessions** output, that would look like:
+For connecting to the operator host, execute the command provided in the **sessions** output, that would look like:
 ```
 ssh -i ~/.ssh/id_rsa -o ProxyCommand='ssh -i ~/.ssh/id_rsa -W %h:%p -p 22 ocid1.bastionsession...@host.bastion.eu-frankfurt-1.oci.oraclecloud.com' -p 22 opc@10.0.x.x
 ```
 
+### Accessing OKE API Endpoint
+
+One connected to the operator Compute instance, use *kubectl* tool to manage your OKE applications. As an example, you can try deploying a sample application, checking and deleting it: 
+```
+> kubectl create -f https://k8s.io/examples/application/deployment.yaml
+> kubectl get deployments
+> kubectl delete -f https://k8s.io/examples/application/deployment.yaml
+```
+
+### SSH'ing to Worker Nodes
+
+Once connected to the operator host, use *ssh* to connect to any of the worker nodes.

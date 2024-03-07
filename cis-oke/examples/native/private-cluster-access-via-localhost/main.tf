@@ -20,9 +20,8 @@ data "oci_containerengine_cluster_kube_config" "kube_config" {
   token_version = "2.0.0"
 }
 
-resource "null_resource" "create_local_kubeconfig" {
+resource "local_file" "kubeconfig" {
   for_each = var.clusters_configuration != null ? var.clusters_configuration["clusters"] : {}
-  provisioner "local-exec" {
-    command = "echo '${tostring(replace(data.oci_containerengine_cluster_kube_config.kube_config[each.key].content, split(":", module.oke.clusters[each.key].endpoints[0].private_endpoint)[0], "127.0.0.1"))}' >> ${path.root}/kubeconfig"
-  }
+  content  = tostring(replace(data.oci_containerengine_cluster_kube_config.kube_config[each.key].content, split(":", module.oke.clusters[each.key].endpoints[0].private_endpoint)[0], "127.0.0.1"))
+  filename = "./kubeconfig"
 }
