@@ -16,12 +16,12 @@ Additionally, the operator host requires an instance principal credential proper
 #### IAM Dynamic Group and Policy
 ##### Dynamic Group Matching Rule
 ```
-instance.compartment.id='<COMPUTE-INSTANCE-COMPARTMENT-OCID>'
+instance.compartment.id='<OPERATOR-HOST-COMPARTMENT-OCID>'
 ```
 
 ##### Dynamic Group Policy
 ```
-Allow dynamic-group <DYNAMIC-GROUP-NAME> to use cluster-family in compartment <CLUSTER-COMPARTMENT-NAME>
+Allow dynamic-group <DYNAMIC-GROUP-NAME> to manage cluster-family in compartment <OKE-CLUSTER-COMPARTMENT-NAME>
 ```
 
 Both resources are automated by the [OKE Operator Host IAM example](../oke-operator-host-iam/).
@@ -82,12 +82,12 @@ The code automatically connects to the operator host using the Bastion service s
 
 For connecting to the operator host, execute the command provided in the **sessions** output, that would look like:
 ```
-ssh -i ~/.ssh/id_rsa -o ProxyCommand='ssh -i ~/.ssh/id_rsa -W %h:%p -p 22 ocid1.bastionsession...@host.bastion.eu-frankfurt-1.oci.oraclecloud.com' -p 22 opc@10.0.x.x
+ssh -i <private-key> -o ProxyCommand='ssh -i <private-key> -W %h:%p -p 22 ocid1.bastionsession.XXXXXXXX@host.bastion.<region>oci.oraclecloud.com' -p 22 opc@<operator-host-ip-address>
 ```
 
 ### Accessing OKE API Endpoint
 
-One connected to the operator Compute instance, use *kubectl* tool to manage your OKE applications. As an example, you can try deploying a sample application, checking and deleting it: 
+One connected to the operator host, use *kubectl* tool to manage your OKE applications. As an example, you can try deploying a sample application, checking and deleting it: 
 ```
 > kubectl create -f https://k8s.io/examples/application/deployment.yaml
 > kubectl get deployments
@@ -96,4 +96,23 @@ One connected to the operator Compute instance, use *kubectl* tool to manage you
 
 ### SSH'ing to Worker Nodes
 
-Once connected to the operator host, use *ssh* to connect to any of the worker nodes.
+This can done via the operator host:
+
+1. Make the SSH private key that matches the SSH public key in the worker node available in the operator host. If the private key is available in your local machine, it can be copied to the operator host like:
+```
+scp -J ocid1.bastionsession.XXXXXXXX@host.bastion.<region>oci.oraclecloud.com <private-key> opc@<operator-host-ip-address>:<private-key>
+```
+2. Connect to the operator host using the SSH command in the **sessions** output:
+```
+ssh -i <private-key> -o ProxyCommand='ssh -i <private-key> -W %h:%p -p 22 ocid1.bastionsession.XXXXXXXX@host.bastion.<region>oci.oraclecloud.com' -p 22 opc@<operator-host-ip-address>
+```
+3. Restrict permissions on the private SSH key:
+```
+chmod 600 <private-key>
+``` 
+4. Connect to the worker node via SSH:
+```
+ssh -i <private-key> opc@<worker-node-ip-address>
+```
+
+Optionally, you can manually create a Bastion endpoint for the worker node subnet and a session for the worker node, bypassing the operator host altogether.
