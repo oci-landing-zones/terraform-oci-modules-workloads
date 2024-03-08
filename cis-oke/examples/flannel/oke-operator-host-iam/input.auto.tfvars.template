@@ -27,7 +27,7 @@ dynamic_groups_configuration = {
     OKE-OPERATOR-DYN-GROUP : { 
       name : "oke-operator-dynamic-group",  
       description : "Dynamic group for OKE operator.",      
-      matching_rule : "resource.compartment.id = '<REPLACE-BY-OPERATOR-HOST-COMPARTMENT-ID>'" 
+      matching_rule : "instance.compartment.id = '<REPLACE-BY-OPERATOR-HOST-COMPARTMENT-ID>'" 
     }
   }  
 }
@@ -39,7 +39,7 @@ policies_configuration = {
       description : "OKE operator policy."
       compartment_id : "<REPLACE-BY-OKE-CLUSTER-COMPARTMENT-ID>"
       statements : [
-        "allow dynamic-group oke-operator-dynamic-group to use cluster-family in compartment <REPLACE-BY-OKE-CLUSTER-COMPARTMENT-ID>"
+        "allow dynamic-group oke-operator-dynamic-group to manage cluster-family in compartment <REPLACE-BY-OKE-CLUSTER-COMPARTMENT-ID>"
       ]            
     }
   } 
