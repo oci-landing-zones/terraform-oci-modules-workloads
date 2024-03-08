@@ -73,7 +73,6 @@ sessions_configuration = {
       PORT-FORWARDING-SESSION = {
         bastion_id      = "BASTION-1"
         ssh_public_key  = "<REPLACE-BY-SSH-PUBLIC-KEY-PATH>"
-        ssh_private_key = "<REPLACE-BY-SSH-PRIVATE-KEY-PATH>"
         session_type    = "PORT_FORWARDING"
         target_resource = "OKE1"
         target_port     = "6443"
@@ -81,3 +80,5 @@ sessions_configuration = {
       }
   }
 }
+
+ssh_private_key = "<REPLACE-BY-SSH-PRIVATE-KEY-PATH>" # Used for generating the ssh command for port forwarding. The private key contents aren't sent anywhere.

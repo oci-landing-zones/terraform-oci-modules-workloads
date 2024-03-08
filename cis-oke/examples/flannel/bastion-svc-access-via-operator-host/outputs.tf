@@ -12,5 +12,5 @@ output "node_pools" {
 }
 
 output "sessions" {
-  value = module.bastion.sessions
+  value = {for k, v in module.bastion.sessions : k => replace(replace(v, "\"", "'"), "<privateKey>", var.ssh_private_key)}
 }

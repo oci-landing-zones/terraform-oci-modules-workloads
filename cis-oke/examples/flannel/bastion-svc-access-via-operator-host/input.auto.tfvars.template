@@ -1,4 +1,4 @@
-# Copyright (c) 2023 Oracle and/or its affiliates.
+# Copyright (c) 2024 Oracle and/or its affiliates.
 # Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
 #--------------------------------------------------------------------------------------------------------------------------------------
@@ -80,21 +80,7 @@ instances_configuration = {
         id = "<REPLACE-BY-DEVELOPER-IMAGE-OCID>" # "Oracle-Linux-Cloud-Developer-8.7-2023.04.28-1" Platform image
       }
       cloud_agent = {
-        #disable_monitoring = true
-        #disable_management = true
         plugins = [
-          { name = "Vulnerability Scanning", enabled = true },
-          { name = "Oracle Java Management Service", enabled = false },
-          { name = "Oracle Autonomous Linux", enabled = false },
-          { name = "Management Agent", enabled = true },
-          { name = "OS Management Service Agent", enabled = true }, # management plugin, impacted by disable_management attribute if not set.
-          { name = "Custom Logs Monitoring", enabled = true },      # monitoring plugin, impacted by disable_monitoring attribute if not set.
-          { name = "Compute RDMA GPU Monitoring", enabled = false },
-          { name = "Compute Instance Run Command", enabled = true }, # management plugin, impacted by disable_management attribute if not set.
-          { name = "Compute Instance Monitoring", enabled = true },  # monitoring plugin, impacted by disable_monitoring attribute if not set.
-          { name = "Compute HPC RDMA Auto-Configuration", enabled = false },
-          { name = "Compute HPC RDMA Authentication", enabled = false },
-          { name = "Block Volume Management", enabled = false },
           { name = "Bastion", enabled = true }
         ]
       }
@@ -119,7 +105,6 @@ sessions_configuration = {
     SESSION-1 = {
       bastion_id      = "BASTION-1"
       ssh_public_key  = "<REPLACE-BY-SSH-PUBLIC-KEY-PATH>"
-      ssh_private_key = "<REPLACE-BY-SSH-PRIVATE-KEY-PATH>"
       session_type    = "MANAGED_SSH"
       target_user     = "opc"
       target_resource = "INSTANCE-1"
@@ -128,3 +113,5 @@ sessions_configuration = {
     }
   }
 }
+
+ssh_private_key = "<REPLACE-BY-SSH-PRIVATE-KEY-PATH>" # Used for generating the command for managed ssh. The private key contents aren't sent anywhere.
