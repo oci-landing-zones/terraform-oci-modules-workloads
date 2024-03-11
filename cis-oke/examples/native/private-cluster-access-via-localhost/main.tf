@@ -11,7 +11,7 @@ module "bastion" {
   source                 = "../../../../../terraform-oci-cis-landing-zone-security/bastion-service/"
   bastions_configuration = var.bastions_configuration
   sessions_configuration = var.sessions_configuration
-  clusters_dependency    = module.oke.clusters
+  endpoints_dependency   = module.oke.clusters
 }
 
 data "oci_containerengine_cluster_kube_config" "kube_config" {
