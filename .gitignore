@@ -14,3 +14,4 @@ platform-images/**/*.txt
 userdata
 mounting-block-volumes.txt
 **/creds
+**/clean-setup

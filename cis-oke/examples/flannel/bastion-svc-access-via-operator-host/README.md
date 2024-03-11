@@ -24,7 +24,7 @@ instance.compartment.id='<OPERATOR-HOST-COMPARTMENT-OCID>'
 Allow dynamic-group <DYNAMIC-GROUP-NAME> to manage cluster-family in compartment <OKE-CLUSTER-COMPARTMENT-NAME>
 ```
 
-Both resources are automated by the [OKE Operator Host IAM example](../oke-operator-host-iam/).
+The deployment of these IAM resources are automated by the [OKE Operator Host IAM example](../oke-operator-host-iam/).
 
 
 ### Resources Deployed by this Example
