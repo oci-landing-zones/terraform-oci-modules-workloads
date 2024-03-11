@@ -11,6 +11,7 @@ Check the [examples](./examples/) folder for actual module usage.
 - [Features](#features)
 - [Requirements](#requirements)
 - [Module Functioning](#functioning)
+  - [Aspects Driven by CIS Profile Levels](#cis-levels)
   - [Compute](#compute)
   - [Block Volumes](#block-volumes)
   - [File Storage](#file-storage)
@@ -25,7 +26,7 @@ Check the [examples](./examples/) folder for actual module usage.
 The following security features are currently supported by the module:
 
 ### <a name="compute-features">Compute</a>
-- CIS profile level drives data at rest encryption configuration.
+- CIS profile level drives data at rest encryption, in-transit encryption, secure boot (Shielded instances) and legacy v1 Metadata service endpoint availability.
 - Boot volumes encryption with customer managed keys from OCI Vault service.
 - In-transit encryption for boot volumes and attached block volumes.
 - Data in-use encryption for platform images ([Confidential computing](https://docs.oracle.com/en-us/iaas/Content/Compute/References/confidential_compute.htm)).
@@ -103,18 +104,35 @@ The module defines two top level attributes used to manage instances and storage
 - **instances_configuration** &ndash; for managing Compute instances.
 - **storage_configuration** &ndash; for managing storage, including Block Volumes and File System Storage.
 
+### <a name="cis-levels">Aspects Driven by CIS Profile Levels</a>
+
+The CIS Benchmark profile levels drive some aspects of Compute and Storage. In this module, the profile levels are defined via the *default_cis_level* attribute at the configuration level or via the *cis_level* attribute at the object (resource) level.
+
+#### For Compute:
+##### CIS profile level "1": 
+  - in-transit encryption is enforced.
+
+##### CIS profile level "2": 
+  - encryption at rest with customer managed keys is enforced.
+  - secure boot (Shielded instance) is enforced. 
+  - legacy v1 Metadata service endpoint is disabled.
+
+#### For Block Volumes and File Storage:
+##### CIS profile level "2": 
+  - encryption at rest with customer managed keys is enforced.
+
 ### <a name="compute">Compute</a>
 
-Compute instances are managed using the **instances_configuration** object. It contains a set of attributes starting with the prefix **default_** and one attribute named **instances**. The **default_** attribute values are applied to all instances within **instances**, unless overriden at the instance level.
+Compute instances are managed using the **instances_configuration** object. It contains a set of attributes starting with the prefix **default_** and one attribute named **instances**. The **default_** attribute values are applied to all instances within **instances**, unless overridden at the instance level.
 
 The *default_* attributes are the following:
-- **default_compartment_id** &ndash; Default compartment for all instances. It can be overriden by *compartment_id* attribute in each instance. This attribute is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *compartments_dependency* variable. See [External Dependencies](#ext-dep) for details.
-- **default_subnet_id** &ndash; (Optional) Default subnet for all instances. It can be overriden by *subnet_id* attribute in each instance. This attribute is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *network_dependency* variable. See [External Dependencies](#ext-dep) for details.
-- **default_ssh_public_key_path** &ndash; (Optional) Default SSH public key path used to access all instances. It can be overriden by the *ssh_public_key* attribute in each instance.
-- **default_kms_key_id** &ndash; (Optional) Default encryption key for all instances. It can be overriden by *kms_key_id* attribute in each instance. This attribute is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *kms_dependency* variable. See [External Dependencies](#ext-dep) for details.
-- **default_cis_level** &ndash; (Optional) Default CIS OCI Benchmark profile level for all instances. Level "2" enforces usage of customer managed keys for boot volume encryption. Default is "1". It can be overriden by *cis_level* attribute in each instance.
-- **default_defined_tags** &ndash; (Optional) Default defined tags for all instances. It can be overriden by *defined_tags* attribute in each instance.
-- **default_freeform_tags** &ndash; (Optional) Default freeform tags for all instances. It can be overriden by *freeform_tags* attribute in each instance.
+- **default_compartment_id** &ndash; Default compartment for all instances. It can be overridden by *compartment_id* attribute in each instance. This attribute is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *compartments_dependency* variable. See [External Dependencies](#ext-dep) for details.
+- **default_subnet_id** &ndash; (Optional) Default subnet for all instances. It can be overridden by *subnet_id* attribute in each instance. This attribute is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *network_dependency* variable. See [External Dependencies](#ext-dep) for details.
+- **default_ssh_public_key_path** &ndash; (Optional) Default SSH public key path used to access all instances. It can be overridden by the *ssh_public_key* attribute in each instance.
+- **default_kms_key_id** &ndash; (Optional) Default encryption key for all instances. It can be overridden by *kms_key_id* attribute in each instance. This attribute is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *kms_dependency* variable. See [External Dependencies](#ext-dep) for details.
+- **default_cis_level** &ndash; (Optional) Default CIS OCI Benchmark profile level for all instances. Level "2" enforces usage of customer managed keys for boot volume encryption. Default is "1". It can be overridden by *cis_level* attribute in each instance.
+- **default_defined_tags** &ndash; (Optional) Default defined tags for all instances. It can be overridden by *defined_tags* attribute in each instance.
+- **default_freeform_tags** &ndash; (Optional) Default freeform tags for all instances. It can be overridden by *freeform_tags* attribute in each instance.
 
 The instances themselves are defined within the **instances** attribute, In Terraform terms, it is a map of objects. where each object is referred by an identifying key. The supported attributes are listed below. For better usability, most attributes are grouped in logical blocks. They are properly indented in the list.
 - **compartment_id** &ndash; (Optional) The instance compartment. *default_compartment_id* is used if undefined. This attribute is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *compartments_dependency* variable. See [External Dependencies](#ext-dep) for details.
@@ -179,13 +197,24 @@ The instances themselves are defined within the **instances** attribute, In Terr
 - **flex_shape_settings** &ndash; (Optional) Flex shape settings.
   - **memory** &ndash; (Optional) The instance memory for Flex shapes. Default is 16 (in GB).
   - **ocpus** &ndash; (Optional) The number of OCPUs for Flex shapes. Default is 1.
-- **cloud_agent** &ndash; (Optional) Cloud Agent settings. Oracle Cloud Agent is supported on current platform images and on custom images that are based on current platform images. See [Oracle Cloud Agent documentation](https://docs.oracle.com/en-us/iaas/Content/Compute/Tasks/manage-plugins.htm) for important information.
+- **cloud_agent** &ndash; (Optional) Cloud Agent settings. Oracle Cloud Agent is supported on current platform images and on custom images that are based on current platform images. See [Cloud Agent Requirements](#cloud-agent-requirements) for basic requirements.
   - **disable_management** &ndash; (Optional) Whether the management plugins should be disabled. These plugins are enabled by default in the Compute service. The management plugins are "OS Management Service Agent" and "Compute Instance Run Command".
   - **disable_monitoring** &ndash; (Optional) Whether the monitoring plugins should be disabled. These plugins are enabled by default in the Compute service. The monitoring plugins are "Compute Instance Monitoring" and "Custom Logs Monitoring".
   - **plugins** &ndash; (Optional) The list of plugins to manage. Each plugin has a name and a boolean flag that enables it.
     - **name** &ndash; The plugin name. **It must be a valid plugin name**. The plugin names are available in [Oracle Cloud Agent documentation](https://docs.oracle.com/en-us/iaas/Content/Compute/Tasks/manage-plugins.htm) and in [compute-only example](./examples/compute-only/input.auto.tfvars.template) as well.
     - **enabled** &ndash; Whether or not the plugin should be enabled. In order to disable a previously enabled plugin, set this value to false. Simply removing the plugin from the list will not disable it.
 
+#### <a name="cloud-agent-requirements">Cloud Agent Requirements</a>
+##### IAM Policy Requirements
+The ability to enable/disable/start/stop plugins require the following policy statements for the executing user, as documented in the [Requirements](#requirements) section above.
+```
+Allow group <GROUP-NAME> to manage instance-family in compartment <INSTANCE-COMPARTMENT-NAME>
+Allow group <GROUP-NAME> to read instance-agent-plugins in compartment <INSTANCE-COMPARTMENT-NAME> 
+```
+##### Network Requirements
+The subnet where the instance is deployed must have access to Oracle Services Network. Make sure there is a network route and an egress security rule to *all regional services In Oracle Services Network* through the VCN Service Gateway.
+
+Please see [Oracle Cloud Agent documentation](https://docs.oracle.com/en-us/iaas/Content/Compute/Tasks/manage-plugins.htm) for other important information.
 
 #### <a name="platform-features">Enabling Platform Features</a>
 The module currently supports [Confidential computing](https://docs.oracle.com/en-us/iaas/Content/Compute/References/confidential_compute.htm) and [Shielded instances](https://docs.oracle.com/en-us/iaas/Content/Compute/References/shielded-instances.htm), which cannot be enabled at the same time.
@@ -193,6 +222,7 @@ The module currently supports [Confidential computing](https://docs.oracle.com/e
 - Confidential computing is only available for the shapes listed in [Compute Shapes that Support Confidential Computing](https://docs.oracle.com/en-us/iaas/Content/Compute/References/confidential_compute.htm#confidential_compute__coco_supported_shapes).
 - Shielded instances usage is controlled by *platform_type*, *boot_volume.secure_boot*, *boot_volume.measured_boot* and *boot_volume.trusted_platform_module* attributes. For supported VM shapes, *boot_volume.measured_boot* value is used to set both *boot_volume.secure_boot* and *boot_volume.trusted_platform_module* attributes. 
 - Shielded instances are only available for the shapes and images listed in [Supported Shapes and Images](https://docs.oracle.com/en-us/iaas/Content/Compute/References/shielded-instances.htm#supported-shapes).
+- Shielded instances are automatically enabled if CIS Profile level is "2" (either via *cis_level* or *default_cis_level* attributes).
 
 #### <a name="platform-images">Obtaining OCI Platform Images Information</a>
 Helper module [platform-images](../platform-images/) aids in finding OCI Platform instances based on a search string. See [this example](../platform-images/examples/platform-images/) for finding images containing "Linux-8" in their names. It outputs information as shown below.
@@ -251,14 +281,14 @@ Additionally, in-transit encryption is only available to paravirtualized volumes
 
 ### <a name="storage">Storage</a>
 
-Storage is managed using the **storage_configuration** object. It contains a set of attributes starting with the prefix **default_** and two attribute named **block_volumes** and **file_storage**. The **default_** attribute values are applied to all storage units within **block_volumes** and **file_storage**, unless overriden at the storage unit level.
+Storage is managed using the **storage_configuration** object. It contains a set of attributes starting with the prefix **default_** and two attribute named **block_volumes** and **file_storage**. The **default_** attribute values are applied to all storage units within **block_volumes** and **file_storage**, unless overridden at the storage unit level.
 
 The defined **default_** attributes are the following:
-- **default_compartment_id** &ndash; (Optional) The default compartment for all storage units. It can be overriden by *compartment_id* attribute in each unit. This attribute is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *compartments_dependency* variable. See [External Dependencies](#ext-dep) for details.
-- **default_kms_key_id** &ndash; (Optional) The default encryption key for all storage units. It can be overriden by *kms_key_id* attribute in each unit. This attribute is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *kms_dependency* variable. See [External Dependencies](#ext-dep) for details.
-- **default_cis_level** &ndash; (Optional) The default CIS OCI Benchmark profile level for all storage units. Level "2" enforces usage of customer managed keys for storage encryption. Default is "1". It can be overriden by *cis_level* attribute in each unit.
-- **default_defined_tags** &ndash; (Optional) The default defined tags for all storage units. It can be overriden by *defined_tags* attribute in each unit.
-- **default_freeform_tags** &ndash; (Optional) the default freeform tags for all storage units. It can be overriden by *freeform_tags* attribute in each unit.
+- **default_compartment_id** &ndash; (Optional) The default compartment for all storage units. It can be overridden by *compartment_id* attribute in each unit. This attribute is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *compartments_dependency* variable. See [External Dependencies](#ext-dep) for details.
+- **default_kms_key_id** &ndash; (Optional) The default encryption key for all storage units. It can be overridden by *kms_key_id* attribute in each unit. This attribute is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *kms_dependency* variable. See [External Dependencies](#ext-dep) for details.
+- **default_cis_level** &ndash; (Optional) The default CIS OCI Benchmark profile level for all storage units. Level "2" enforces usage of customer managed keys for storage encryption. Default is "1". It can be overridden by *cis_level* attribute in each unit.
+- **default_defined_tags** &ndash; (Optional) The default defined tags for all storage units. It can be overridden by *defined_tags* attribute in each unit.
+- **default_freeform_tags** &ndash; (Optional) the default freeform tags for all storage units. It can be overridden by *freeform_tags* attribute in each unit.
 
 #### <a name="block-volumes">Block Volumes</a>
 Block volumes are defined using the optional **block_volumes** attribute. In Terraform terms, it is a map of objects, where each object is referred by an identifying key. The following attributes are supported:
@@ -285,10 +315,203 @@ Block volumes are defined using the optional **block_volumes** attribute. In Ter
 ##### <a name="mounting-block-volumes">Mounting Block Volumes</a>
 As stated in the [OCI User Guide](https://docs.oracle.com/en-us/iaas/Content/Block/Tasks/attachingavolume.htm):
 
-*"On Linux-based instances, if you want to automatically mount volumes when the instance starts, you need to set some specific options in the /etc/fstab file, or the instance might fail to start. This applies to both iSCSI and paravirtualized attachment types. For volumes that use consistent device paths, see [fstab Options for Block Volumes Using Consistent Device Paths](https://docs.oracle.com/en-us/iaas/Content/Block/References/fstaboptionsconsistentdevicepaths.htm#fstab_Options_for_Block_Volumes_Using_Consistent_Device_Paths). For all other volumes, see [Traditional fstab Options](https://docs.oracle.com/en-us/iaas/Content/Block/References/fstaboptions.htm#Traditional_fstab_Options)."*
+*"On Linux-based instances, if you want to automatically mount volumes when the instance starts, you need to set some specific options in the /etc/fstab file, or the instance might fail to start. This applies to both iSCSI and paravirtualized attachment types."*
+In case of the ISCSI attachment type, you need to connect to the Block Volume before mounting it. This can be done automatically by enabling the **Block Volume Management** agent on the Instances where you want to mount Block Volumes. Volumes attached with Paravirtualized are automatically connected.
+
+- **For volumes that use consistent device path see the following steps**:
+
+1. To verify that the volume is attached to a supported instance, connect to the instance and run the following command:
+```
+ll /dev/oracleoci/oraclevd*
+```
+The output will look similar to the following:
+```
+lrwxrwxrwx. 1 root root 6 Oct  6 08:17 /dev/oracleoci/oraclevda -> ../sda
+lrwxrwxrwx. 1 root root 7 Oct  6 08:17 /dev/oracleoci/oraclevda1 -> ../sda1
+lrwxrwxrwx. 1 root root 7 Oct  6 08:17 /dev/oracleoci/oraclevda2 -> ../sda2
+lrwxrwxrwx. 1 root root 7 Oct  6 08:17 /dev/oracleoci/oraclevda3 -> ../sda3
+```
+
+2. To see the volumes attached to the instance, run the following command:
+```
+lsblk
+```
+The output will look similar to the following:
+```
+NAME               MAJ:MIN RM  SIZE RO TYPE MOUNTPOINT
+sda                  8:0    0 46.6G  0 disk
+├─sda1               8:1    0  100M  0 part /boot/efi
+├─sda2               8:2    0    1G  0 part /boot
+└─sda3               8:3    0 45.5G  0 part
+  ├─ocivolume-root 252:0    0 35.5G  0 lvm  /
+  └─ocivolume-oled 252:1    0   10G  0 lvm  /var/oled
+sdb                  8:16   0   75G  0 disk
+```
+ **sda** is the root volume.
+ **sdb** is the block volume.
+
+3. Create the filesystem of your choice on the volume. If a file system already exists on the volume, you don't need to create another one.
+Example to create a filesystem:
+```
+sudo parted /dev/oracleoci/oraclevdb  --script -- mklabel gpt
+sudo parted /dev/oracleoci/oraclevdb  --script -- mkpart primary 0% 100%
+sudo mkfs.ext4 /dev/oracleoci/oraclevdb1
+```
+Running the **lsblk** command again, you will see an output similar to the following:
+```
+NAME               MAJ:MIN RM  SIZE RO TYPE MOUNTPOINT
+sda                  8:0    0 46.6G  0 disk
+├─sda1               8:1    0  100M  0 part /boot/efi
+├─sda2               8:2    0    1G  0 part /boot
+└─sda3               8:3    0 45.5G  0 part
+  ├─ocivolume-root 252:0    0 35.5G  0 lvm  /
+  └─ocivolume-oled 252:1    0   10G  0 lvm  /var/oled
+sdb                  8:16   0   75G  0 disk
+└─sdb1               8:17   0   75G  0 part
+```
+**sdb1** is the partition of the **sdb** block volume.
+
+4. To automatically attach the block volume at /mnt/vol1, create the directory with the following command:
+```
+sudo mkdir /mnt/vol1
+```
+
+5. Add an entry in the /etc/fstab with the following format to automatically mount the block volume after reboot:
+```
+/dev/oracleoci/oraclevdb1 /mnt/vol1 ext4 defaults,_netdev,nofail 0 2
+```
+The **ext4** option is the filesystem type you set when you created the filesystem.
+The **_netdev** option is to configure the mount process to initiate before the volumes are mounted.
+The **nofail** option is to prevent an issue when you create a custom image of an instance where the volumes, excluding the root volume, are listed in the /etc/fstab file, instances will fail to launch from the custom image.
+
+6. Run the following command to update the systemd after you modified the fstab:
+```
+sudo systemctl daemon-reload
+```
+
+7. Mount the volume by running the following commands to mount and check if the volume has been mounted:
+```
+sudo mount -a
+lsblk
+```
+The output will look similar to the following:
+```
+sda                  8:0    0 46.6G  0 disk
+├─sda1               8:1    0  100M  0 part /boot/efi
+├─sda2               8:2    0    1G  0 part /boot
+└─sda3               8:3    0 45.5G  0 part
+  ├─ocivolume-root 252:0    0 35.5G  0 lvm  /
+  └─ocivolume-oled 252:1    0   10G  0 lvm  /var/oled
+sdb                  8:16   0   75G  0 disk
+└─sdb1               8:17   0   75G  0 part /mnt/vol1
+```
+
+8. You can test if the volume is mounted by restarting the instance and run the **lsblk** command.
+
+For more information on mounting block volumes with consistent device path see [fstab Options for Block Volumes Using Consistent Device Paths](https://docs.oracle.com/en-us/iaas/Content/Block/References/fstaboptionsconsistentdevicepaths.htm#fstab_Options_for_Block_Volumes_Using_Consistent_Device_Paths).
+
+- **For volumes that don't use consistent device path:**
+
+On Linux operating systems, the order in which volumes are attached is non-deterministic, so it can change with each reboot. If you refer to a volume using the device name, such as /dev/sdb, and you have more than one non-root volume, you can't guarantee that the volume you intend to mount for a specific device name will be the volume mounted.
+To prevent this issue, specify the volume UUID in the /etc/fstab file instead of the device name. When you use the UUID, the mount process matches the UUID in the superblock with the mount point specified in the /etc/fstab file. This process guarantees that the same volume is always mounted to the same mount point.
+See the following steps for mounting traditional volumes:
+
+1. To see the volumes attached to the instance, run the following command:
+```
+lsblk
+```
+The output will look similar to the following:
+```
+NAME               MAJ:MIN RM  SIZE RO TYPE MOUNTPOINT
+sda                  8:0    0 46.6G  0 disk
+├─sda1               8:1    0  100M  0 part 
+├─sda2               8:2    0    1G  0 part
+└─sda3               8:3    0 45.5G  0 part
+  ├─ocivolume-root 252:0    0 35.5G  0 lvm  /
+  └─ocivolume-oled 252:1    0   10G  0 lvm  /var/oled
+sdb                  8:16   0   60G  0 disk
+```
+ **sda** is the root volume.
+ **sdb** is the block volume.
+
+2. Create the filesystem of your choice on the volume. If a file system already exists on the volume, you don't need to create another one.
+
+Example to create a filesystem:
+```
+sudo parted /dev/sdb --script -- mklabel gpt
+sudo parted /dev/sdb  --script -- mkpart primary 0% 100%
+sudo mkfs.xfs /dev/sdb1
+```
+Running the **lsblk** command again, you will see an output similar to the following:
+```
+NAME               MAJ:MIN RM  SIZE RO TYPE MOUNTPOINT
+sda                  8:0    0 46.6G  0 disk
+├─sda1               8:1    0  100M  0 part
+├─sda2               8:2    0    1G  0 part
+└─sda3               8:3    0 45.5G  0 part
+  ├─ocivolume-root 252:0    0 35.5G  0 lvm  /
+  └─ocivolume-oled 252:1    0   10G  0 lvm  /var/oled
+sdb                  8:16   0   60G  0 disk
+└─sdb1               8:17   0   60G  0 part
+```
+**sdb1** is the partition of the **sdb** block volume.
+
+3. Run the following command to get the UUIDs for the volumes:
+```
+sudo blkid
+```
+The output will look similar to the following:
+```
+/dev/mapper/ocivolume-oled: UUID="b19c85cf-53cb-4cf3-a2f5-946d7a30bbf0" BLOCK_SIZE="4096" TYPE="xfs"
+/dev/sda3: UUID="xW7hJV-XCVZ-zI0I-qhp7-mLnH-3oDH-hppEqq" TYPE="LVM2_member" PARTUUID="8bb84ab7-f5df-47f1-b630-21442c9102c1"
+/dev/sda1: SEC_TYPE="msdos" UUID="A1B2-7E6F" BLOCK_SIZE="512" TYPE="vfat" PARTLABEL="EFI System Partition" PARTUUID="ceb6c9aa-4543-4cbf-a44e-d75d7bddc644"
+/dev/sda2: UUID="3f9d566b-9964-4512-bcd6-3bb2596d710c" BLOCK_SIZE="4096" TYPE="xfs" PARTUUID="340a48cc-18ed-4c1a-aad7-90cdb8e0b600"
+/dev/mapper/ocivolume-root: UUID="9ba90a84-c4e7-447d-bfff-92134fee9387" BLOCK_SIZE="4096" TYPE="xfs"
+/dev/sdb1: UUID="3c378562-2bbe-4641-a508-34797d3e198e" BLOCK_SIZE="4096" TYPE="xfs" PARTLABEL="primary" PARTUUID="708ad452-569b-4dfb-b7f0-0b9e38c58157"
+```
+
+4. To automatically attach the volume at /mnt/vol1, create the directory with the following command:
+```
+sudo mkdir /mnt/vol1
+```
+
+5. Add an entry in the /etc/fstab with the following format to automatically mount the block volume after reboot:
+```
+UUID=3c378562-2bbe-4641-a508-34797d3e198e /mnt/vol1 xfs defaults,_netdev,nofail 0 2
+```
+The **xfs** option is the filesystem type you set when you created the filesystem.
+The **_netdev** option is to configure the mount process to initiate before the volumes are mounted.
+The **nofail** option is to prevent an issue when you create a custom image of an instance where the volumes, excluding the root volume, are listed in the /etc/fstab file, instances will fail to launch from the custom image.
+
+6. Run the following command to update the systemd after you modified the fstab:
+```
+sudo systemctl daemon-reload
+```
+
+7. Mount the volume by running the following commands to mount and check if the volume has been mounted:
+```
+sudo mount -a
+lsblk
+```
+The output will look similar to the following:
+```
+sda                  8:0    0 46.6G  0 disk
+├─sda1               8:1    0  100M  0 part /boot/efi
+├─sda2               8:2    0    1G  0 part /boot
+└─sda3               8:3    0 45.5G  0 part
+  ├─ocivolume-root 252:0    0 35.5G  0 lvm  /
+  └─ocivolume-oled 252:1    0   10G  0 lvm  /var/oled
+sdb                  8:16   0   60G  0 disk
+└─sdb1               8:17   0   60G  0 part /mnt/vol1
+```
+
+8. You can test if the volume is mounted by restarting the instance and run the **lsblk** command.
+
+For more information on mounting block volumes without consistent device path see [Traditional fstab Options](https://docs.oracle.com/en-us/iaas/Content/Block/References/fstaboptions.htm#Traditional_fstab_Options).
+
 
 #### <a name="file-storage">File Storage</a>
-The **file_storage** attribute defines the file systems, mount targets and snapshot policies for OCI File Storage service. The optional attribute **default_subnet_id** applies to all mount targets, unless overriden by **subnet_id** attribute in each mount target. Attribute **subnet_id** is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *network_dependency* variable. See [External Dependencies](#ext-dep) for details.
+The **file_storage** attribute defines the file systems, mount targets and snapshot policies for OCI File Storage service. The optional attribute **default_subnet_id** applies to all mount targets, unless overridden by **subnet_id** attribute in each mount target. Attribute **subnet_id** is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *network_dependency* variable. See [External Dependencies](#ext-dep) for details.
 
 ##### <a name="file-systems">File Systems</a>
 File systems are defined using the optional attribute **file_systems**. A Terraform map of objects, where each object is referred by an identifying key. The following attributes are supported:
@@ -342,8 +565,9 @@ Snapshot policies are defined using the optional attribute **snapshot_policies**
 As mentioned, default snapshot policies are created for file systems that do not have a snapshot policy. The default snapshot policies are defined with a single schedule, set to run weekly at 23:00 UTC on sundays.
 
 ### <a name="ext-dep">External Dependencies</a>
-An optional feature, external dependencies are resources managed elsewhere that resources managed by this module may depend on. The following dependencies are supported:
-- **compartments_dependency** &ndash; A map of objects containing the externally managed compartments this module may depend on. All map objects must have the same type and must contain at least an *id* attribute with the compartment OCID.
+An optional feature, external dependencies are resources managed elsewhere that resources managed by this module depends on. The following dependencies are supported:
+
+- **compartments_dependency** &ndash; A map of objects containing the externally managed compartments this module depends on. All map objects must have the same type and must contain at least an *id* attribute with the compartment OCID. This mechanism allows for the usage of referring keys (instead of OCIDs) in *default_compartment_id* and *compartment_id* attributes. The module replaces the keys by the OCIDs provided within *compartments_dependency* map. Contents of *compartments_dependency* is typically the output of a [Compartments module](../compartments/) client.
 
 Example:
 ```
@@ -353,22 +577,26 @@ Example:
 	}
 }
 ```
-- **network_dependency** &ndash; A map of objects containing the externally managed network resources (including subnets and network security groups) this module may depend on. All map objects must have the same type and should contain the following attributes:
+- **network_dependency** &ndash; A map of map of objects containing the externally managed network resources this module depends on. This mechanism allows for the usage of referring keys (instead of OCIDs) in *default_subnet_id*, *subnet_id* and *network_security_groups* attributes. The module replaces the keys by the OCIDs provided within *network_dependency* map. Contents of *network_dependency* is typically the output of a [Networking module](https://github.com/oracle-quickstart/terraform-oci-cis-landing-zone-networking) client. All map objects must have the same type and should contain the following attributes:
   - An *id* attribute with the subnet OCID.
   - An *id* attribute with the network security group OCID.
 
 Example:
 ```
 {
-  "APP-SUBNET" : {
-    "id" : "ocid1.subnet.oc1.iad.aaaaaaaax...e7a"
-  }, 
-  "APP-NSG" : {
-    "id" : "ocid1.networksecuritygroup.oc1.iad.aaaaaaaa...xlq"
-  }
+  "subnets" : {
+    "APP-SUBNET" : {
+      "id" : "ocid1.subnet.oc1.iad.aaaaaaaax...e7a"
+    }
+  },
+  "network_security_groups" : {  
+    "APP-NSG" : {
+      "id" : "ocid1.networksecuritygroup.oc1.iad.aaaaaaaa...xlq"
+    }
+  }  
 } 
 ```  
-- **kms_dependency** &ndash; A map of objects containing the externally managed encryption keys this module may depend on. All map objects must have the same type and must contain at least an *id* attribute with the encryption key OCID.
+- **kms_dependency** &ndash; A map of objects containing the externally managed encryption keys this module depends on. All map objects must have the same type and must contain at least an *id* attribute with the encryption key OCID. This mechanism allows for the usage of referring keys (instead of OCIDs) in *default_kms_key_id*, and *kms_key_id* attributes. The module replaces the keys by the OCIDs provided within *kms_dependency* map. Contents of *kms_dependency* is typically the output of a [Vault module](https://github.com/oracle-quickstart/terraform-oci-cis-landing-zone-security/tree/main/vaults) client.
 
 Example:
 ```
@@ -378,20 +606,17 @@ Example:
 	}
 }
 ```
-- **instances_dependency** &ndash; A map of objects containing the externally managed instances this module may depend on. All map objects must have the same type and should contain at least the following attributes:
-  - An *id* attribute with the instance OCID.
-  - A *is_pv_encryption_in_transit_enabled* attribute informing whether the instance supports in-transit encryption.
+- **instances_dependency** &ndash; A map of objects containing the externally managed instances this module depends on. All map objects must have the same type and must contain at least an *id* attribute with the instance OCID. This mechanism allows for the usage of referring keys (instead of OCIDs) in *instance_id* attributes. The module replaces the keys by the OCIDs provided within *instances_dependency* map. Contents of *instances_dependency* is typically the output of a client of this module.
 
 Example:
 ```
 {
 	"INSTANCE-2": {
 		"id": "ocid1.instance.oc1.iad.anuwc...ftq",
-    "is_pv_encryption_in_transit_enabled" : false
 	}
 }
 ```
-- **file_system_dependency** &ndash; A map of objects containing the externally managed file systems this module may depend on. All map objects must have the same type and must contain at least an *id* attribute with the file system OCID.
+- **file_system_dependency** &ndash; A map of objects containing the externally managed file systems this module depends on. All map objects must have the same type and must contain at least an *id* attribute with the file system OCID. This mechanism allows for the usage of referring keys (instead of OCIDs) in *file_system_id* and *file_system_target_id* attributes. The module replaces the keys by the OCIDs provided within *file_system_dependency* map. Contents of *file_system_dependency* is typically the output of a client of this module.
 
 Example:
 ```

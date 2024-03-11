@@ -40,7 +40,7 @@ resource "oci_file_storage_mount_target" "these" {
     compartment_id      = each.value.compartment_id != null ? (length(regexall("^ocid1.*$", each.value.compartment_id)) > 0 ? each.value.compartment_id : var.compartments_dependency[each.value.compartment_id].id) : (length(regexall("^ocid1.*$", var.storage_configuration.default_compartment_id)) > 0 ? var.storage_configuration.default_compartment_id : var.compartments_dependency[var.storage_configuration.default_compartment_id].id)
     availability_domain = data.oci_identity_availability_domains.mt_ads[each.key].availability_domains[each.value.availability_domain - 1].name
     display_name        = each.value.mount_target_name
-    subnet_id           = each.value.subnet_id != null ? (length(regexall("^ocid1.*$", each.value.subnet_id)) > 0 ? each.value.subnet_id : var.network_dependency[each.value.subnet_id].id) : (length(regexall("^ocid1.*$", var.storage_configuration.file_storage.default_subnet_id)) > 0 ? var.storage_configuration.file_storage.default_subnet_id : var.network_dependency[var.storage_configuration.file_storage.default_subnet_id].id)
+    subnet_id           = each.value.subnet_id != null ? (length(regexall("^ocid1.*$", each.value.subnet_id)) > 0 ? each.value.subnet_id : var.network_dependency["subnets"][each.value.subnet_id].id) : (length(regexall("^ocid1.*$", var.storage_configuration.file_storage.default_subnet_id)) > 0 ? var.storage_configuration.file_storage.default_subnet_id : var.network_dependency["subnets"][var.storage_configuration.file_storage.default_subnet_id].id)
 }
 
 

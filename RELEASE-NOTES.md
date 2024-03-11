@@ -1,3 +1,25 @@
+# February 29, 2024 Release Notes - 0.1.3
+
+## Updates
+### CIS Compute & Storage Module
+1. Compute aligns with CIS Benchmark 2.0.0: in additional to encryption at rest, CIS profile level now drives in-transit encryption, secure Boot (Shielded instances), and the availability of legacy Metadata service endpoint.
+    - CIS profile level 1 enables in-transit encryption.
+    - CIS profile level 2 enables secure boot and disables legacy Metadata service endpoint.
+    
+2. [Cloud Agent Requirements](./cis-compute-storage/README.md#cloud-agent-requirements) documented.
+
+# October 30, 2023 Release Notes - 0.1.2
+
+## Updates
+1. [How to Mount Block Volumes](#0-1-2-bv-mount-doc)
+2. [Network dependency aligned with CIS Landing Zone Networking Module Output](#0-1-2-net-dep)
+
+### <a name="0-1-2-bv-mount-doc">How to Mount Block Volumes</a>
+Instructions are provided in [README.md](./README.md) for mounting block volumes. The modules does not mount volumes automatically.
+
+### <a name="0-1-2-net-dep">Network dependency aligned with CIS Landing Zone Networking Module Output</a>
+*network_dependency* input variable aligns with [CIS Landing Zone Networking](https://github.com/oracle-quickstart/terraform-oci-cis-landing-zone-networking) module output. The Networking module outputs resources grouped by resource type ("vcns", "subnets", "network_security_groups", etc.). All modules in this repository have been updated accordingly. This impacts the contents of *network_dependency* variable. See [external-dependencies](./cis-compute-storage/examples/external-dependencies/) for an example.
+
 # October 05, 2023 Release Notes - 0.1.1
 
 ## Updates
@@ -12,7 +34,7 @@ Compute module can configure instances with secondary VNICs and secondary IPs pe
 1. [Initial Release](#0-1-0-initial)
 
 ### <a name="0-1-0-initial">Initial Release</a>
-Modules for Compute, Storage, Plaform Images and Marketplace Images
+Modules for Compute, Storage, Platform Images and Marketplace Images
 
 #### [Compute](./cis-compute-storage/)
 - CIS profile level drives data at rest encryption configuration.
