@@ -225,9 +225,9 @@ Virtual Node Pools are defined using the optional **virtual_node_pools** attribu
     - **availability_domain**: (Optional) The virtual nodes availability domain. Default is 1.
     - **fault_domain**: (Optional) The virtual nodes fault domain. Default is 1.
   - **taints**: (Optional) Taints enable virtual nodes to repel pods, thereby ensuring that pods do not run on virtual nodes in a particular virtual node pool. Taints work together with Kubernetes tolerations to ensure that pods are not scheduled in undesired nodes.
-    - **effect**: (Optional) The taint effect. Valid values are "NoSchedule", "NoExecute", of "PreferNoSchedule".
-    - **key**: (Optional) The node label key to apply the taint.
-    - **value**: (Optional) The node label value to apply eh taint.
+    - **effect**: (Optional) The taint effect. Valid values are "NoSchedule", "NoExecute", or "PreferNoSchedule".
+    - **key**: (Optional) The node label key to apply the taint to.
+    - **value**: (Optional) The node label value to apply the taint to.
 
 
 ### <a name="ext-dep">External Dependencies</a>
