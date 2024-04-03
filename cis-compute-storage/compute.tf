@@ -70,12 +70,12 @@ resource "oci_core_instance" "these" {
       }
       ## Check 3: In-transit encryption is only available to paravirtualized boot volumes.
       precondition {
-        condition = each.value.encryption != null ? (each.value.boot_volume != null ? (upper(coalesce(each.value.boot_volume.type,"PARAVIRTUALIZED")) != "PARAVIRTUALIZED" ? coalesce(each.value.encryption.encrypt_in_transit_on_instance_create,false) == false && coalesce(each.value.encryption.encrypt_in_transit_on_instance_update,false) == false : true) : false) : true 
+        condition = each.value.encryption != null ? (each.value.boot_volume != null ? (upper(coalesce(each.value.boot_volume.type,"PARAVIRTUALIZED")) != "PARAVIRTUALIZED" ? each.value.encryption.encrypt_in_transit_on_instance_create == false && each.value.encryption.encrypt_in_transit_on_instance_update == false : true) : false) : true 
         error_message = "VALIDATION FAILURE in instance \"${each.key}\": in-transit encryption (during instance creation and instance update) is only available to instances with PARAVIRTUALIZED boot volume."
       }
       ## Check 4: In-transit encryption is only available to images that have it enabled.
       precondition {
-        condition = each.value.encryption != null ? (coalesce(each.value.encryption.encrypt_in_transit_on_instance_create,false) == true || coalesce(each.value.encryption.encrypt_in_transit_on_instance_update,false) == true ? (contains(keys(data.oci_core_image.these),each.key) ? (data.oci_core_image.these[each.key].launch_options[0].is_pv_encryption_in_transit_enabled == false ? false : true) : true) : true) : true
+        condition = each.value.encryption != null ? (each.value.encryption.encrypt_in_transit_on_instance_create == true || each.value.encryption.encrypt_in_transit_on_instance_update == true ? (contains(keys(data.oci_core_image.these),each.key) ? (data.oci_core_image.these[each.key].launch_options[0].is_pv_encryption_in_transit_enabled == false ? false : true) : true) : true) : true
         error_message = "VALIDATION FAILURE in instance \"${each.key}\": in-transit encryption is not enabled in the underlying image. Unset both \"encryption.encrypt_in_transit_at_instance_create\" and \"encryption.encrypt_in_transit_at_instance_update\" attributes."
       }
       ## Check 5: Valid platform types.
@@ -108,7 +108,7 @@ resource "oci_core_instance" "these" {
     defined_tags         = each.value.defined_tags != null ? each.value.defined_tags : var.instances_configuration.default_defined_tags
     freeform_tags        = merge(local.cislz_module_tag, each.value.freeform_tags != null ? each.value.freeform_tags : var.instances_configuration.default_freeform_tags)
     # some images don't allow encrypt in transit
-    is_pv_encryption_in_transit_enabled = coalesce(each.value.cis_level,var.instances_configuration.default_cis_level,"1") >= "1" ? true : (each.value.encryption != null ? coalesce(each.value.encryption.encrypt_in_transit_on_instance_create,false) : null)
+    is_pv_encryption_in_transit_enabled = coalesce(each.value.cis_level,var.instances_configuration.default_cis_level,"1") >= "1" ? true : (each.value.encryption != null ? each.value.encryption.encrypt_in_transit_on_instance_create : null)
     create_vnic_details {
       private_ip       = each.value.networking != null ? each.value.networking.private_ip : null
       assign_public_ip = each.value.networking != null ? coalesce(each.value.networking.assign_public_ip,false) : false
@@ -128,7 +128,7 @@ resource "oci_core_instance" "these" {
       firmware = each.value.boot_volume != null ? (each.value.boot_volume.firmware != null ? upper(each.value.boot_volume.firmware) : null) : null
       network_type = each.value.networking != null ? upper(coalesce(each.value.networking.type,"PARAVIRTUALIZED")) : "PARAVIRTUALIZED"
       remote_data_volume_type = upper(coalesce(each.value.volumes_emulation_type,"PARAVIRTUALIZED"))
-      is_pv_encryption_in_transit_enabled = coalesce(each.value.cis_level,var.instances_configuration.default_cis_level,"1") >= "1" ? true : (each.value.encryption != null ? coalesce(each.value.encryption.encrypt_in_transit_on_instance_update,false) : null)
+      is_pv_encryption_in_transit_enabled = coalesce(each.value.cis_level,var.instances_configuration.default_cis_level,"1") >= "1" ? true : (each.value.encryption != null ? each.value.encryption.encrypt_in_transit_on_instance_update : null)
     }
     dynamic "platform_config" {
       for_each = each.value.platform_type != null || coalesce(each.value.cis_level,var.instances_configuration.default_cis_level,"1") == "2" ? [1] : []
