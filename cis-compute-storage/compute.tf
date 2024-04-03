@@ -70,12 +70,12 @@ resource "oci_core_instance" "these" {
       }
       ## Check 3: In-transit encryption is only available to paravirtualized boot volumes.
       precondition {
-        condition = each.value.encryption != null ? (each.value.boot_volume != null ? (upper(each.value.boot_volume.type) != "PARAVIRTUALIZED" ? each.value.encryption.encrypt_in_transit_on_instance_create == false && each.value.encryption.encrypt_in_transit_on_instance_update == false : true) : true) : true 
+        condition = each.value.encryption != null ? (each.value.boot_volume != null ? (upper(coalesce(each.value.boot_volume.type,"PARAVIRTUALIZED")) != "PARAVIRTUALIZED" ? coalesce(each.value.encryption.encrypt_in_transit_on_instance_create,false) == false && coalesce(each.value.encryption.encrypt_in_transit_on_instance_update,false) == false : true) : false) : true 
         error_message = "VALIDATION FAILURE in instance \"${each.key}\": in-transit encryption (during instance creation and instance update) is only available to instances with PARAVIRTUALIZED boot volume."
       }
       ## Check 4: In-transit encryption is only available to images that have it enabled.
       precondition {
-        condition = each.value.encryption != null ? (each.value.encryption.encrypt_in_transit_on_instance_create == true || each.value.encryption.encrypt_in_transit_on_instance_update == true ? (contains(keys(data.oci_core_image.these),each.key) ? (data.oci_core_image.these[each.key].launch_options[0].is_pv_encryption_in_transit_enabled == false ? false : true) : true) : true) : true
+        condition = each.value.encryption != null ? (coalesce(each.value.encryption.encrypt_in_transit_on_instance_create,false) == true || coalesce(each.value.encryption.encrypt_in_transit_on_instance_update,false) == true ? (contains(keys(data.oci_core_image.these),each.key) ? (data.oci_core_image.these[each.key].launch_options[0].is_pv_encryption_in_transit_enabled == false ? false : true) : true) : true) : true
         error_message = "VALIDATION FAILURE in instance \"${each.key}\": in-transit encryption is not enabled in the underlying image. Unset both \"encryption.encrypt_in_transit_at_instance_create\" and \"encryption.encrypt_in_transit_at_instance_update\" attributes."
       }
       ## Check 5: Valid platform types.
@@ -85,7 +85,7 @@ resource "oci_core_instance" "these" {
       }
       ## Check 6: Confidential computing and shielded instances are mutually exclusive.
       precondition {
-        condition = each.value.platform_type != null ? (each.value.encryption != null ? (each.value.encryption.encrypt_data_in_use == true ? (each.value.boot_volume != null ? each.value.boot_volume.secure_boot == false && each.value.boot_volume.measured_boot == false : true) : true) : true) : true
+        condition = each.value.platform_type != null ? (each.value.encryption != null ? (coalesce(each.value.encryption.encrypt_data_in_use,false) == true ? (each.value.boot_volume != null ? coalesce(each.value.boot_volume.secure_boot,false) == false && coalesce(each.value.boot_volume.measured_boot,false) == false : true) : true) : true) : true
         error_message = "VALIDATION FAILURE in instance \"${each.key}\": confidential computing and shielded instances are mutually exclusive. Either set \"encryption.encrypt_data_in_use\" to false or set both \"boot_volume.secure_boot\" and \"boot_volume.measured_boot\" to false."
       }
       ## Check 7: Platform type must be provided if CIS profile level is "2". This is required for enabling Secure Compute.
@@ -95,64 +95,64 @@ resource "oci_core_instance" "these" {
       }
       ## Check 8: Confidential computing and CIS level profile level "2" are mutually exclusive.
       precondition {
-        condition = coalesce(each.value.cis_level,var.instances_configuration.default_cis_level,"1") == "2" ? (each.value.encryption != null ? (each.value.encryption.encrypt_data_in_use == true ? false : true) : true) : true
+        condition = coalesce(each.value.cis_level,var.instances_configuration.default_cis_level,"1") == "2" ? (each.value.encryption != null ? (coalesce(each.value.encryption.encrypt_data_in_use,false) == true ? false : true) : true) : true
         error_message = "VALIDATION FAILURE in instance \"${each.key}\": confidential computing must be disabled when CIS level is set to 2. CIS level 2 automatically enables shielded instances, which cannot be enabled simultaneously with confidential computing in OCI. Either set \"encryption.encrypt_data_in_use\" to false or set CIS level to \"1\"."
       }
     }  
     compartment_id       = each.value.compartment_id != null ? (length(regexall("^ocid1.*$", each.value.compartment_id)) > 0 ? each.value.compartment_id : var.compartments_dependency[each.value.compartment_id].id) : (length(regexall("^ocid1.*$", var.instances_configuration.default_compartment_id)) > 0 ? var.instances_configuration.default_compartment_id : var.compartments_dependency[var.instances_configuration.default_compartment_id].id)
-    availability_domain  = data.oci_identity_availability_domains.ads[each.key].availability_domains[(each.value.placement != null ? each.value.placement.availability_domain : 1) - 1].name
-    fault_domain         = format("FAULT-DOMAIN-%s", each.value.placement != null ? each.value.placement.fault_domain : 1)
+    availability_domain  = data.oci_identity_availability_domains.ads[each.key].availability_domains[(each.value.placement != null ? coalesce(each.value.placement.availability_domain,1) : 1) - 1].name
+    fault_domain         = format("FAULT-DOMAIN-%s", each.value.placement != null ? coalesce(each.value.placement.fault_domain,1) : 1)
     shape                = each.value.shape
     display_name         = each.value.name
-    preserve_boot_volume = each.value.boot_volume != null ? each.value.boot_volume.preserve_on_instance_deletion : true
+    preserve_boot_volume = each.value.boot_volume != null ? coalesce(each.value.boot_volume.preserve_on_instance_deletion,true) : true
     defined_tags         = each.value.defined_tags != null ? each.value.defined_tags : var.instances_configuration.default_defined_tags
     freeform_tags        = merge(local.cislz_module_tag, each.value.freeform_tags != null ? each.value.freeform_tags : var.instances_configuration.default_freeform_tags)
     # some images don't allow encrypt in transit
-    is_pv_encryption_in_transit_enabled = coalesce(each.value.cis_level,var.instances_configuration.default_cis_level,"1") >= "1" ? true : (each.value.encryption != null ? each.value.encryption.encrypt_in_transit_on_instance_create : null)
+    is_pv_encryption_in_transit_enabled = coalesce(each.value.cis_level,var.instances_configuration.default_cis_level,"1") >= "1" ? true : (each.value.encryption != null ? coalesce(each.value.encryption.encrypt_in_transit_on_instance_create,false) : null)
     create_vnic_details {
       private_ip       = each.value.networking != null ? each.value.networking.private_ip : null
       assign_public_ip = each.value.networking != null ? coalesce(each.value.networking.assign_public_ip,false) : false
       subnet_id        = each.value.networking != null ? (each.value.networking.subnet_id != null ? (length(regexall("^ocid1.*$", each.value.networking.subnet_id)) > 0 ? each.value.networking.subnet_id : var.network_dependency["subnets"][each.value.networking.subnet_id].id) : (length(regexall("^ocid1.*$", var.instances_configuration.default_subnet_id)) > 0 ? var.instances_configuration.default_subnet_id : var.network_dependency["subnets"][var.instances_configuration.default_subnet_id].id)) : (length(regexall("^ocid1.*$", var.instances_configuration.default_subnet_id)) > 0 ? var.instances_configuration.default_subnet_id : var.network_dependency["subnets"][var.instances_configuration.default_subnet_id].id)
       hostname_label   = each.value.networking != null ? (coalesce(each.value.networking.hostname,lower(replace(each.value.name," ","")))) : lower(replace(each.value.name," ",""))
       nsg_ids          = each.value.networking != null ? [for nsg in coalesce(each.value.networking.network_security_groups,[]) : (length(regexall("^ocid1.*$", nsg)) > 0 ? nsg : var.network_dependency["network_security_groups"][nsg].id)] : null
-      skip_source_dest_check = each.value.networking != null ? each.value.networking.skip_source_dest_check : false
+      skip_source_dest_check = each.value.networking != null ? coalesce(each.value.networking.skip_source_dest_check,false) : false
     }
     source_details {
-      boot_volume_size_in_gbs = each.value.boot_volume != null ? each.value.boot_volume.size : 50
+      boot_volume_size_in_gbs = each.value.boot_volume != null ? coalesce(each.value.boot_volume.size,50) : 50
       source_type = "image"
       source_id   = each.value.image.id != null ? each.value.image.id : [for i in local.versions : i.listing_resource_id if i.publisher == each.value.image.publisher_name && i.display_name == each.value.image.name][0]
       kms_key_id  = each.value.encryption != null ? (each.value.encryption.kms_key_id != null ? (length(regexall("^ocid1.*$", each.value.encryption.kms_key_id)) > 0 ? each.value.encryption.kms_key_id : var.kms_dependency[each.value.encryption.kms_key_id].id) : (var.instances_configuration.default_kms_key_id != null ? (length(regexall("^ocid1.*$", var.instances_configuration.default_kms_key_id)) > 0 ? var.instances_configuration.default_kms_key_id : var.kms_dependency[var.instances_configuration.default_kms_key_id].id) : null)) : (var.instances_configuration.default_kms_key_id != null ? (length(regexall("^ocid1.*$", var.instances_configuration.default_kms_key_id)) > 0 ? var.instances_configuration.default_kms_key_id : var.kms_dependency[var.instances_configuration.default_kms_key_id].id) : null)
     }
     launch_options {
-      boot_volume_type = each.value.boot_volume != null ? upper(each.value.boot_volume.type) : "PARAVIRTUALIZED"
+      boot_volume_type = each.value.boot_volume != null ? upper(coalesce(each.value.boot_volume.type,"PARAVIRTUALIZED")) : "PARAVIRTUALIZED"
       firmware = each.value.boot_volume != null ? (each.value.boot_volume.firmware != null ? upper(each.value.boot_volume.firmware) : null) : null
-      network_type = each.value.networking != null ? upper(each.value.networking.type) : "PARAVIRTUALIZED"
-      remote_data_volume_type = upper(each.value.volumes_emulation_type)
-      is_pv_encryption_in_transit_enabled = coalesce(each.value.cis_level,var.instances_configuration.default_cis_level,"1") >= "1" ? true : (each.value.encryption != null ? each.value.encryption.encrypt_in_transit_on_instance_update : null)
+      network_type = each.value.networking != null ? upper(coalesce(each.value.networking.type,"PARAVIRTUALIZED")) : "PARAVIRTUALIZED"
+      remote_data_volume_type = upper(coalesce(each.value.volumes_emulation_type,"PARAVIRTUALIZED"))
+      is_pv_encryption_in_transit_enabled = coalesce(each.value.cis_level,var.instances_configuration.default_cis_level,"1") >= "1" ? true : (each.value.encryption != null ? coalesce(each.value.encryption.encrypt_in_transit_on_instance_update,false) : null)
     }
     dynamic "platform_config" {
       for_each = each.value.platform_type != null || coalesce(each.value.cis_level,var.instances_configuration.default_cis_level,"1") == "2" ? [1] : []
       content {
         type = each.value.platform_type
-        is_secure_boot_enabled = coalesce(each.value.cis_level,var.instances_configuration.default_cis_level,"1") == "2" ? true : (each.value.boot_volume != null ? (split(".",each.value.shape)[0] == "VM" && each.value.boot_volume.measured_boot == true ? each.value.boot_volume.measured_boot : each.value.boot_volume.secure_boot) : false)
-        is_measured_boot_enabled = each.value.boot_volume != null ? each.value.boot_volume.measured_boot : false
-        is_trusted_platform_module_enabled = each.value.boot_volume != null ? (split(".",each.value.shape)[0] == "VM" && each.value.boot_volume.measured_boot == true ? each.value.boot_volume.measured_boot : each.value.boot_volume.trusted_platform_module) : false
-        is_memory_encryption_enabled = each.value.encryption != null ? each.value.encryption.encrypt_data_in_use : false
+        is_secure_boot_enabled = coalesce(each.value.cis_level,var.instances_configuration.default_cis_level,"1") == "2" ? true : (each.value.boot_volume != null ? (split(".",each.value.shape)[0] == "VM" && coalesce(each.value.boot_volume.measured_boot,false) == true ? coalesce(each.value.boot_volume.measured_boot,false) : coalesce(each.value.boot_volume.secure_boot,false)) : false)
+        is_measured_boot_enabled = each.value.boot_volume != null ? coalesce(each.value.boot_volume.measured_boot,false) : false
+        is_trusted_platform_module_enabled = each.value.boot_volume != null ? (split(".",each.value.shape)[0] == "VM" && coalesce(each.value.boot_volume.measured_boot,false) == true ? coalesce(each.value.boot_volume.measured_boot,false) : coalesce(each.value.boot_volume.trusted_platform_module,false)) : false
+        is_memory_encryption_enabled = each.value.encryption != null ? coalesce(each.value.encryption.encrypt_data_in_use,false) : false
       }
     }  
     dynamic "shape_config" {
       for_each = length(regexall("Flex", each.value.shape)) > 0 ? [each.value.shape] : []
       content {
-        memory_in_gbs = each.value.flex_shape_settings != null ? each.value.flex_shape_settings.memory : 16
-        ocpus         = each.value.flex_shape_settings != null ? each.value.flex_shape_settings.ocpus : 1
+        memory_in_gbs = each.value.flex_shape_settings != null ? coalesce(each.value.flex_shape_settings.memory,16) : 16
+        ocpus         = each.value.flex_shape_settings != null ? coalesce(each.value.flex_shape_settings.ocpus,1) : 1
       }
     }
     dynamic "agent_config" {
       for_each = each.value.cloud_agent != null ? [1] : []
       content {
         #are_all_plugins_disabled = false
-        is_management_disabled = each.value.cloud_agent.disable_management
-        is_monitoring_disabled = each.value.cloud_agent.disable_monitoring
+        is_management_disabled = coalesce(each.value.cloud_agent.disable_management,false)
+        is_monitoring_disabled = coalesce(each.value.cloud_agent.disable_monitoring,false)
         dynamic "plugins_config" {
           for_each = coalesce(each.value.cloud_agent.plugins,[])
             iterator = plugin
@@ -178,7 +178,7 @@ resource "oci_core_instance" "these" {
 resource "oci_core_volume_backup_policy_assignment" "these_boot_volumes" {
   for_each = var.instances_configuration != null ? var.instances_configuration["instances"] : {}
     asset_id  = oci_core_instance.these[each.key].boot_volume_id
-    policy_id = local.oracle_backup_policies[lower(each.value.boot_volume != null ? each.value.boot_volume.backup_policy : "bronze")]
+    policy_id = local.oracle_backup_policies[lower(each.value.boot_volume != null ? coalesce(each.value.boot_volume.backup_policy,"bronze") : "bronze")]
 }
 
 /* data "template_file" "block_volumes_templates" {
@@ -223,7 +223,7 @@ locals {
         subnet_id               = vnic_value.subnet_id
         network_security_groups = vnic_value.network_security_groups
         skip_source_dest_check  = vnic_value.skip_source_dest_check
-        nic_index               = vnic_value.nic_index
+        nic_index               = coalesce(vnic_value.nic_index,0)
         defined_tags            = vnic_value.defined_tags
         freeform_tags           = vnic_value.freeform_tags
       } 
@@ -284,7 +284,7 @@ resource "oci_core_vnic_attachment" "these" {
       hostname_label   = each.value.hostname
       subnet_id        = each.value.subnet_id != null ? (length(regexall("^ocid1.*$", each.value.subnet_id)) > 0 ? each.value.subnet_id : var.network_dependency["subnets"][each.value.subnet_id].id) : (length(regexall("^ocid1.*$", var.instances_configuration.default_subnet_id)) > 0 ? var.instances_configuration.default_subnet_id : var.network_dependency["subnets"][var.instances_configuration.default_subnet_id].id)
       nsg_ids          = [for nsg in coalesce(each.value.network_security_groups,[]) : (length(regexall("^ocid1.*$", nsg)) > 0 ? nsg : var.network_dependency["network_security_groups"][nsg].id)]
-      skip_source_dest_check = each.value.skip_source_dest_check
+      skip_source_dest_check = coalesce(each.value.skip_source_dest_check,false)
       defined_tags     = each.value.defined_tags != null ? each.value.defined_tags : var.instances_configuration.default_defined_tags
       freeform_tags    = merge(local.cislz_module_tag, each.value.freeform_tags != null ? each.value.freeform_tags : var.instances_configuration.default_freeform_tags)
     }
