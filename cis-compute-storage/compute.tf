@@ -170,7 +170,7 @@ resource "oci_core_instance" "these" {
       }
     }
     metadata = {
-      ssh_authorized_keys = each.value.ssh_public_key_path != null ? file(each.value.ssh_public_key_path) : file(var.instances_configuration.default_ssh_public_key_path)
+      ssh_authorized_keys = each.value.ssh_public_key_path != null ? file(each.value.ssh_public_key_path) : var.instances_configuration.default_ssh_public_key_path != null ? file(var.instances_configuration.default_ssh_public_key_path) : null
     #  user_data           = contains(keys(data.template_cloudinit_config.config),each.key) ? data.template_cloudinit_config.config[each.key].rendered : null
     }
 }
