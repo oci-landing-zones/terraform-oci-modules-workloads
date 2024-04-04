@@ -6,14 +6,19 @@ output "instances" {
   value       = var.enable_output ? oci_core_instance.these : null
 }
 
-output "private_ips" {
-  description = "The private IPs"
-  value = var.enable_output ? oci_core_private_ip.these : null
+output "secondary_vnics" {
+  description = "The secondary VNICs"
+  value = var.enable_output ? data.oci_core_vnic.these : null
 }
 
-output "vnic_attachments" {
-  description = "The VNIC attachments"
+output "secondary_vnic_attachments" {
+  description = "The secondary VNIC attachments"
   value = var.enable_output ? oci_core_vnic_attachment.these : null
+}
+
+output "secondary_private_ips" {
+  description = "The secondary private IPs in all instances VNICs"
+  value = var.enable_output ? oci_core_private_ip.these : null
 }
 
 output "block_volumes" {
