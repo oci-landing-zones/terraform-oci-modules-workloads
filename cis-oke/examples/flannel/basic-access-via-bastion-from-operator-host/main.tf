@@ -18,7 +18,7 @@ module "operator_instance" {
 
 module "bastion" {
   depends_on = [module.oke]
-  source                 = "../../../../../terraform-oci-cis-landing-zone-security/bastion/"
+  source                 = "github.com/oracle-quickstart/terraform-oci-cis-landing-zone-security.git//bastion?ref=v0.1.4"
   bastions_configuration = var.bastions_configuration
   sessions_configuration = var.sessions_configuration
   instances_dependency   = module.operator_instance.instances
