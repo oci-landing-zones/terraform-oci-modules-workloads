@@ -22,3 +22,7 @@ variable "bastions_configuration" {
 variable "sessions_configuration" {
   type = any
 }
+variable "ssh_private_key" {
+  type = string
+  default = "~/.ssh/id_rsa"
+}
