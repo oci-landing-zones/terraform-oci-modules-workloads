@@ -16,20 +16,27 @@ This stack can be deployed with OCI Resource Manager service (RMS) or Terraform 
 
 1. Click [![Deploy_To_OCI](../../../DeployToOCI.svg)](https://cloud.oracle.com/resourcemanager/stacks/create?zipUrl=https://github.com/oracle-quickstart/terraform-oci-secure-workloads/archive/refs/heads/issue-523-rms.zip)
 2. Accept terms, wait for the configuration to load. 
-3. Set *Working directory* to "terraform-oci-secure-workloads-issue-523-rms/cis-compute-storage/examples/clusters". 
+3. Set *Working directory* to *terraform-oci-secure-workloads-issue-523-rms/cis-compute-storage/examples/clusters*. **Make sure to select this directory**.
 4. Give the stack a name in the *Name* field.
-5. Set *Terraform version* to 1.2.x. Click *Next*. 
-6. a) **For deploying a cluster network**, use the following screenshot as guidance: 
+5. Set *Terraform version* to 1.2.x. 
+
+See screenshot below as guidance:
+
+![rms-create-stack](images/rms-create-stack.png)
+
+6. Click *Next*. 
+7. a) **For deploying a cluster network**, use the following screenshot as guidance: 
 
 ![cluster-network-rms-deployment](images/cluster-network-rms-deployment.png)
 
-6. b) **For deploying a compute cluster**, use the following screenshot as guidance: 
+7. b) **For deploying a compute cluster**, use the following screenshot as guidance: 
 
 ![compute-cluster-rms-deployment](images/compute-cluster-rms-deployment.png)
 
-7. Click *Next*. Uncheck *Run apply* option at the bottom of the screen. Click *Create*.
-8. Click the *Plan* button.
-9. Upon a successfully created plan, click the *Apply* button and pick the created plan in the *Apply job plan resolution* drop down.
+8. Click *Next*. 
+9. Uncheck *Run apply* option at the bottom of the screen. Click *Create*.
+10. Click the *Plan* button.
+11. Upon a successfully created plan, click the *Apply* button and pick the created plan in the *Apply job plan resolution* drop down.
 
 
 ## Deploying with Terraform CLI
