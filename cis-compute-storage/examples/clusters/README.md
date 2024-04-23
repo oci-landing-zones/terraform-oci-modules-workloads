@@ -1,4 +1,4 @@
-# Cluster Network and Compute Clusters
+# Cluster Networks and Compute Clusters
 
 ![Landing_Zone_Logo](../../../landing_zone_300.png)
 
