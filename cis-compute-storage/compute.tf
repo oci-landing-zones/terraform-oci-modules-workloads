@@ -182,8 +182,8 @@ resource "oci_core_volume_backup_policy_assignment" "these_boot_volumes" {
 }
 
 data "template_file" "cloud_config" {
-  for_each = var.instances_configuration != null ? {for k, v in var.instances_configuration["instances"] : k => v if v.cloud_init_script != null} : {}
-    template = each.value.cloud_init_script
+  for_each = var.instances_configuration != null ? {for k, v in var.instances_configuration["instances"] : k => v if v.cloud_init != null || var.instances_configuration.default_cloud_init_heredoc_script != null || var.instances_configuration.default_cloud_init_script_file != null} : {}
+    template = coalesce(try(each.value.cloud_init.heredoc_script,null), try(file(try(each.value.cloud_init.script_file,null)),null), var.instances_configuration.default_cloud_init_heredoc_script, try(file(var.instances_configuration.default_cloud_init_script_file),null), "__void__")
 }
 
 /* data "template_file" "block_volumes_templates" {
