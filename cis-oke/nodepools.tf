@@ -75,7 +75,7 @@ resource "oci_containerengine_node_pool" "these" {
           content {
             preemption_action {
               type                    = "TERMINATE"
-              is_preserve_boot_volume = each.value.node_config_details.boot_volume != null ? each.value.node_config_details.boot_volume.preserve_boot_volume != null ? each.value.node_config_details.boot_volume.preserve_boot_volume : false : false
+              is_preserve_boot_volume = each.value.node_config_details.boot_volume != null ? coalesce(each.value.node_config_details.boot_volume.preserve_boot_volume,false) : false
             }
           }
         }
@@ -118,14 +118,14 @@ resource "oci_containerengine_node_pool" "these" {
   dynamic "node_shape_config" {
     for_each = length(regexall("Flex", each.value.node_config_details.node_shape)) > 0 ? [each.value.node_config_details.node_shape] : []
     content {
-      memory_in_gbs = each.value.node_config_details.flex_shape_settings != null ? each.value.node_config_details.flex_shape_settings.memory : 16
-      ocpus         = each.value.node_config_details.flex_shape_settings != null ? each.value.node_config_details.flex_shape_settings.ocpus : 1
+      memory_in_gbs = each.value.node_config_details.flex_shape_settings != null ? coalesce(each.value.node_config_details.flex_shape_settings.memory,16) : 16
+      ocpus         = each.value.node_config_details.flex_shape_settings != null ? coalesce(each.value.node_config_details.flex_shape_settings.ocpus,1) : 1
     }
   }
   node_source_details {
     image_id                = each.value.node_config_details.image != null ? length(regexall("^ocid1.*$", each.value.node_config_details.image)) > 0 ? each.value.node_config_details.image : each.value.kubernetes_version != null ? element([for source in data.oci_containerengine_node_pool_option.np_option[each.key].sources : source.image_id if length(regexall("Oracle-Linux-${each.value.node_config_details.image}-20[0-9]*.*-OKE-${substr(each.value.kubernetes_version, 1, -1)}", source.source_name)) > 0], 0) : length(regexall("^ocid1.*$", each.value.cluster_id)) > 0 ? element([for source in data.oci_containerengine_node_pool_option.np_option[each.key].sources : source.image_id if length(regexall("Oracle-Linux-${each.value.node_config_details.image}-20[0-9]*.*-OKE-${substr([for cluster in data.oci_containerengine_clusters.existing[each.key].clusters : cluster.kubernetes_version if cluster.id == each.value.cluster_id][0], 1, -1)}", source.source_name)) > 0], 0) : element([for source in data.oci_containerengine_node_pool_option.np_option[each.key].sources : source.image_id if length(regexall("Oracle-Linux-${each.value.node_config_details.image}-20[0-9]*.*-OKE-${substr(oci_containerengine_cluster.these[each.value.cluster_id].kubernetes_version, 1, -1)}", source.source_name)) > 0], 0) : each.value.kubernetes_version != null ? [for source in data.oci_containerengine_node_pool_option.np_option[each.key].sources : source.image_id if length(regexall("Oracle-Linux-[0-9].[0-9]-20[0-9]*.*-OKE-${substr(each.value.kubernetes_version, 1, -1)}", source.source_name)) > 0][0] : length(regexall("^ocid1.*$", each.value.cluster_id)) > 0 ? [for source in data.oci_containerengine_node_pool_option.np_option[each.key].sources : source.image_id if length(regexall("Oracle-Linux-[0-9].[0-9]-20[0-9]*.*-OKE-${substr([for cluster in data.oci_containerengine_clusters.existing[each.key].clusters : cluster.kubernetes_version if cluster.id == each.value.cluster_id][0], 1, -1)}", source.source_name)) > 0][0] : [for source in data.oci_containerengine_node_pool_option.np_option[each.key].sources : source.image_id if length(regexall("Oracle-Linux-[0-9].[0-9]-20[0-9]*.*-OKE-${substr(oci_containerengine_cluster.these[each.value.cluster_id].kubernetes_version, 1, -1)}", source.source_name)) > 0][0]
     source_type             = "image"
-    boot_volume_size_in_gbs = each.value.node_config_details.boot_volume != null ? each.value.node_config_details.boot_volume.size : 60
+    boot_volume_size_in_gbs = each.value.node_config_details.boot_volume != null ? coalesce(each.value.node_config_details.boot_volume.size,60) : 60
   }
   ssh_public_key = each.value.node_config_details.ssh_public_key_path != null ? file(each.value.node_config_details.ssh_public_key_path) : file(var.workers_configuration.default_ssh_public_key_path)
 }
