@@ -151,6 +151,8 @@ The *default_* attributes are the following:
 - **default_cis_level** &ndash; (Optional) Default CIS OCI Benchmark profile level for all instances. Level "2" enforces usage of customer managed keys for boot volume encryption. Default is "1". It can be overridden by *cis_level* attribute in each instance.
 - **default_defined_tags** &ndash; (Optional) Default defined tags for all instances. It can be overridden by *defined_tags* attribute in each instance.
 - **default_freeform_tags** &ndash; (Optional) Default freeform tags for all instances. It can be overridden by *freeform_tags* attribute in each instance.
+- **default_cloud_init_heredoc_script** &ndash; (Optional) Default cloud-init script in [Terraform heredoc style](https://developer.hashicorp.com/terraform/language/expressions/strings#heredoc-strings) that is applied to all instances. It has precedence over *default_cloud_init_script_file*. Use this when the script cannot be made available in the file system. **Any further changes to the script triggers instance recreation on subsequent plan/apply.**
+- **default_cloud_init_script_file** &ndash; (Optional) Default cloud-init script file that is applied to all instances. Use this when the script is available in the file system. **Any further changes to the script triggers instance recreation on subsequent plan/apply.**
 
 The instances themselves are defined within the **instances** attribute, In Terraform terms, it is a map of objects. where each object is referred by an identifying key. The supported attributes are listed below. For better usability, most attributes are grouped in logical blocks. They are properly indented in the list.
 - **compartment_id** &ndash; (Optional) The instance compartment. *default_compartment_id* is used if undefined. This attribute is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *compartments_dependency* variable. See [External Dependencies](#ext-dep) for details.
@@ -221,6 +223,9 @@ The instances themselves are defined within the **instances** attribute, In Terr
   - **plugins** &ndash; (Optional) The list of plugins to manage. Each plugin has a name and a boolean flag that enables it.
     - **name** &ndash; The plugin name. **It must be a valid plugin name**. The plugin names are available in [Oracle Cloud Agent documentation](https://docs.oracle.com/en-us/iaas/Content/Compute/Tasks/manage-plugins.htm) and in [compute-only example](./examples/compute-only/input.auto.tfvars.template) as well.
     - **enabled** &ndash; Whether or not the plugin should be enabled. In order to disable a previously enabled plugin, set this value to false. Simply removing the plugin from the list will not disable it.
+- **cloud_init** &ndash; (Optional) a script that is automatically executed once the instance starts out. Use either *heredoc_script* (when the script cannot be made available in the file system) or *script_file* (when the script is available in the file system). **Any further changes to the script (supplied in either way) triggers instance recreation on subsequent plan/apply.**
+  - **heredoc_script** &ndash; (Optional) cloud-init script in [Terraform heredoc style](https://developer.hashicorp.com/terraform/language/expressions/strings#heredoc-strings) that is applied to the instance. It has precedence over *script_file*.
+  - **script_file** &ndash; (Optional) cloud-init script file that is applied to the instance.    
 
 #### <a name="cloud-agent-requirements">Cloud Agent Requirements</a>
 ##### IAM Policy Requirements

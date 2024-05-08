@@ -11,10 +11,11 @@ For INSTANCE-1:
 - The instance is based on "VM.Standard.E4.Flex" shape, as defined by the *shape* attribute.
 - The instance is based on the "Oracle Linux 7 STIG" Marketplace image published by "Oracle Linux", as defined by *image.name* and *image.publisher_name* attributes. Use the [markeplace-images module](../../../marketplace-images/) to find Marketplace images information based on a search filter.
 - The instance will **not** have the boot volume preserved on termination, as defined by *boot_volume.preserve_on_instance_deletion* attribute.
-- The instance requires a customer managed key for boot volume encryption, as defined by *cis_level* atrribute.
+- The instance requires a customer managed key for boot volume encryption, as defined by *cis_level* attribute.
 - The instance boot volume is encrypted with a customer managed key referred by *encryption.kms_key_id* attribute.
 - The instance boot volume is set to be backed up per Oracle-managed *bronze* backup policy (enforced by the module by default).
 - The instance has all Cloud Agent plugins enabled, as defined by *cloud_agent.plugins* attribute.
+- The instance executes the cloud-init script given in [cloud-init.yaml](./cloud-init.yaml).
 
 For INSTANCE-2:
 - The instance is based on "VM.Standard.E4.Flex" shape, as defined by the *shape* attribute.
