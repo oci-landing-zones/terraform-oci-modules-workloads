@@ -1,3 +1,13 @@
+# May 10, 2024 Release Notes - 0.1.4
+
+## New
+1. OKE module added, supporting basic and enhanced clusters, with managed node pools and virtual node pools. See [OKE module](./cis-oke/README.md) for details.
+
+## Updates
+1. Compute module can now manage cluster networks and compute clusters. See [Clusters](./cis-compute-storage/README.md#clusters-1) for details.
+2. Compute module now supports cloud-init scripts passed in as a file or as a string in [Terraform heredoc style](https://developer.hashicorp.com/terraform/language/expressions/strings#heredoc-strings). See [Compute](./cis-compute-storage/README.md#compute-1) for details.
+3. Compute module now supports SSH public keys passed in as a file or as a string.
+
 # February 29, 2024 Release Notes - 0.1.3
 
 ## Updates
