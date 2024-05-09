@@ -8,7 +8,7 @@ module "cluster_networks" {
     oci = oci
     oci.block_volumes_replication_region = oci
   }
-  rdma_clusters_configuration = var.rdma_clusters_configuration
-  rdma_cluster_instances_configuration = var.rdma_cluster_instances_configuration
+  clusters_configuration = var.clusters_configuration
+  cluster_instances_configuration = var.cluster_instances_configuration
   instances_configuration = var.instances_configuration
 }
