@@ -170,7 +170,7 @@ resource "oci_core_instance" "these" {
       }
     }
     metadata = {
-      ssh_authorized_keys = each.value.ssh_public_key_path != null ? file(each.value.ssh_public_key_path) : file(var.instances_configuration.default_ssh_public_key_path)
+      ssh_authorized_keys = each.value.ssh_public_key_path != null ? (fileexists(each.value.ssh_public_key_path) ? file(each.value.ssh_public_key_path) : each.value.ssh_public_key_path) : var.instances_configuration.default_ssh_public_key_path != null ? (fileexists(var.instances_configuration.default_ssh_public_key_path) ? file(var.instances_configuration.default_ssh_public_key_path) : var.instances_configuration.default_ssh_public_key_path): null
       user_data           = contains(keys(data.template_file.cloud_config),each.key) ? base64encode(data.template_file.cloud_config[each.key].rendered) : null
     }
     compute_cluster_id = each.value.cluster_id != null ? oci_core_compute_cluster.these[each.value.cluster_id].id : null
