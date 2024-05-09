@@ -2,17 +2,17 @@
 # Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
 data "oci_containerengine_clusters" "vpool" {
-  for_each       = var.workers_configuration != null ? var.workers_configuration["virtual_node_pools"] : {}
+  for_each       = var.workers_configuration != null ? coalesce(var.workers_configuration["virtual_node_pools"], {}) : {}
   compartment_id = each.value.compartment_id != null ? (length(regexall("^ocid1.*$", each.value.compartment_id)) > 0 ? each.value.compartment_id : var.compartments_dependency[each.value.compartment_id].id) : var.workers_configuration.default_compartment_id != null ? (length(regexall("^ocid1.*$", var.workers_configuration.default_compartment_id)) > 0 ? var.workers_configuration.default_compartment_id : var.compartments_dependency[var.workers_configuration.default_compartment_id].id) : length(regexall("^ocid1.*$", each.value.cluster_id)) > 0 ? null : oci_containerengine_cluster.these[each.value.cluster_id].compartment_id
 }
 
 data "oci_identity_availability_domains" "vpool_ads" {
-  for_each       = var.workers_configuration != null ? var.workers_configuration["virtual_node_pools"] : {}
+  for_each       = var.workers_configuration != null ? coalesce(var.workers_configuration["virtual_node_pools"], {}) : {}
   compartment_id = each.value.compartment_id != null ? (length(regexall("^ocid1.*$", each.value.compartment_id)) > 0 ? each.value.compartment_id : var.compartments_dependency[each.value.compartment_id].id) : var.workers_configuration.default_compartment_id != null ? (length(regexall("^ocid1.*$", var.workers_configuration.default_compartment_id)) > 0 ? var.workers_configuration.default_compartment_id : var.compartments_dependency[var.workers_configuration.default_compartment_id].id) : length(regexall("^ocid1.*$", each.value.cluster_id)) > 0 ? null : oci_containerengine_cluster.these[each.value.cluster_id].compartment_id
 }
 
 resource "oci_containerengine_virtual_node_pool" "these" {
-  for_each = var.workers_configuration != null ? var.workers_configuration["virtual_node_pools"] != null ? var.workers_configuration["virtual_node_pools"] : {} : {}
+  for_each = var.workers_configuration != null ? coalesce(var.workers_configuration["virtual_node_pools"], {}) : {}
   lifecycle {
     ## Check 1. Enhanced Cluster validation when creating virtual node pools.
     precondition {

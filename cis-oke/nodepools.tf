@@ -2,28 +2,28 @@
 # Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
 data "oci_containerengine_clusters" "existing" {
-  for_each       = var.workers_configuration != null ? var.workers_configuration["node_pools"] : {}
+  for_each       = var.workers_configuration != null ? coalesce(var.workers_configuration["node_pools"],{}) : {}
   compartment_id = each.value.compartment_id != null ? (length(regexall("^ocid1.*$", each.value.compartment_id)) > 0 ? each.value.compartment_id : var.compartments_dependency[each.value.compartment_id].id) : var.workers_configuration.default_compartment_id != null ? (length(regexall("^ocid1.*$", var.workers_configuration.default_compartment_id)) > 0 ? var.workers_configuration.default_compartment_id : var.compartments_dependency[var.workers_configuration.default_compartment_id].id) : length(regexall("^ocid1.*$", each.value.cluster_id)) > 0 ? null : oci_containerengine_cluster.these[each.value.cluster_id].compartment_id
 }
 
 data "oci_containerengine_cluster_option" "kube_versions" {
-  for_each          = var.workers_configuration != null ? var.workers_configuration["node_pools"] : {}
+  for_each          = var.workers_configuration != null ? coalesce(var.workers_configuration["node_pools"],{}) : {}
   cluster_option_id = "all"
   compartment_id    = each.value.compartment_id != null ? (length(regexall("^ocid1.*$", each.value.compartment_id)) > 0 ? each.value.compartment_id : var.compartments_dependency[each.value.compartment_id].id) : var.workers_configuration.default_compartment_id != null ? (length(regexall("^ocid1.*$", var.workers_configuration.default_compartment_id)) > 0 ? var.workers_configuration.default_compartment_id : var.compartments_dependency[var.workers_configuration.default_compartment_id].id) : length(regexall("^ocid1.*$", each.value.cluster_id)) > 0 ? null : oci_containerengine_cluster.these[each.value.cluster_id].compartment_id
 }
 
 data "oci_containerengine_node_pool_option" "np_option" {
-  for_each            = var.workers_configuration != null ? var.workers_configuration["node_pools"] : {}
+  for_each            = var.workers_configuration != null ? coalesce(var.workers_configuration["node_pools"],{}) : {}
   node_pool_option_id = length(regexall("^ocid1.*$", each.value.cluster_id)) > 0 ? each.value.cluster_id : oci_containerengine_cluster.these[each.value.cluster_id].id
 }
 
 data "oci_identity_availability_domains" "ads" {
-  for_each       = var.workers_configuration != null ? var.workers_configuration["node_pools"] : {}
+  for_each       = var.workers_configuration != null ? coalesce(var.workers_configuration["node_pools"],{}) : {}
   compartment_id = each.value.compartment_id != null ? (length(regexall("^ocid1.*$", each.value.compartment_id)) > 0 ? each.value.compartment_id : var.compartments_dependency[each.value.compartment_id].id) : var.workers_configuration.default_compartment_id != null ? (length(regexall("^ocid1.*$", var.workers_configuration.default_compartment_id)) > 0 ? var.workers_configuration.default_compartment_id : var.compartments_dependency[var.workers_configuration.default_compartment_id].id) : length(regexall("^ocid1.*$", each.value.cluster_id)) > 0 ? null : oci_containerengine_cluster.these[each.value.cluster_id].compartment_id
 }
 
 resource "oci_containerengine_node_pool" "these" {
-  for_each = var.workers_configuration != null ? var.workers_configuration["node_pools"] != null ? var.workers_configuration["node_pools"] : {} : {}
+  for_each = var.workers_configuration != null ? coalesce(var.workers_configuration["node_pools"],{}) : {}
   lifecycle {
     ## Check 1: Customer managed key must be provided if CIS profile level is "2".
     precondition {

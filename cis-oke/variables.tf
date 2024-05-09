@@ -124,7 +124,7 @@ variable "workers_configuration" {
           max_unavailable = optional(string) # maximum active nodes that would be terminated from nodepool during the cycling nodepool process. OKE supports both integer and percentage input. Defaults to 0, Ranges from 0 to Nodepool size or 0% to 100%.
         }))
       })
-    })), {})
+    })))
 
     virtual_node_pools = optional(map(object({
       cluster_id                  = string                # the cluster where the virtual node pool will be created.
@@ -155,7 +155,7 @@ variable "workers_configuration" {
         key    = optional(string)     # the key of the pair.
         value  = optional(string)     # the value of the pair.
       })))
-    })), {})
+    })))
   })
   default = null
 }
