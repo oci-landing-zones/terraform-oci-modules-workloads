@@ -4,13 +4,15 @@
 variable "instances_configuration" {
   description = "Compute instances configuration attributes."
   type = object({
-    default_compartment_id      = string,                # the default compartment where all resources are defined. It's overriden by the compartment_ocid attribute within each object.
-    default_subnet_id           = optional(string),      # the default subnet where all Compute instances are defined. It's overriden by the subnet_id attribute within each Compute instance.
-    default_ssh_public_key_path = optional(string),      # the default ssh public key path used to access the Compute instance. It's overriden by the ssh_public_key attribute within each Compute instance.
-    default_kms_key_id          = optional(string),      # the default KMS key to assign as the master encryption key. It's overriden by the kms_key_id attribute within each object.
-    default_cis_level           = optional(string)       # The CIS OCI Benchmark profile level. Level "1" is be practical and prudent. Level "2" is intended for environments where security is more critical than manageability and usability. Default is "1".
-    default_defined_tags        = optional(map(string)), # the default defined tags. It's overriden by the defined_tags attribute within each object.
-    default_freeform_tags       = optional(map(string)), # the default freeform tags. It's overriden by the freeform_tags attribute within each object.
+    default_compartment_id      = string,                 # the default compartment where all resources are defined. It's overriden by the compartment_ocid attribute within each object.
+    default_subnet_id           = optional(string),       # the default subnet where all Compute instances are defined. It's overriden by the subnet_id attribute within each Compute instance.
+    default_ssh_public_key_path = optional(string),       # the default ssh public key path used to access the Compute instance. It's overriden by the ssh_public_key attribute within each Compute instance.
+    default_kms_key_id          = optional(string),       # the default KMS key to assign as the master encryption key. It's overriden by the kms_key_id attribute within each object.
+    default_cis_level           = optional(string)        # the CIS OCI Benchmark profile level. Level "1" is be practical and prudent. Level "2" is intended for environments where security is more critical than manageability and usability. Default is "1".
+    default_defined_tags        = optional(map(string)),  # the default defined tags. It's overriden by the defined_tags attribute within each object.
+    default_freeform_tags       = optional(map(string)),  # the default freeform tags. It's overriden by the freeform_tags attribute within each object.
+    default_cloud_init_heredoc_script = optional(string), # the default cloud-init script in Terraform heredoc style that is applied to all instances. It has precedence over default_cloud_init_script_file.
+    default_cloud_init_script_file    = optional(string), # the default cloud-init script file that is applied to all instances.
 
     instances = map(object({ # the instances to manage in this configuration.
       cis_level        = optional(string)
@@ -90,6 +92,10 @@ variable "instances_configuration" {
           name = string # the plugin name. It must be a valid plugin name. The plugin names are available in https://docs.oracle.com/en-us/iaas/Content/Compute/Tasks/manage-plugins.htm and in compute-only example(./examples/compute-only/input.auto.tfvars.template) as well.
           enabled = bool #Whether or not the plugin should be enabled. In order to disable a previously enabled plugin, set this value to false. Simply removing the plugin from the list will not disable it.
         })))
+      }))
+      cloud_init = optional(object({
+        heredoc_script = optional(string) # the cloud-init script in Terraform heredoc style that is applied to the instance. It has precedence over script_file.
+        script_file = optional(string)    # the cloud-init script file that is applied to the instance.    
       }))
       ssh_public_key_path = optional(string) # the SSH public key path used to access the instance.
       defined_tags        = optional(map(string)) # instances defined_tags. default_defined_tags is used if this is not defined.
