@@ -17,6 +17,7 @@ Check the [examples](./examples/) folder for actual module usage.
     - [File Systems](#file-systems)
     - [Mount Targets](#mount-targets)
     - [Snapshot Policies](#snapshot-policies)
+  - [Clusters](#clusters)  
   - [External Dependencies](#ext-dep)
 - [Related Documentation](#related)
 - [Known Issues](#issues)
@@ -47,6 +48,9 @@ The following security features are currently supported by the module:
 - Data at rest encryption with customer managed keys from OCI Vault service.
 - Cross-region replication for strong cyber resilience posture.
 - Backups with custom snapshot policies.
+
+### <a name="cluster-features">Clusters</a>
+- Deployment of cluster networks and compute clusters.
 
 ## <a name="requirements">Requirements</a>
 ### IAM Permissions
@@ -99,22 +103,24 @@ This module relies on [Terraform Optional Object Type Attributes feature](https:
 
 ## <a name="functioning">Module Functioning</a>
 
-The module defines two top level attributes used to manage instances and storage: 
+The module defines two top level variables used to manage instances, storage, clusters and cluster configurations: 
 - **instances_configuration** &ndash; for managing Compute instances.
 - **storage_configuration** &ndash; for managing storage, including Block Volumes and File System Storage.
+- **clusters_configuration** &ndash; for managing clusters, including cluster networks and compute clusters.
+- **cluster_instances_configuration** &ndash; for managing instance configurations used in cluster networks.
 
 ### <a name="compute">Compute</a>
 
-Compute instances are managed using the **instances_configuration** object. It contains a set of attributes starting with the prefix **default_** and one attribute named **instances**. The **default_** attribute values are applied to all instances within **instances**, unless overriden at the instance level.
+Compute instances are managed using the **instances_configuration** variable. It contains a set of attributes starting with the prefix **default_** and one attribute named **instances**. The **default_** attribute values are applied to all instances within **instances**, unless overridden at the instance level.
 
 The *default_* attributes are the following:
-- **default_compartment_id** &ndash; Default compartment for all instances. It can be overriden by *compartment_id* attribute in each instance. This attribute is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *compartments_dependency* variable. See [External Dependencies](#ext-dep) for details.
-- **default_subnet_id** &ndash; (Optional) Default subnet for all instances. It can be overriden by *subnet_id* attribute in each instance. This attribute is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *network_dependency* variable. See [External Dependencies](#ext-dep) for details.
-- **default_ssh_public_key_path** &ndash; (Optional) Default SSH public key path used to access all instances. It can be overriden by the *ssh_public_key* attribute in each instance.
-- **default_kms_key_id** &ndash; (Optional) Default encryption key for all instances. It can be overriden by *kms_key_id* attribute in each instance. This attribute is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *kms_dependency* variable. See [External Dependencies](#ext-dep) for details.
-- **default_cis_level** &ndash; (Optional) Default CIS OCI Benchmark profile level for all instances. Level "2" enforces usage of customer managed keys for boot volume encryption. Default is "1". It can be overriden by *cis_level* attribute in each instance.
-- **default_defined_tags** &ndash; (Optional) Default defined tags for all instances. It can be overriden by *defined_tags* attribute in each instance.
-- **default_freeform_tags** &ndash; (Optional) Default freeform tags for all instances. It can be overriden by *freeform_tags* attribute in each instance.
+- **default_compartment_id** &ndash; Default compartment for all instances. It can be overridden by *compartment_id* attribute in each instance. This attribute is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *compartments_dependency* variable. See [External Dependencies](#ext-dep) for details.
+- **default_subnet_id** &ndash; (Optional) Default subnet for all instances. It can be overridden by *subnet_id* attribute in each instance. This attribute is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *network_dependency* variable. See [External Dependencies](#ext-dep) for details.
+- **default_ssh_public_key_path** &ndash; (Optional) Default SSH public key path used to access all instances. It can be overridden by the *ssh_public_key* attribute in each instance.
+- **default_kms_key_id** &ndash; (Optional) Default encryption key for all instances. It can be overridden by *kms_key_id* attribute in each instance. This attribute is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *kms_dependency* variable. See [External Dependencies](#ext-dep) for details.
+- **default_cis_level** &ndash; (Optional) Default CIS OCI Benchmark profile level for all instances. Level "2" enforces usage of customer managed keys for boot volume encryption. Default is "1". It can be overridden by *cis_level* attribute in each instance.
+- **default_defined_tags** &ndash; (Optional) Default defined tags for all instances. It can be overridden by *defined_tags* attribute in each instance.
+- **default_freeform_tags** &ndash; (Optional) Default freeform tags for all instances. It can be overridden by *freeform_tags* attribute in each instance.
 
 The instances themselves are defined within the **instances** attribute, In Terraform terms, it is a map of objects. where each object is referred by an identifying key. The supported attributes are listed below. For better usability, most attributes are grouped in logical blocks. They are properly indented in the list.
 - **compartment_id** &ndash; (Optional) The instance compartment. *default_compartment_id* is used if undefined. This attribute is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *compartments_dependency* variable. See [External Dependencies](#ext-dep) for details.
@@ -122,6 +128,7 @@ The instances themselves are defined within the **instances** attribute, In Terr
 - **shape** &ndash; The instance shape. See [Compute Shapes](https://docs.oracle.com/en-us/iaas/Content/Compute/References/computeshapes.htm) for OCI Compute shapes.
 - **name** &ndash; The instance name.
 - **platform_type** &ndash; (Optional) The platform type. Assigning this attribute enables important platform security features in the Compute service. See [Enabling Platform Features](#platform-features) for more information. Valid values are "AMD_MILAN_BM", "AMD_MILAN_BM_GPU", "AMD_ROME_BM", "AMD_ROME_BM_GPU", "AMD_VM", "GENERIC_BM", "INTEL_ICELAKE_BM", "INTEL_SKYLAKE_BM", "INTEL_VM". By default, no platform features are enabled.
+- **cluster_id** &ndash; (Optional) The Compute cluster the instance is added to. It can take either a literal cluster OCID or cluster key defined in the *clusters_configuration* variable.
 - **ssh_public_key_path** &ndash; (Optional) The SSH public key path used to access the instance. *default_ssh_public_key_path* is used if undefined.
 - **defined_tags** &ndash; (Optional) The instance defined tags. *default_defined_tags* is used if undefined.
 - **freeform_tags** &ndash; (Optional) The instance freeform tags. *default_freeform_tags* is used if undefined.
@@ -251,14 +258,14 @@ Additionally, in-transit encryption is only available to paravirtualized volumes
 
 ### <a name="storage">Storage</a>
 
-Storage is managed using the **storage_configuration** object. It contains a set of attributes starting with the prefix **default_** and two attribute named **block_volumes** and **file_storage**. The **default_** attribute values are applied to all storage units within **block_volumes** and **file_storage**, unless overriden at the storage unit level.
+Storage is managed using the **storage_configuration** variable. It contains a set of attributes starting with the prefix **default_** and two attribute named **block_volumes** and **file_storage**. The **default_** attribute values are applied to all storage units within **block_volumes** and **file_storage**, unless overridden at the storage unit level.
 
 The defined **default_** attributes are the following:
-- **default_compartment_id** &ndash; (Optional) The default compartment for all storage units. It can be overriden by *compartment_id* attribute in each unit. This attribute is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *compartments_dependency* variable. See [External Dependencies](#ext-dep) for details.
-- **default_kms_key_id** &ndash; (Optional) The default encryption key for all storage units. It can be overriden by *kms_key_id* attribute in each unit. This attribute is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *kms_dependency* variable. See [External Dependencies](#ext-dep) for details.
-- **default_cis_level** &ndash; (Optional) The default CIS OCI Benchmark profile level for all storage units. Level "2" enforces usage of customer managed keys for storage encryption. Default is "1". It can be overriden by *cis_level* attribute in each unit.
-- **default_defined_tags** &ndash; (Optional) The default defined tags for all storage units. It can be overriden by *defined_tags* attribute in each unit.
-- **default_freeform_tags** &ndash; (Optional) the default freeform tags for all storage units. It can be overriden by *freeform_tags* attribute in each unit.
+- **default_compartment_id** &ndash; (Optional) The default compartment for all storage units. It can be overridden by *compartment_id* attribute in each unit. This attribute is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *compartments_dependency* variable. See [External Dependencies](#ext-dep) for details.
+- **default_kms_key_id** &ndash; (Optional) The default encryption key for all storage units. It can be overridden by *kms_key_id* attribute in each unit. This attribute is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *kms_dependency* variable. See [External Dependencies](#ext-dep) for details.
+- **default_cis_level** &ndash; (Optional) The default CIS OCI Benchmark profile level for all storage units. Level "2" enforces usage of customer managed keys for storage encryption. Default is "1". It can be overridden by *cis_level* attribute in each unit.
+- **default_defined_tags** &ndash; (Optional) The default defined tags for all storage units. It can be overridden by *defined_tags* attribute in each unit.
+- **default_freeform_tags** &ndash; (Optional) the default freeform tags for all storage units. It can be overridden by *freeform_tags* attribute in each unit.
 
 #### <a name="block-volumes">Block Volumes</a>
 Block volumes are defined using the optional **block_volumes** attribute. In Terraform terms, it is a map of objects, where each object is referred by an identifying key. The following attributes are supported:
@@ -481,7 +488,7 @@ For more information on mounting block volumes without consistent device path se
 
 
 #### <a name="file-storage">File Storage</a>
-The **file_storage** attribute defines the file systems, mount targets and snapshot policies for OCI File Storage service. The optional attribute **default_subnet_id** applies to all mount targets, unless overriden by **subnet_id** attribute in each mount target. Attribute **subnet_id** is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *network_dependency* variable. See [External Dependencies](#ext-dep) for details.
+The **file_storage** attribute defines the file systems, mount targets and snapshot policies for OCI File Storage service. The optional attribute **default_subnet_id** applies to all mount targets, unless overridden by **subnet_id** attribute in each mount target. Attribute **subnet_id** is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *network_dependency* variable. See [External Dependencies](#ext-dep) for details.
 
 ##### <a name="file-systems">File Systems</a>
 File systems are defined using the optional attribute **file_systems**. A Terraform map of objects, where each object is referred by an identifying key. The following attributes are supported:
@@ -533,6 +540,63 @@ Snapshot policies are defined using the optional attribute **snapshot_policies**
 - **freeform_tags** &ndash; (Optional) Snapshot policy freeform tags. *storage_configuration*'s *default_freeform_tags* is used if undefined.
 
 As mentioned, default snapshot policies are created for file systems that do not have a snapshot policy. The default snapshot policies are defined with a single schedule, set to run weekly at 23:00 UTC on sundays.
+
+
+#### <a name="clusters">Clusters</a>
+
+The module can manage cluster networks and compute clusters.
+
+A [cluster network](https://docs.oracle.com/en-us/iaas/Content/Compute/Tasks/managingclusternetworks.htm) is a pool of high performance computing (HPC) instances that are connected with a high-bandwidth, ultra low-latency network. They're designed for highly demanding parallel computing jobs.
+
+A [Compute cluster](https://docs.oracle.com/iaas/Content/Compute/Tasks/compute-clusters.htm) is a remote direct memory access (RDMA) network group. You can create high performance computing (HPC) instances in the network and manage them individually.
+
+Clusters are managed using the **clusters_configuration** variable. It contains a set of attributes starting with the prefix **default_** and one attribute named **clusters**. The **default_** attribute values are applied to all clusters within **clusters**, unless overridden at the cluster level.
+
+The *default_* attributes are the following:
+- **default_compartment_id** &ndash; Default compartment for all clusters. It can be overridden by *compartment_id* attribute in each cluster. This attribute is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *compartments_dependency* variable. See [External Dependencies](#ext-dep) for details.
+- **default_defined_tags** &ndash; (Optional) Default defined tags for all clusters. It can be overridden by *defined_tags* attribute in each cluster.
+- **default_freeform_tags** &ndash; (Optional) Default freeform tags for all clusters. It can be overridden by *freeform_tags* attribute in each cluster.
+
+The clusters themselves are defined within the **clusters** attribute, In Terraform terms, it is a map of objects. where each object is referred by an identifying key. The supported attributes are listed below. For better usability, most attributes are grouped in logical blocks. They are properly indented in the list.
+
+- **compartment_id** &ndash; (Optional) The cluster compartment. *default_compartment_id* is used if undefined. This attribute is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *compartments_dependency* variable. See [External Dependencies](#ext-dep) for details.
+- **type** &ndash; (Optional) The cluster type. Valid values: "cluster_network", "compute_cluster". Default is "cluster_network".
+- **availability_domain** &ndash; (Optional) The availability domain for cluster instances. Default is 1.
+- **name** &ndash; The cluster display name.
+- **defined_tags** &ndash; (Optional) The cluster defined_tags. *default_defined_tags* is used if undefined.
+- **freeform_tags** &ndash; (Optional) The cluster freeform_tags. *default_freeform_tags* is used if undefined.
+- **cluster_network_settings** &ndash; (Optional) Cluster network settings. **Only applicable if type is "cluster_network"**.
+  - **instance_configuration_id** &ndash; The instance configuration id to use in this cluster. It can be a literal OCID or a configuration key defined in *cluster_instances_configuration* variable.
+  - **instance_pool** &ndash; (Optional) Cluster instance pool settings.
+    - **name** &ndash; (Optional) The instance pool name.
+    - **size** &ndash; (Optional) The number of instances in the instance pool. Default is 1.
+  - **networking** &ndash; Networking settings.
+    - **subnet_id** &ndash; The subnet where instances primary VNIC is placed.
+    - **ipv6_enable** &ndash; (Optional) Whether IPv6 is enabled for instances primary VNIC. Default is false.
+    - **ipv6_subnet_cidrs** = &ndash; (Optional) A list of IPv6 subnet CIDR ranges from which the primary VNIC is assigned an IPv6 address. Only applicable if ipv6_enable for primary VNIC is true. Default is [].
+    - **secondary_vnic_settings** &ndash; (Optional) Secondary VNIC settings
+      - **subnet_id** &ndash; The subnet where instances secondary VNIC are created.
+      - **name** &ndash; (Optional) The secondary VNIC name.
+      - **ipv6_enable** &ndash; (Optional) Whether IPv6 is enabled for the secondary VNIC. Default is false.
+      - **ipv6_subnet_cidrs** &ndash; (Optional) A list of IPv6 subnet CIDR ranges from which the secondary VNIC is assigned an IPv6 address. Only applicable if ipv6_enable for secondary VNIC is true. Default is [].
+
+Cluster instance configurations required by cluster networks are managed using the **cluster_instances_configuration** variable. It contains a set of attributes starting with the prefix **default_** and one attribute named **configurations**. The **default_** attribute values are applied to all instance configurations within **configurations**, unless overridden at the configuration level.
+
+The *default_* attributes are the following:
+- **default_compartment_id** &ndash; Default compartment for all configurations. It can be overridden by *compartment_id* attribute in each configurations. This attribute is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *compartments_dependency* variable. See [External Dependencies](#ext-dep) for details.
+- **default_defined_tags** &ndash; (Optional) Default defined tags for all configurations. It can be overridden by *defined_tags* attribute in each configuration.
+- **default_freeform_tags** &ndash; (Optional) Default freeform tags for all configurations. It can be overridden by *freeform_tags* attribute in each configuration.
+
+The configurations themselves are defined within the **configurations** attribute, In Terraform terms, it is a map of objects. where each object is referred by an identifying key. The supported attributes are listed below.
+
+- **compartment_id** &ndash; (Optional) The compartment where the instance configuration is created. *default_compartment_id* is used if undefined.
+- **name** &ndash; (Optional) The instance configuration display name.
+- **instance_type** &ndash; (Optional) the instance type. Default is "compute".
+- **template_instance_id** &ndash; The existing instance id to use as the configuration template for all instances in the cluster instance pool. It can be a literal instance OCID, an instance key defined in the *instances_configuration* variable, or an instance key defined in the *instances_dependency* variable. 
+    **NOTE: The instance must have a <a href='https://docs.oracle.com/en-us/iaas/Content/Compute/Tasks/managingclusternetworks.htm#supported-shapes'>shape that supports cluster networks</a>**.
+- **defined_tags** &ndash; (Optional) The instance configuration defined_tags. *default_defined_tags* is used if undefined.
+- **freeform_tags** &ndash; (Optional) The instance configuration freeform_tags. *default_freeform_tags* is used if undefined.
+
 
 ### <a name="ext-dep">External Dependencies</a>
 An optional feature, external dependencies are resources managed elsewhere that resources managed by this module depends on. The following dependencies are supported:
