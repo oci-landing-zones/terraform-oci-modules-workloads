@@ -1,46 +1,47 @@
-locals {
-  supported_shapes = {
-    (lower("BM.HPC2.36"))       : "BM.HPC2.36"
-    (lower("BM.GPU.A100-v2.8")) : "BM.GPU.A100-v2.8"
-    (lower("BM.GPU4.8"))        : "BM.GPU4.8"
-    (lower("BM.Optimized3.36")) : "BM.Optimized3.36"
-  }
-}
+# locals {
+#   supported_shapes = {
+#     (lower("BM.HPC2.36"))       : "BM.HPC2.36"
+#     (lower("BM.GPU.A100-v2.8")) : "BM.GPU.A100-v2.8"
+#     (lower("BM.GPU4.8"))        : "BM.GPU4.8"
+#     (lower("BM.Optimized3.36")) : "BM.Optimized3.36"
+#   }
+# }
 
 data "oci_core_instance" "these" {
-  for_each = var.rdma_cluster_instances_configuration != null ? (var.rdma_cluster_instances_configuration.configurations != null ? ({for k, v in var.rdma_cluster_instances_configuration.configurations : k => v if v.instance_details == null}): {}) : {}  
+  for_each = var.cluster_instances_configuration != null ? (var.cluster_instances_configuration.configurations != null ? ({for k, v in var.cluster_instances_configuration.configurations : k => v if v.template_instance_id != null}): {}) : {}  
     instance_id = contains(keys(oci_core_instance.these),each.value.template_instance_id) ? oci_core_instance.these[each.value.template_instance_id].id : length(regexall("^ocid1.*$", each.value.template_instance_id)) > 0 ? each.value.template_instance_id : var.instances_dependency[each.value.template_instance_id].id
 }
 
 resource "oci_core_instance_configuration" "these" {
-  for_each = var.rdma_cluster_instances_configuration != null ? (var.rdma_cluster_instances_configuration.configurations != null ? var.rdma_cluster_instances_configuration.configurations : {}) : {}
-  lifecycle {
-      ## Check 1: supported shapes check for NEW instances
-      precondition {
-        condition = each.value.instance_details != null ? (contains(keys(local.supported_shapes),lower(each.value.instance_details.shape))) : true
-        error_message = "VALIDATION FAILURE in instance configuration \"${each.key}\": invalid \"${each.value.instance_details != null ? each.value.instance_details.shape : ""}\" instance shape. Supported instance shape values for cluster networks are ${join(", ",[for v in values(local.supported_shapes): "\"${v}\""])}, case insensitive."
-      }
-      ## Check 1: supported shapes check for EXISTING instances
-      precondition {
-        condition = each.value.instance_details == null ? (contains(keys(local.supported_shapes),lower(data.oci_core_instance.these[each.key].shape))) : true
-        error_message = "VALIDATION FAILURE in instance configuration \"${each.key}\": the instance shape of provided \"template_instance_id\" attribute (\"${each.value.template_instance_id}\") is invalid: \"${data.oci_core_instance.these[each.key].shape}\". Supported instance shape values for cluster networks are ${join(", ",[for v in values(local.supported_shapes): "\"${v}\""])}."
-      }
-    }
+  for_each = var.cluster_instances_configuration != null ? (var.cluster_instances_configuration.configurations != null ? var.cluster_instances_configuration.configurations : {}) : {}
+#   lifecycle {
+#       ## Check 1: supported shapes check for NEW instances
+#       precondition {
+#         condition = each.value.instance_details != null ? (contains(keys(local.supported_shapes),lower(coalesce(each.value.instance_details.shape,"BM.Optimized3.36")))) : true
+#         error_message = "VALIDATION FAILURE in instance configuration \"${each.key}\": invalid \"${each.value.instance_details != null ? lower(coalesce(each.value.instance_details.shape,"BM.Optimized3.36")) : ""}\" instance shape. Supported instance shape values for cluster networks are ${join(", ",[for v in values(local.supported_shapes): "\"${v}\""])}, case insensitive."
+#       }
+#       ## Check 1: supported shapes check for EXISTING instances
+#       precondition {
+#         condition = each.value.template_instance_id != null ? (contains(keys(local.supported_shapes),lower(data.oci_core_instance.these[each.key].shape))) : true
+#         #error_message = "VALIDATION FAILURE in instance configuration \"${each.key}\": the instance shape of provided \"template_instance_id\" attribute (\"${coalesce(each.value.template_instance_id,"__void__")}\") is invalid: \"${contains(keys(local.supported_shapes),lower(data.oci_core_instance.these[each.key].shape)) ? data.oci_core_instance.these[each.key].shape : ""}\". Supported instance shape values for cluster networks are ${join(", ",[for v in values(local.supported_shapes): "\"${v}\""])}."
+#         error_message = "VALIDATION FAILURE in instance configuration \"${each.key}\": the instance shape of provided \"template_instance_id\" attribute (\"${coalesce(each.value.template_instance_id,"__void__")}\") is invalid. Supported instance shape values for cluster networks are ${join(", ",[for v in values(local.supported_shapes): "\"${v}\""])}."
+#       }
+#     }
     #Required
-    compartment_id = each.value.compartment_id != null ? (length(regexall("^ocid1.*$", each.value.compartment_id)) > 0 ? each.value.compartment_id : var.compartments_dependency[each.value.compartment_id].id) : (length(regexall("^ocid1.*$", var.rdma_cluster_instances_configuration.default_compartment_id)) > 0 ? var.rdma_cluster_instances_configuration.default_compartment_id : var.compartments_dependency[var.rdma_cluster_instances_configuration.default_compartment_id].id)
+    compartment_id = each.value.compartment_id != null ? (length(regexall("^ocid1.*$", each.value.compartment_id)) > 0 ? each.value.compartment_id : var.compartments_dependency[each.value.compartment_id].id) : (length(regexall("^ocid1.*$", var.cluster_instances_configuration.default_compartment_id)) > 0 ? var.cluster_instances_configuration.default_compartment_id : var.compartments_dependency[var.cluster_instances_configuration.default_compartment_id].id)
 
     #Optional
-    display_name = each.value.name != null ? each.value.name : null
-    defined_tags = each.value.defined_tags != null ? each.value.defined_tags : var.rdma_cluster_instances_configuration.default_defined_tags
-    freeform_tags = each.value.freeform_tags != null ? each.value.freeform_tags : var.rdma_cluster_instances_configuration.default_freeform_tags
+    display_name = each.value.name
+    defined_tags = each.value.defined_tags != null ? each.value.defined_tags : var.cluster_instances_configuration.default_defined_tags
+    freeform_tags = each.value.freeform_tags != null ? each.value.freeform_tags : var.cluster_instances_configuration.default_freeform_tags
 
     # instance_id and source are relevant when the instance configuration is created based on a EXISTING instance (when instance_details attribute is not provided)
-    instance_id = each.value.instance_details == null ? (contains(keys(oci_core_instance.these),each.value.template_instance_id) ? oci_core_instance.these[each.value.template_instance_id].id : length(regexall("^ocid1.*$", each.value.template_instance_id)) > 0 ? each.value.template_instance_id : var.instances_dependency[each.value.template_instance_id].id) : null
+    instance_id = contains(keys(oci_core_instance.these),each.value.template_instance_id) ? oci_core_instance.these[each.value.template_instance_id].id : (length(regexall("^ocid1.*$", each.value.template_instance_id)) > 0 ? each.value.template_instance_id : var.instances_dependency[each.value.template_instance_id].id)
     source = each.value.template_instance_id != null ? "INSTANCE" : "NONE"
 
-    instance_details {
+    ### instance_details {
         #Required
-        instance_type = coalesce(each.value.instance_type,"compute")
+        ###vinstance_type = coalesce(each.value.instance_type,"compute")
 
         #Optional
         # block_volumes {
@@ -97,9 +98,9 @@ resource "oci_core_instance_configuration" "these" {
         # }
 
         # launch_details is relevant when the instance configuration is created based on a NEW instance (when instance_details attribute is provided).
-        dynamic "launch_details" {
-          for_each = each.value.instance_details != null ? [1] : []
-          content {
+        ### dynamic "launch_details" {
+          ### for_each = each.value.instance_details != null ? [1] : []
+          ### content {
             #Optional
             # agent_config {
 
@@ -122,7 +123,7 @@ resource "oci_core_instance_configuration" "these" {
             # }
             # availability_domain = var.instance_configuration_instance_details_launch_details_availability_domain
             # capacity_reservation_id = oci_core_capacity_reservation.test_capacity_reservation.id
-            compartment_id = each.value.instance_details.compartment_id != null ? (length(regexall("^ocid1.*$", each.value.instance_details.compartment_id)) > 0 ? each.value.instance_details.compartment_id : var.compartments_dependency[each.value.instance_details.compartment_id].id) : (each.value.compartment_id != null ? (length(regexall("^ocid1.*$", each.value.compartment_id)) > 0 ? each.value.compartment_id : var.compartments_dependency[each.value.compartment_id].id) : (length(regexall("^ocid1.*$", var.rdma_cluster_instances_configuration.default_compartment_id)) > 0 ? var.rdma_cluster_instances_configuration.default_compartment_id : var.compartments_dependency[var.rdma_cluster_instances_configuration.default_compartment_id].id))
+            ### compartment_id = each.value.instance_details.compartment_id != null ? (length(regexall("^ocid1.*$", each.value.instance_details.compartment_id)) > 0 ? each.value.instance_details.compartment_id : var.compartments_dependency[each.value.instance_details.compartment_id].id) : (each.value.compartment_id != null ? (length(regexall("^ocid1.*$", each.value.compartment_id)) > 0 ? each.value.compartment_id : var.compartments_dependency[each.value.compartment_id].id) : (length(regexall("^ocid1.*$", var.cluster_instances_configuration.default_compartment_id)) > 0 ? var.cluster_instances_configuration.default_compartment_id : var.compartments_dependency[var.cluster_instances_configuration.default_compartment_id].id))
 
             #     #Optional
             #     assign_ipv6ip = var.instance_configuration_instance_details_launch_details_create_vnic_details_assign_ipv6ip
@@ -197,7 +198,7 @@ resource "oci_core_instance_configuration" "these" {
             #     }
             # }
             # preferred_maintenance_action = var.instance_configuration_instance_details_launch_details_preferred_maintenance_action
-            shape = local.supported_shapes[lower(each.value.instance_details.shape)]
+            ### shape = local.supported_shapes[lower(each.value.instance_details.shape)]
             # shape_config {
 
             #     #Optional
@@ -207,14 +208,14 @@ resource "oci_core_instance_configuration" "these" {
             #     ocpus = var.instance_configuration_instance_details_launch_details_shape_config_ocpus
             #     vcpus = var.instance_configuration_instance_details_launch_details_shape_config_vcpus
             # }
-            source_details {
-              source_type = each.value.instance_details.source_type
+            ### source_details {
+              ### source_type = coalesce(each.value.instance_details.source_type,"image")
 
             #     #Optional
             #     boot_volume_id = oci_core_boot_volume.test_boot_volume.id
             #     boot_volume_size_in_gbs = var.instance_configuration_instance_details_launch_details_source_details_boot_volume_size_in_gbs
             #     boot_volume_vpus_per_gb = var.instance_configuration_instance_details_launch_details_source_details_boot_volume_vpus_per_gb
-               image_id = lower(each.value.instance_details.source_type) == "image" ? each.value.instance_details.image_id : null
+               ### image_id = lower(coalesce(each.value.instance_details.source_type,"image")) == "image" ? each.value.instance_details.image_id : null
             #     kms_key_id = oci_kms_key.test_key.id
             #     instance_source_image_filter_details {
 
@@ -224,10 +225,10 @@ resource "oci_core_instance_configuration" "these" {
             #         operating_system = var.instance_configuration_instance_details_launch_details_source_details_instance_source_image_filter_details_operating_system
             #         operating_system_version = var.instance_configuration_instance_details_launch_details_source_details_instance_source_image_filter_details_operating_system_version
             #     }
-            }
-          }
+            ### }
+          ### }
             
-        }
+        ### }
         # options {
 
         #     #Optional
@@ -450,5 +451,5 @@ resource "oci_core_instance_configuration" "these" {
         #     display_name = var.instance_configuration_instance_details_secondary_vnics_display_name
         #     nic_index = var.instance_configuration_instance_details_secondary_vnics_nic_index
         # }
-    }
+    ### }
 }
