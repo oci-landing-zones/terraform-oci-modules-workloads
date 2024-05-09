@@ -179,7 +179,7 @@ resource "oci_core_instance" "these" {
 resource "oci_core_volume_backup_policy_assignment" "these_boot_volumes" {
   for_each = var.instances_configuration != null ? var.instances_configuration["instances"] : {}
     asset_id  = oci_core_instance.these[each.key].boot_volume_id
-    policy_id = local.oracle_backup_policies[lower(each.value.boot_volume != null ? each.value.boot_volume.backup_policy : "bronze")]
+    policy_id = local.oracle_backup_policies[lower(each.value.boot_volume != null ? coalesce(each.value.boot_volume.backup_policy,"bronze") : "bronze")]
 }
 
 data "template_file" "cloud_config" {
