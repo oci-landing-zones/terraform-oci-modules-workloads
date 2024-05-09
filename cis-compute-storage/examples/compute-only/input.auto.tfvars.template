@@ -69,6 +69,15 @@ instances_configuration = {
           {name = "Bastion", enabled = true}
         ]
       }
+      cloud_init = {
+        script_file = "./cloud-init.yaml"
+## Comment the line above and uncomment the following five lines if you want provide the script inlined in heredoc style.        
+#         heredoc_script = <<YAML
+# #cloud-config
+# runcmd:
+#   - echo 'This instance was provisioned by Terraform.' >> /etc/motd
+# YAML
+      }        
     }
     INSTANCE-2 = { # Shielded instance, per platform_type and boot_volume.measured_boot settings.
       shape = "VM.Standard.E4.Flex"
@@ -81,7 +90,7 @@ instances_configuration = {
       boot_volume = {
         size = 120
         preserve_on_instance_deletion = true
-        measured_boot = true # applicable when plataform_type is set.
+        measured_boot = true # applicable when platform_type is set.
         backup_policy = "silver"
       }
       networking = {
@@ -113,7 +122,7 @@ instances_configuration = {
         network_security_groups = ["<REPLACE-BY-NETWORK-SECURITY-GROUP_NAME>"]
       }
       encryption = {
-        encrypt_data_in_use = true # applicable when plataform_type is set.
+        encrypt_data_in_use = true # applicable when platform_type is set.
       }
       image = {
         id = "ocid1.image.oc1.iad.aaaaaaaamf35m2qg5krijvq4alf6qmvdqiroq4i5zdwqqdijmstn4ryes36q" # Oracle-Linux-8.8-2023.08.31-0 platform image

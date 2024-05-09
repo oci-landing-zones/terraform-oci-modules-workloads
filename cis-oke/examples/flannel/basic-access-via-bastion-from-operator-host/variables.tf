@@ -8,8 +8,22 @@ variable "fingerprint" { default = "" }
 variable "private_key_path" { default = "" }
 variable "private_key_password" { default = "" }
 
-variable "instances_configuration" {
-  description = "Compute instances configuration attributes."
+variable "clusters_configuration" {
   type = any
-  default = null
+}
+variable "workers_configuration" {
+  type = any
+}
+variable "instances_configuration" {
+  type = any
+}
+variable "bastions_configuration" {
+  type = any
+}
+variable "sessions_configuration" {
+  type = any
+}
+variable "ssh_private_key" {
+  type = string
+  default = "~/.ssh/id_rsa"
 }
