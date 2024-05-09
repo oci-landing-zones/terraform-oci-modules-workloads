@@ -173,6 +173,7 @@ resource "oci_core_instance" "these" {
       ssh_authorized_keys = each.value.ssh_public_key_path != null ? (fileexists(each.value.ssh_public_key_path) ? file(each.value.ssh_public_key_path) : each.value.ssh_public_key_path) : var.instances_configuration.default_ssh_public_key_path != null ? (fileexists(var.instances_configuration.default_ssh_public_key_path) ? file(var.instances_configuration.default_ssh_public_key_path) : var.instances_configuration.default_ssh_public_key_path): null
       user_data           = contains(keys(data.template_file.cloud_config),each.key) ? base64encode(data.template_file.cloud_config[each.key].rendered) : null
     }
+    compute_cluster_id   = each.value.cluster_id != null ? (contains(keys(oci_core_compute_cluster.these),each.value.cluster_id) ? oci_core_compute_cluster.these[each.value.cluster_id].id : (length(regexall("^ocid1.*$", each.value.cluster_id)) > 0 ? each.value.cluster_id : null)) : null
 }
 
 resource "oci_core_volume_backup_policy_assignment" "these_boot_volumes" {
