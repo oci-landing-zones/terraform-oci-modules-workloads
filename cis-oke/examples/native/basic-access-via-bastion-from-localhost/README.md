@@ -1,8 +1,8 @@
-# OKE Native with Localhost Access Example
+# OKE NPN (Native Pod Networking) with Localhost Access Example
 
 ## Introduction
 
-This example shows how to deploy OKE clusters and node pools in OCI using the [cis-oke module](https://github.com/oracle-quickstart/terraform-oci-secure-workloads/tree/main/cis-oke). It deploys one Native-based basic OKE Cluster, one node pool, one Bastion service endpoint and one Bastion session for application management with the characteristics described below. 
+This example shows how to deploy OKE clusters and node pools in OCI using the [cis-oke module](https://github.com/oracle-quickstart/terraform-oci-secure-workloads/tree/main/cis-oke). It deploys one NPN basic OKE Cluster, one node pool, one Bastion service endpoint and one Bastion session for application management with the characteristics described below. 
 
 ### Pre-Requisite
 
@@ -23,7 +23,7 @@ Node Pool (NODEPOOL1):
 - The nodepool will have three worker nodes.
 - The nodes will use the "VM.Standard.E4.Flex" shape as defined by the *node_shape* attribute.
 - The nodes will use the latest OKE image available.
-- The nodes will have 16 GB memory and 1 ocpu by default.
+- The nodes will have 16 GB memory and 1 OCPU by default.
 - The nodes boot volume size will be 60GB and will be terminated when the nodes are destroyed by default.
 - The nodes will be placed as following: node1 in ad1 and fd1, node2 in ad1 and fd2 and lastly node3 will be placed in ad1 and fd3 by default.
 

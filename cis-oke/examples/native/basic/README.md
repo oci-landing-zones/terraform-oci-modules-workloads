@@ -1,8 +1,8 @@
-# OKE Native Basic Example 
+# OKE NPN (Native Pod Networking) Basic Example 
 
 ## Introduction
 
-This example shows how to deploy Kubernetes clusters and node pools in OCI using the [cis-oke module](https://github.com/oracle-quickstart/terraform-oci-secure-workloads/tree/main/cis-oke). It deploys Native-based basic OKE cluster and one node pool with the characteristics described below. 
+This example shows how to deploy Kubernetes clusters and node pools in OCI using the [cis-oke module](https://github.com/oracle-quickstart/terraform-oci-secure-workloads/tree/main/cis-oke). It deploys one NPN basic OKE cluster with one node pool with the characteristics described below. 
 
 This example provides no cluster access automation. Automating access to the cluster can be implemented with the [OCI Bastion service module](https://github.com/oracle-quickstart/terraform-oci-cis-landing-zone-security/tree/main/bastion). See [Bastion available examples](https://github.com/oracle-quickstart/terraform-oci-cis-landing-zone-security/tree/main/bastion/examples).
 
@@ -29,7 +29,7 @@ Node Pool (NODEPOOL1):
 - The nodepool will have three worker nodes.
 - The nodes will use the "VM.Standard.E4.Flex" shape as defined by the *node_shape* attribute.
 - The nodes will use the image specified in the *image* attribute.
-- The nodes will have 16 GB memory and 1 ocpu by default.
+- The nodes will have 16 GB memory and 1 OCPU by default.
 - The nodes boot volume size will be 60GB and will be terminated when the nodes are destroyed by default.
 
 Commented Virtual Node Pool (VIRTUAL_POOL1):
