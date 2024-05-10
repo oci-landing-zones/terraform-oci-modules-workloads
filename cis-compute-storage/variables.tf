@@ -274,31 +274,47 @@ variable "module_name" {
 
 variable compartments_dependency {
   description = "A map of objects containing the externally managed compartments this module may depend on. All map objects must have the same type and must contain at least an 'id' attribute (representing the compartment OCID) of string type." 
-  type = map(any)
+  type = map(object({
+    id = string # the compartment OCID
+  }))
   default = null
 }
 
-variable network_dependency {
-  description = "A map of objects containing the externally managed network resources this module may depend on. All map objects must have the same type and must contain at least an 'id' attribute (representing the network resource OCID) of string type." 
-  type = map(any)
+variable "network_dependency" {
+  description = "An object containing the externally managed network resources this module may depend on. Supported resources are 'subnets', and 'network_security_groups', represented as map of objects. Each object, when defined, must have an 'id' attribute of string type set with the subnet or NSG OCID."
+  type = object({
+    subnets = optional(map(object({
+      id = string # the subnet OCID
+    })))
+    network_security_groups = optional(map(object({
+      id = string # the NSG OCID
+    })))
+  })
   default = null
 }
 
 variable kms_dependency {
   description = "A map of objects containing the externally managed encryption keys this module may depend on. All map objects must have the same type and must contain at least an 'id' attribute (representing the key OCID) of string type." 
-  type = map(any)
+  type = map(object({
+    id = string # the key OCID.
+  }))
   default = null
 }
 
-variable instances_dependency {
-  description = "A map of objects containing the externally managed Compute instances this module may depend on. All map objects must have the same type and must contain at least an 'id' attribute (representing the instance OCID) of string type." 
-  type = map(any)
+variable "instances_dependency" {
+  description = "A map of objects containing the externally managed Compute instances this module may depend on. The objects, when defined, must contain at least an 'id' attribute (representing the instance OCID) of string type." 
+  type = map(object({
+    id = string # the instance OCID
+  }))
   default = null
 }
+
 
 variable file_system_dependency {
   description = "A map of objects containing the externally managed file storage resources this module may depend on. This is used when setting file system replication using target file systems managed in another Terraform configuration. All map objects must have the same type and must contain at least an 'id' attribute (representing the file system OCID) of string type." 
-  type = map(any)
+  type = map(object({
+    id = string # the file system OCID.
+  }))
   default = null
 }
 
