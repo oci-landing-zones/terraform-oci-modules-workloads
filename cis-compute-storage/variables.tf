@@ -272,7 +272,7 @@ variable "module_name" {
   default     = "cis-compute-storage"
 }
 
-variable compartments_dependency {
+variable "compartments_dependency" {
   description = "A map of objects containing the externally managed compartments this module may depend on. All map objects must have the same type and must contain at least an 'id' attribute (representing the compartment OCID) of string type." 
   type = map(object({
     id = string # the compartment OCID
@@ -293,7 +293,7 @@ variable "network_dependency" {
   default = null
 }
 
-variable kms_dependency {
+variable "kms_dependency" {
   description = "A map of objects containing the externally managed encryption keys this module may depend on. All map objects must have the same type and must contain at least an 'id' attribute (representing the key OCID) of string type." 
   type = map(object({
     id = string # the key OCID.
@@ -310,7 +310,7 @@ variable "instances_dependency" {
 }
 
 
-variable file_system_dependency {
+variable "file_system_dependency" {
   description = "A map of objects containing the externally managed file storage resources this module may depend on. This is used when setting file system replication using target file systems managed in another Terraform configuration. All map objects must have the same type and must contain at least an 'id' attribute (representing the file system OCID) of string type." 
   type = map(object({
     id = string # the file system OCID.
