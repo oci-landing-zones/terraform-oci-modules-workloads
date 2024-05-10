@@ -4,11 +4,11 @@
 
 This example shows how to deploy Kubernetes clusters and node pools in OCI using the [cis-oke module](https://github.com/oracle-quickstart/terraform-oci-secure-workloads/tree/main/cis-oke). It deploys Native-based basic OKE cluster and one node pool with the characteristics described below. 
 
-This example provides no cluster access automation. Automating access to the cluster can be implemented with the [OCI Bastion service module](https://github.com/oracle-quickstart/terraform-oci-cis-landing-zone-security/tree/main/bastion). See the [available examples](https://github.com/oracle-quickstart/terraform-oci-cis-landing-zone-security/tree/main/bastion/examples).
+This example provides no cluster access automation. Automating access to the cluster can be implemented with the [OCI Bastion service module](https://github.com/oracle-quickstart/terraform-oci-cis-landing-zone-security/tree/main/bastion). See [Bastion available examples](https://github.com/oracle-quickstart/terraform-oci-cis-landing-zone-security/tree/main/bastion/examples).
 
-As alternatives to this example, the following examples are available with full cluster access automation:
-   1. [OKE Native with Localhost Access Example](../private-cluster-access-via-localhost/), where the OKE cluster is managed from a host external to OCI (like the user laptop). 
-   2. [OKE Native with Operator Access Example](../private-cluster-access-via-operator/), where the OKE cluster is managed from a Compute instance deployed in OCI. 
+As alternatives to this example, the following examples are available with cluster access automation:
+   1. [OKE Native with Localhost Access Example](../basic-access-via-bastion-from-localhost/), where the OKE cluster is managed from a host external to OCI (such as the user laptop). 
+   2. [OKE Native with Operator Access Example](../basic-access-via-bastion-from-operator-host/), where the OKE cluster is managed from a Compute instance deployed in OCI. 
 
 ### Pre-Requisite
 
@@ -71,7 +71,7 @@ As the endpoint and worker nodes are in private subnets, access can be enabled t
 - **OKE API endpoint**: Cluster access is enabled by configuring a *kubeconfig* file and setting up the OCI Bastion service endpoint with a Port Forwarding session. [More information](https://docs.oracle.com/en-us/iaas/Content/ContEng/Tasks/contengsettingupbastion.htm). 
 - **Worker nodes**: SSH access to worker nodes (\*) is enabled by setting up OCI Bastion service endpoint with a Managed SSH session. [More information](https://docs.oracle.com/en-us/iaas/Content/ContEng/Tasks/contengsettingupbastion.htm).
 
-Utilize the [OCI Bastion service module](https://github.com/oracle-quickstart/terraform-oci-cis-landing-zone-security/tree/main/bastion) to automate OCI Bastion service.
+Utilize the [OCI Bastion service module](https://github.com/oracle-quickstart/terraform-oci-cis-landing-zone-security/tree/main/bastion) to automate OCI Bastion service provisioning.
 
 (\*) SSH access to worker nodes via the OCI Bastion service requires the Cloud Agent Bastion plugin enabled in the worker nodes.
 
