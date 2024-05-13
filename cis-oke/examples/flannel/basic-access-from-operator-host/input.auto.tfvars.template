@@ -94,8 +94,8 @@ bastions_configuration = {
       bastion_type          = "STANDARD"
       compartment_id        = "<REPLACE-BY-COMPARTMENT-OCID>"
       subnet_id             = "<REPLACE-BY-OKE-OPERATOR-SUBNET-OCID>"
-      cidr_block_allow_list = ["<REPLACE-BY-CIDR-BLOCK>"]
-      name                  = "<REPLACE-BY-BASTION-NAME>"
+      cidr_block_allow_list = ["<REPLACE-BY-CIDR-BLOCK>"] # Try to be as much specific as possible, and avoid entering "0.0.0.0/0".
+      name                  = "OkeFlannelBastionByTerraform"
     }
   }
 }
@@ -109,7 +109,7 @@ sessions_configuration = {
       target_user     = "opc"
       target_resource = "INSTANCE-1"
       target_port     = "22"
-      session_name    = "<REPLACE-BY-SESSION-NAME>"
+      session_name    = "ManagedSSHByTerraform"
     }
   }
 }

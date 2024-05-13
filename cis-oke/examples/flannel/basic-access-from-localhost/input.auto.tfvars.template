@@ -62,8 +62,8 @@ bastions_configuration = {
         bastion_type          = "STANDARD"
         compartment_id        = "<REPLACE-BY-COMPARTMENT-OCID>"
         subnet_id             = "<REPLACE-BY-OPERATOR-SUBNET-OCID>"
-        cidr_block_allow_list = ["<REPLACE-BY-CIDR-BLOCK>"] # Try to be as much specific as possible, and avoid entering "0.0.0.0\0".
-        name                  = "FlannelOkeClusterBastionByTerraform"
+        cidr_block_allow_list = ["<REPLACE-BY-CIDR-BLOCK>"] # Try to be as much specific as possible, and avoid entering "0.0.0.0/0".
+        name                  = "OkeFlannelBastionByTerraform"
     }
   }
 }
@@ -76,7 +76,7 @@ sessions_configuration = {
         session_type    = "PORT_FORWARDING"
         target_resource = "OKE1"
         target_port     = "6443"
-        session_name    = "PortForwardingSessionByTerraform"
+        session_name    = "PortForwardingByTerraform"
       }
   }
 }

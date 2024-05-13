@@ -73,6 +73,11 @@ You are now all set to use *kubectl* tool to manage your OKE applications. As an
 > kubectl delete -f https://k8s.io/examples/application/deployment.yaml
 ```
 
-### SSH'ing to Worker Nodes
+### Connecting to Worker Nodes with SSH
 
-Create a Bastion session in the provisioned OCI Bastion service for accessing specific worker nodes in the cluster.
+1. Using the Console, enable the Cloud Agent Bastion plugin in the worker node.
+2. Using the Console, create a managed SSH session for the worker node in the provisioned OCI Bastion service.
+3. Connect to worker node using the SSH command provided for the managed SSH session. The command looks like:
+```
+ssh -o ProxyCommand="ssh -W %h:%p -p 22 ocid1.bastionsession.XXXXXXXXX@host.bastion.us-phoenix-1.oci.oraclecloud.com" -p 22 opc@<worker-node-ip-address>
+```
