@@ -1,4 +1,4 @@
-# May 10, 2024 Release Notes - 0.1.4
+# May 15, 2024 Release Notes - 0.1.4
 
 ## New
 1. OKE module added, supporting basic and enhanced clusters, with managed node pools and virtual node pools. See [OKE module](./cis-oke/README.md) for details.
