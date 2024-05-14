@@ -2,7 +2,7 @@
 
 ## Introduction
 
-This example shows how to deploy OKE clusters and node pools in OCI using the [cis-oke module](https://github.com/oracle-quickstart/terraform-oci-secure-workloads/tree/main/cis-oke). It deploys one Flannel-based basic OKE Cluster, one node pool, one Bastion service endpoint and one Bastion session for application management with the characteristics described below. 
+This example shows how to deploy OKE clusters and node pools in OCI using the [cis-oke module](https://github.com/oracle-quickstart/terraform-oci-secure-workloads/tree/main/cis-oke). It deploys one Flannel-based basic OKE Cluster, one node pool, one Bastion service endpoint and one Bastion session for cluster management with the characteristics described below. 
 
 Once the cluster is provisioned, cluster access is automatically enabled from localhost via the OCI Bastion service endpoint.
 
@@ -64,7 +64,10 @@ To connect to the OKE API endpoint, in a terminal, execute the command provided 
 ssh -i ~/.ssh/id_rsa -N -L 6443:10.0.x.x:6443 -p 22 ocid1.bastionsession.oc1...@host.bastion.eu-frankfurt-1.oci.oraclecloud.com
 ```
 
-Following that, in another terminal, set the KUBECONFIG environment variable to the *kubeconfig* file that was created in the Terraform configuration folder. Example: ```export KUBECONFIG = <full-path-to-kubeconfig>```
+Following that, in another terminal, set the KUBECONFIG environment variable to the *kubeconfig* file that was created in the Terraform configuration folder. 
+```
+export KUBECONFIG = <full-path-to-kubeconfig>
+```
 
 You are now all set to use *kubectl* tool to manage your OKE applications. As an example, you can try deploying a sample application, checking and deleting it: 
 ```

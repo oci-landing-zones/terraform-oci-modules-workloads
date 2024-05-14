@@ -32,9 +32,9 @@ clusters_configuration = {
       is_enhanced = false
       networking = {
         vcn_id                 = "<REPLACE-BY-VCN-OCID>"
-        api_endpoint_subnet_id = "<REPLACE-BY-ENDPOINT-SUBNET-OCID>"
+        api_endpoint_subnet_id = "<REPLACE-BY-API-ENDPOINT-SUBNET-OCID>"
         services_subnet_id     = ["<REPLACE-BY-SERVICES-SUBNET-OCID>"]
-        api_endpoint_nsg_ids   = ["<REPLACE-BY-API-NSG-OCIDS>"]
+        api_endpoint_nsg_ids   = ["<REPLACE-BY-API-ENDPOINT-NSG-OCIDS>"]
       }
     }
   }
@@ -48,9 +48,9 @@ workers_configuration = {
       name       = "node-pool"
       size       = 1
       networking = {
-        workers_subnet_id = "<REPLACE-BY-WORKER-SUBNET-OCID>"
+        workers_subnet_id = "<REPLACE-BY-WORKERS-SUBNET-OCID>"
         pods_subnet_id    = "<REPLACE-BY-PODS-SUBNET-OCID>"
-        workers_nsg_ids   = ["<REPLACE-BY-NODES-NSG-OCID>"]
+        workers_nsg_ids   = ["<REPLACE-BY-WORKERS-NSG-OCID>"]
         pods_nsg_ids      = ["<REPLACE-BY-PODS-NSG-OCID>"]
       }
       node_config_details = {
@@ -64,9 +64,9 @@ workers_configuration = {
     #     pod_shape = "Pod.Standard.E4.Flex"
     #     size       = 1
     #     networking = {
-    #       workers_subnet_id = "<REPLACE-BY-WORKER-SUBNET-OCID>"
+    #       workers_subnet_id = "<REPLACE-BY-WORKERS-SUBNET-OCID>"
     #       pods_subnet_id    = "<REPLACE-BY-PODS-SUBNET-OCID>"  
-    #       workers_nsg_ids   = ["<REPLACE-BY-NODES-NSG-OCID>"]
+    #       workers_nsg_ids   = ["<REPLACE-BY-WORKERS-NSG-OCID>"]
     #       pods_nsg_ids      = ["<REPLACE-BY-PODS-NSG-OCID>"]
     #     }
     #   }

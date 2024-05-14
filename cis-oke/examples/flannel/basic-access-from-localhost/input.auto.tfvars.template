@@ -32,7 +32,7 @@ clusters_configuration = {
         vcn_id                 = "<REPLACE-BY-VCN-OCID>"
         api_endpoint_subnet_id = "<REPLACE-BY-API-ENDPOINT-SUBNET-OCID>"
         services_subnet_id     = ["<REPLACE-BY-SERVICES-SUBNET-OCID>"]
-        api_endpoint_nsg_ids   = ["<REPLACE-BY-API-ENDPOINT-NSG-IDS>"]
+        api_endpoint_nsg_ids   = ["<REPLACE-BY-API-ENDPOINT-NSG-OCIDS>"]
       }
     }
   }
@@ -46,8 +46,8 @@ workers_configuration = {
       name       = "node-pool"
       size       = 1
       networking = {
-        workers_subnet_id = "<REPLACE-BY-WORKER-SUBNET-OCID>"
-        workers_nsg_ids   = ["<REPLACE-BY-NODES-NSG-OCID>"]
+        workers_subnet_id = "<REPLACE-BY-WORKERS-SUBNET-OCID>"
+        workers_nsg_ids   = ["<REPLACE-BY-WORKERS-NSG-OCID>"]
       }
       node_config_details = {
         node_shape = "VM.Standard.E4.Flex"

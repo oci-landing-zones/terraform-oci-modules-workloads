@@ -73,7 +73,10 @@ To connect to the OKE API endpoint, in a terminal, execute the command provided 
 ssh -i ~/.ssh/id_rsa -N -L 6443:10.0.x.x:6443 -p 22 ocid1.bastionsession.oc1...@host.bastion.eu-frankfurt-1.oci.oraclecloud.com
 ```
 
-Following that, in another terminal, set the KUBECONFIG environment variable to the *kubeconfig* file that was created in the Terraform configuration folder. Example: ```export KUBECONFIG = <full-path-to-kubeconfig>```
+Following that, in another terminal, set the KUBECONFIG environment variable to the *kubeconfig* file that was created in the Terraform configuration folder. 
+```
+export KUBECONFIG = <full-path-to-kubeconfig>
+```
 
 You are now all set to use *kubectl* tool to manage your OKE applications. As an example, you can try deploying a sample application, checking and deleting it: 
 ```
