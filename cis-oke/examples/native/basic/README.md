@@ -7,8 +7,8 @@ This example shows how to deploy Kubernetes clusters and node pools in OCI using
 This example provides no cluster access automation. Automating access to the cluster can be implemented with the [OCI Bastion service module](https://github.com/oracle-quickstart/terraform-oci-cis-landing-zone-security/tree/main/bastion). See [Bastion available examples](https://github.com/oracle-quickstart/terraform-oci-cis-landing-zone-security/tree/main/bastion/examples).
 
 As alternatives to this example, the following examples are available with cluster access automation:
-   1. [OKE Native with Localhost Access Example](../basic-access-via-bastion-from-localhost/), where the OKE cluster is managed from a host external to OCI (such as the user laptop). 
-   2. [OKE Native with Operator Access Example](../basic-access-via-bastion-from-operator-host/), where the OKE cluster is managed from a Compute instance deployed in OCI. 
+   1. [OKE Native with Access from Localhost](../basic-access-from-localhost/), where the OKE cluster is managed from a host external to OCI (such as the user laptop). 
+   2. [OKE Native with Access from Operator Host](../basic-access-from-operator-host/), where the OKE cluster is managed from a Compute instance deployed in OCI. 
 
 ### Pre-Requisite
 
@@ -17,33 +17,29 @@ The OKE cluster and the Node Pool depend on a pre existing Virtual Cloud Network
 ### Resources Deployed by this Example
 
 OKE Cluster (OKE1):
-- The Cluster will be a Basic Cluster.
-- The Cluster will have the native cni as defined in the *cni_type* attribute.
-- The Cluster will have the latest kubernetes version by default.
-- The cluster will have a private api endpoint by default.
+- of *basic* type.
+- set with the latest Kubernetes version;
+- with NPN (Native Pod Networking) CNI;
+- with a private API endpoint.
 
 Node Pool (NODEPOOL1):
-- The nodepool will be created in OKE1 Cluster.
-- The nodes will be created in the same compartment as the OKE1 Cluster.
-- The nodes will have the same kubernetes version as the OKE1 Cluster.
-- The nodepool will have three worker nodes.
-- The nodes will use the "VM.Standard.E4.Flex" shape as defined by the *node_shape* attribute.
-- The nodes will use the image specified in the *image* attribute.
-- The nodes will have 16 GB memory and 1 OCPU by default.
-- The nodes boot volume size will be 60GB and will be terminated when the nodes are destroyed by default.
+- created in the same compartment as the cluster;
+- with the same Kubernetes version as the cluster;
+- with one worker node (it is set by *workers_configuration.node_pools.NODEPOOL1.size* attribute);
+- node has the "VM.Standard.E4.Flex" shape;
+- node has 16 GB memory and 1 OCPU by default;
+- node boot volume size is 60GB and is terminated when the node is destroyed.
 
-Commented Virtual Node Pool (VIRTUAL_POOL1):
-- The virtual node pool will be created in OKE1 Cluster.
-- It will be created in the same compartment as the OKE1 Cluster.
-- It will have three virtual worker nodes.
-- The pods will use the "Pod.Standard.E4.Flex" shape as defined by the *pod_shape* attribute.
+Commented Virtual Node Pool (VIRTUALPOOL1):
+- created in the same compartment as the cluster;
+- with one worker node;
+- node has the "VM.Standard.E4.Flex" shape;
 
-### How to create Virtual Node Pools
+### How to Create Virtual Node Pools
 
-To create Virtual Node Pools you need to make the cluster enhanced by setting the attribute **is_enhanced** to **true** and uncomment the **virtual_node_pools** map.
-Virtual Node Pools only work on enhanced clusters.
+For adding a virtual node pool to the cluster, set the attribute *is_enhanced* to *true* and uncomment the *virtual_node_pools* attribute. Virtual node pools only work on enhanced clusters.
 
-To create **only** Virtual Node Pools, comment/remove the **node_pools** map.
+For having the cluster with **only** virtual node pools, comment/remove the *node_pools* attribute.
 
 See [input.auto.tfvars.template](./input.auto.tfvars.template) for the variables configuration.
 

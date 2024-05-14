@@ -8,17 +8,17 @@ module "oke" {
 }
 
 module "operator_instance" {
-  source = "../../../../cis-compute-storage/"
+  source = "github.com/oracle-quickstart/terraform-oci-secure-workloads//cis-compute-storage?ref=v0.1.3"
   providers = {
-    oci                                  = oci
+    oci = oci
     oci.block_volumes_replication_region = oci
   }
   instances_configuration = var.instances_configuration
 }
 
 module "bastion" {
-  depends_on             = [module.oke]
-  source                 = "../../../../../terraform-oci-cis-landing-zone-security/bastion/"
+  depends_on = [module.oke]
+  source     = "github.com/oracle-quickstart/terraform-oci-cis-landing-zone-security.git//bastion?ref=v0.1.4"
   bastions_configuration = var.bastions_configuration
   sessions_configuration = var.sessions_configuration
   instances_dependency   = module.operator_instance.instances

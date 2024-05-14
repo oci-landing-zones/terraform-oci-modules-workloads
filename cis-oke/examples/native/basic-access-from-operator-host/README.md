@@ -1,15 +1,15 @@
-# OKE Flannel with Operator Access Example
+# OKE NPN (Native Pod Networking) with Operator Access Example
 
 ## Introduction
 
-This example shows how to deploy OKE clusters and node pools in OCI using the [cis-oke module](https://github.com/oracle-quickstart/terraform-oci-secure-workloads/tree/main/cis-oke). It deploys one Flannel-based basic OKE Cluster, one node pool, one Bastion service endpoint, one Bastion session, and one Compute instance with the characteristics described below. 
+This example shows how to deploy OKE clusters and node pools in OCI using the [cis-oke module](https://github.com/oracle-quickstart/terraform-oci-secure-workloads/tree/main/cis-oke). It deploys one NPN basic OKE Cluster, one node pool, one Bastion service endpoint, one Bastion session, and one Compute instance with the characteristics described below. 
 
 Once the cluster is provisioned, cluster access is automatically enabled from the provisioned Compute instance, which is accessible via the OCI Bastion service endpoint. We refer to this Compute instance as the Operator host.
 
 ### Pre-Requisites
 
 #### Networking
-The OKE cluster and the node pool depend on a pre existing Virtual Cloud Network (VCN). A VCN built specifically for this deployment is available in [flannel network example](https://github.com/oracle-quickstart/terraform-oci-cis-landing-zone-networking/tree/main/examples/oke-examples/flannel).
+The OKE cluster and the node pool depend on a pre existing Virtual Cloud Network (VCN). A VCN built specifically for this deployment is available in [native network example](https://github.com/oracle-quickstart/terraform-oci-cis-landing-zone-networking/tree/main/examples/oke-examples/native).
 
 Additionally, the Operator host requires an instance principal credential properly authorized for managing the OKE cluster. That means a dynamic group and a policy are required.
 
@@ -24,7 +24,7 @@ instance.compartment.id='<OPERATOR-HOST-COMPARTMENT-OCID>'
 Allow dynamic-group <DYNAMIC-GROUP-NAME> to manage cluster-family in compartment <OKE-CLUSTER-COMPARTMENT-NAME>
 ```
 
-The deployment of these IAM resources are automated by the [OKE Operator Host IAM example](../oke-operator-host-iam/).
+The deployment of these IAM resources are automated by the [OKE Operator Host IAM example](../../flannel/oke-operator-host-iam/).
 
 
 ### Resources Deployed by this Example
@@ -45,7 +45,7 @@ Node pool (NODEPOOL1):
 
 Compute instance (INSTANCE-1), a.k.a. Operator host:
 - based on "VM.Standard.E4.Flex" shape, as defined by the *shape* attribute.
-- based on the "Oracle-Linux-Cloud-Developer-8.7-2023.04.28-1" platform image, as defined by *image.id* attribute. 
+- based on the "Oracle-Linux-Cloud-Developer-8.7-2023.04.28-1" platform image, as defined by *image.id* attribute.
    - Either use the [platform-images module](https://github.com/oracle-quickstart/terraform-oci-secure-workloads/tree/main/platform-images) to find Platform images information based on a search filter or search for the region-specific image OCID in [All Image Families](https://docs.oracle.com/en-us/iaas/images/).
 - it does **not** have the boot volume preserved on termination, as defined by *boot_volume.preserve_on_instance_deletion* attribute.
 - the boot volume is set to be backed up per Oracle-managed *bronze* backup policy (enforced by the module by default).

@@ -18,11 +18,9 @@
 # private_key_password = ""                          # This is the password that protects the private key, if any.
 # region               = "<your tenancy region>"     # The region name.
 
-
 #---------------------------------------
 # Input variable
 #---------------------------------------
-
 
 clusters_configuration = {
   default_compartment_id         = "<REPLACE-BY-COMPARTMENT-OCID>"
@@ -86,7 +84,7 @@ workers_configuration = {
 
 instances_configuration = {
   default_compartment_id      = "<REPLACE-BY-COMPARTMENT-OCID>"
-  default_subnet_id           = "<REPLACE-BY-OKE-OPERATOR-SUBNET-OCID>"
+  default_subnet_id           = "<REPLACE-BY-OKE-MGMT-SUBNET-OCID>"
   default_ssh_public_key_path = "~/.ssh/id_rsa.pub"
   instances = {
     INSTANCE-1 = {
@@ -102,10 +100,10 @@ instances_configuration = {
       }
       networking = {
         hostname                = "oke-operator-instance"
-        network_security_groups = ["<REPLACE-BY-OKE-OPERATOR-NSG-OCID>"]
+        network_security_groups = ["<REPLACE-BY-OKE-MGMG-NSG-OCID>"]
       }
       image = {
-        id = "<REPLACE-BY-DEVELOPER-IMAGE-OCID>" # "Oracle-Linux-Cloud-Developer-8.7-2023.04.28-1" Platform image
+        id = "<REPLACE-BY-PLATFORM-IMAGE-OCID>" # As an example, you can use "Oracle-Linux-Cloud-Developer-8.7-2023.04.28-1" platform image, but you need its OCID, that is region-specific. Either use the https://github.com/oracle-quickstart/terraform-oci-secure-workloads/tree/main/platform-images to find platform images information based on a search filter or search for the region-specific image OCID in https://docs.oracle.com/en-us/iaas/images/.
       }
       cloud_agent = {
         #disable_monitoring = true

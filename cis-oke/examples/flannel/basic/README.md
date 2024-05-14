@@ -6,13 +6,13 @@ This example shows how to deploy Kubernetes clusters and node pools in OCI using
 
 This example provides no cluster access automation. Automating access to the cluster can be implemented with the [OCI Bastion service module](https://github.com/oracle-quickstart/terraform-oci-cis-landing-zone-security/tree/main/bastion). See the [available examples](https://github.com/oracle-quickstart/terraform-oci-cis-landing-zone-security/tree/main/bastion/examples).
 
-As alternatives to this example, the following examples are available with full cluster access automation:
-   1. [OKE Flannel with Localhost Access Example](../basic-access-via-bastion-from-localhost/), where the OKE cluster is managed from a host external to OCI (like the user laptop). 
-   2. [OKE Flannel with Operator Access Example](../basic-access-via-bastion-from-operator-host/), where the OKE cluster is managed from a Compute instance deployed in OCI. 
+As alternatives to this example, the following examples are available with cluster access automation:
+   1. [OKE Flannel with Access from Localhost](../basic-access-from-localhost/), where the OKE cluster is managed from a host external to OCI (like the user laptop). 
+   2. [OKE Flannel with Access from Operator Host](../basic-access-from-operator-host/), where the OKE cluster is managed from a Compute instance deployed in OCI. 
 
 ### Pre-Requisite
 
-The OKE cluster and the Node Pool depend on a pre existing Virtual Cloud Network (VCN). A VCN built specifically for this deployment is available in [flannel network example](https://github.com/oracle-quickstart/terraform-oci-cis-landing-zone-networking/tree/main/examples/oke-examples/flannel).
+The OKE cluster and the node pool depend on a pre existing Virtual Cloud Network (VCN). A VCN built specifically for this deployment is available in [flannel network example](https://github.com/oracle-quickstart/terraform-oci-cis-landing-zone-networking/tree/main/examples/oke-examples/flannel).
 
 ### Resources Deployed by this Example
 
