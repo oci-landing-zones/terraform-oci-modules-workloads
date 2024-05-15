@@ -71,6 +71,8 @@ variable "workers_configuration" {
     default_ssh_public_key_path = optional(string)       # the default SSH public key path used to access the workers.
     default_kms_key_id          = optional(string)       # the default KMS key to assign as the master encryption key. It's overriden by the kms_key_id attribute within each object.
     default_initial_node_labels = optional(map(string))  # the default initial node labels, a list of key/value pairs to add to nodes after they join the Kubernetes cluster.
+    default_cloud_init_heredoc_script = optional(string), # the default cloud-init script in Terraform heredoc style that is applied to all nodes. It has precedence over default_cloud_init_script_file. Only applicable to node_pools.
+    default_cloud_init_script_file    = optional(string), # the default cloud-init script file that is applied to all nodes. Only applicable to node_pools.
 
     node_pools = optional(map(object({ # the node pools to manage in this configuration.
       cis_level           = optional(string)
@@ -122,6 +124,10 @@ variable "workers_configuration" {
           enable_cycling  = optional(bool)   # whether to enable node cycling. Default is false.
           max_surge       = optional(string) # maximum additional new compute instances that would be temporarily created and added to nodepool during the cycling nodepool process. OKE supports both integer and percentage input. Defaults to 1, Ranges from 0 to Nodepool size or 0% to 100%.
           max_unavailable = optional(string) # maximum active nodes that would be terminated from nodepool during the cycling nodepool process. OKE supports both integer and percentage input. Defaults to 0, Ranges from 0 to Nodepool size or 0% to 100%.
+        }))
+        cloud_init = optional(object({
+          heredoc_script = optional(string) # the cloud-init script in Terraform heredoc style that is applied to the node. It has precedence over script_file.
+          script_file = optional(string)    # the cloud-init script file that is applied to the node.    
         }))
       })
     })))

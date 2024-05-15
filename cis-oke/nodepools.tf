@@ -127,5 +127,13 @@ resource "oci_containerengine_node_pool" "these" {
     source_type             = "image"
     boot_volume_size_in_gbs = each.value.node_config_details.boot_volume != null ? coalesce(each.value.node_config_details.boot_volume.size,60) : 60
   }
+  node_metadata = {
+      user_data = contains(keys(data.template_file.cloud_config),each.key) ? base64encode(data.template_file.cloud_config[each.key].rendered) : null
+    }
   ssh_public_key = each.value.node_config_details.ssh_public_key_path != null ? (fileexists(each.value.node_config_details.ssh_public_key_path) ? file(each.value.node_config_details.ssh_public_key_path) : each.value.node_config_details.ssh_public_key_path) : var.workers_configuration.default_ssh_public_key_path != null ? (fileexists(var.workers_configuration.default_ssh_public_key_path) ? file(var.workers_configuration.default_ssh_public_key_path) : var.workers_configuration.default_ssh_public_key_path): null
+}
+
+data "template_file" "cloud_config" {
+  for_each = var.workers_configuration != null ? {for k, v in var.workers_configuration["node_pools"] : k => v if v.node_config_details.cloud_init != null || var.workers_configuration.default_cloud_init_heredoc_script != null || var.workers_configuration.default_cloud_init_script_file != null} : {}
+    template = coalesce(try(each.value.node_config_details.cloud_init.heredoc_script,null), try(file(try(each.value.node_config_details.cloud_init.script_file,null)),null), var.workers_configuration.default_cloud_init_heredoc_script, try(file(var.workers_configuration.default_cloud_init_script_file),null), "__void__")
 }
