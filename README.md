@@ -6,7 +6,7 @@ This repository contains Terraform modules for managing workload resources in OC
 
 The following modules are available:
 - [CIS Compute & Storage](./cis-compute-storage/)
-- OKE (Oracle Kubernetes Engine) - soon
+- [OKE (Oracle Kubernetes Engine)](./cis-oke/)
 
 Helper modules:
 - [Platform Images](./platform-images/) - aids in finding OCI Platform images. Use it to obtain image information for provisioning a Compute instance.

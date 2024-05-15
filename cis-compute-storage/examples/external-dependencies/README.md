@@ -67,8 +67,7 @@ The OCI Object Storage objects with external dependencies are expected to have s
 ```
 {
 	"INSTANCE-2": {
-		"id": "ocid1.instance.oc1.iad.anuwc...ftq",
-    "is_pv_encryption_in_transit_enabled" : false
+		"id": "ocid1.instance.oc1.iad.anuwc...ftq"
 	}
 }
 ```

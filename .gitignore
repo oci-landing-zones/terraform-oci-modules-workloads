@@ -13,3 +13,6 @@ marketplace-images/**/*.txt
 platform-images/**/*.txt
 userdata
 mounting-block-volumes.txt
+**/examples/clusters/*
+**/creds
+**/clean-setup

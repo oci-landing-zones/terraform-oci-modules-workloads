@@ -170,15 +170,21 @@ resource "oci_core_instance" "these" {
       }
     }
     metadata = {
-      ssh_authorized_keys = each.value.ssh_public_key_path != null ? file(each.value.ssh_public_key_path) : file(var.instances_configuration.default_ssh_public_key_path)
-    #  user_data           = contains(keys(data.template_cloudinit_config.config),each.key) ? data.template_cloudinit_config.config[each.key].rendered : null
+      ssh_authorized_keys = each.value.ssh_public_key_path != null ? (fileexists(each.value.ssh_public_key_path) ? file(each.value.ssh_public_key_path) : each.value.ssh_public_key_path) : var.instances_configuration.default_ssh_public_key_path != null ? (fileexists(var.instances_configuration.default_ssh_public_key_path) ? file(var.instances_configuration.default_ssh_public_key_path) : var.instances_configuration.default_ssh_public_key_path): null
+      user_data           = contains(keys(data.template_file.cloud_config),each.key) ? base64encode(data.template_file.cloud_config[each.key].rendered) : null
     }
+    compute_cluster_id   = each.value.cluster_id != null ? (contains(keys(oci_core_compute_cluster.these),each.value.cluster_id) ? oci_core_compute_cluster.these[each.value.cluster_id].id : (length(regexall("^ocid1.*$", each.value.cluster_id)) > 0 ? each.value.cluster_id : null)) : null
 }
 
 resource "oci_core_volume_backup_policy_assignment" "these_boot_volumes" {
   for_each = var.instances_configuration != null ? var.instances_configuration["instances"] : {}
     asset_id  = oci_core_instance.these[each.key].boot_volume_id
     policy_id = local.oracle_backup_policies[lower(each.value.boot_volume != null ? each.value.boot_volume.backup_policy : "bronze")]
+}
+
+data "template_file" "cloud_config" {
+  for_each = var.instances_configuration != null ? {for k, v in var.instances_configuration["instances"] : k => v if v.cloud_init != null || var.instances_configuration.default_cloud_init_heredoc_script != null || var.instances_configuration.default_cloud_init_script_file != null} : {}
+    template = coalesce(try(each.value.cloud_init.heredoc_script,null), try(file(try(each.value.cloud_init.script_file,null)),null), var.instances_configuration.default_cloud_init_heredoc_script, try(file(var.instances_configuration.default_cloud_init_script_file),null), "__void__")
 }
 
 /* data "template_file" "block_volumes_templates" {
@@ -190,19 +196,7 @@ resource "oci_core_volume_backup_policy_assignment" "these_boot_volumes" {
       block_vol_att_type = each.value.device_mounting.emulation_type != null ? lower(each.value.device_mounting.emulation_type) : "paravirtualized"
     }
 }
-
-data "template_cloudinit_config" "config" {
-  for_each      = var.instances_configuration != null ? {for k, v in var.instances_configuration["instances"] : k => v if v.device_mounting != null} : {}
-    gzip          = false
-    base64_encode = true
-
-    # Main cloud-config configuration file.
-    part {
-      filename     = "cloudinit.sh"
-      content_type = "text/x-shellscript"
-      content      = data.template_file.block_volumes_templates[each.key].rendered
-    }
-  } */
+*/  
 
 data "oci_core_vnic_attachments" "these" {
   for_each = var.instances_configuration != null ? var.instances_configuration["instances"] : {}
