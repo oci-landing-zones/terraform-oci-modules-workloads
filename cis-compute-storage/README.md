@@ -10,14 +10,16 @@ Check the [examples](./examples/) folder for actual module usage.
 
 - [Features](#features)
 - [Requirements](#requirements)
+- [How to Invoke the Module](#invoke)
 - [Module Functioning](#functioning)
   - [Aspects Driven by CIS Profile Levels](#cis-levels)
-  - [Compute](#compute)
-  - [Block Volumes](#block-volumes)
-  - [File Storage](#file-storage)
+  - [Compute](#compute-1)
+  - [Block Volumes](#block-volumes-1)
+  - [File Storage](#file-storage-1)
     - [File Systems](#file-systems)
     - [Mount Targets](#mount-targets)
     - [Snapshot Policies](#snapshot-policies)
+  - [Clusters](#clusters-1)  
   - [External Dependencies](#ext-dep)
 - [Related Documentation](#related)
 - [Known Issues](#issues)
@@ -48,6 +50,9 @@ The following security features are currently supported by the module:
 - Data at rest encryption with customer managed keys from OCI Vault service.
 - Cross-region replication for strong cyber resilience posture.
 - Backups with custom snapshot policies.
+
+### <a name="cluster-features">Clusters</a>
+- Deployment of cluster networks and compute clusters.
 
 ## <a name="requirements">Requirements</a>
 ### IAM Permissions
@@ -98,11 +103,46 @@ Allow group <GROUP-NAME> to use key-delegate in compartment <ENCRYPTION-KEYS-COM
 
 This module relies on [Terraform Optional Object Type Attributes feature](https://developer.hashicorp.com/terraform/language/expressions/type-constraints#optional-object-type-attributes), which has been promoted and no longer experimental in versions greater than 1.3.x. The feature shortens the amount of input values in complex object types, by having Terraform automatically inserting a default value for any missing optional attributes.
 
+## <a name="invoke">How to Invoke the Module</a>
+
+Terraform modules can be invoked locally or remotely. 
+
+For invoking the module locally, just set the module *source* attribute to the module file path (relative path works). The following example assumes the module is two folders up in the file system.
+```
+module "compute" {
+  source = "../.."
+  providers = {
+    oci = oci
+    oci.block_volumes_replication_region = oci.block_volumes_replication_region
+  }
+  instances_configuration = var.instances_configuration
+  storage_configuration   = var.storage_configuration
+}
+```
+For invoking the module remotely, set the module *source* attribute to the *cis-compute-storage* module folder in this repository, as shown:
+```
+module "compute" {
+  source = "github.com/oracle-quickstart/terraform-oci-secure-workloads/cis-compute-storage"
+  providers = {
+    oci = oci
+    oci.block_volumes_replication_region = oci.block_volumes_replication_region
+  }
+  instances_configuration = var.instances_configuration
+  storage_configuration   = var.storage_configuration
+}
+```
+For referring to a specific module version, add an extra slash before the folder name and append *ref=\<version\>* to the *source* attribute value, as in:
+```
+  source = "github.com/oracle-quickstart/terraform-oci-secure-workloads//cis-compute-storage?ref=v0.1.0"
+```
+
 ## <a name="functioning">Module Functioning</a>
 
-The module defines two top level attributes used to manage instances and storage: 
+The module defines two top level variables used to manage instances, storage, clusters and cluster configurations: 
 - **instances_configuration** &ndash; for managing Compute instances.
 - **storage_configuration** &ndash; for managing storage, including Block Volumes and File System Storage.
+- **clusters_configuration** &ndash; for managing clusters, including cluster networks and compute clusters.
+- **cluster_instances_configuration** &ndash; for managing instance configurations used in cluster networks.
 
 ### <a name="cis-levels">Aspects Driven by CIS Profile Levels</a>
 
@@ -123,7 +163,7 @@ The CIS Benchmark profile levels drive some aspects of Compute and Storage. In t
 
 ### <a name="compute">Compute</a>
 
-Compute instances are managed using the **instances_configuration** object. It contains a set of attributes starting with the prefix **default_** and one attribute named **instances**. The **default_** attribute values are applied to all instances within **instances**, unless overridden at the instance level.
+Compute instances are managed using the **instances_configuration** variable. It contains a set of attributes starting with the prefix **default_** and one attribute named **instances**. The **default_** attribute values are applied to all instances within **instances**, unless overridden at the instance level.
 
 The *default_* attributes are the following:
 - **default_compartment_id** &ndash; Default compartment for all instances. It can be overridden by *compartment_id* attribute in each instance. This attribute is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *compartments_dependency* variable. See [External Dependencies](#ext-dep) for details.
@@ -133,6 +173,8 @@ The *default_* attributes are the following:
 - **default_cis_level** &ndash; (Optional) Default CIS OCI Benchmark profile level for all instances. Level "2" enforces usage of customer managed keys for boot volume encryption. Default is "1". It can be overridden by *cis_level* attribute in each instance.
 - **default_defined_tags** &ndash; (Optional) Default defined tags for all instances. It can be overridden by *defined_tags* attribute in each instance.
 - **default_freeform_tags** &ndash; (Optional) Default freeform tags for all instances. It can be overridden by *freeform_tags* attribute in each instance.
+- **default_cloud_init_heredoc_script** &ndash; (Optional) Default cloud-init script in [Terraform heredoc style](https://developer.hashicorp.com/terraform/language/expressions/strings#heredoc-strings) that is applied to all instances. It has precedence over *default_cloud_init_script_file*. Use this when the script cannot be made available in the file system. **Any further changes to the script triggers instance recreation on subsequent plan/apply.**
+- **default_cloud_init_script_file** &ndash; (Optional) Default cloud-init script file that is applied to all instances. Use this when the script is available in the file system. **Any further changes to the script triggers instance recreation on subsequent plan/apply.**
 
 The instances themselves are defined within the **instances** attribute, In Terraform terms, it is a map of objects. where each object is referred by an identifying key. The supported attributes are listed below. For better usability, most attributes are grouped in logical blocks. They are properly indented in the list.
 - **compartment_id** &ndash; (Optional) The instance compartment. *default_compartment_id* is used if undefined. This attribute is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *compartments_dependency* variable. See [External Dependencies](#ext-dep) for details.
@@ -140,6 +182,7 @@ The instances themselves are defined within the **instances** attribute, In Terr
 - **shape** &ndash; The instance shape. See [Compute Shapes](https://docs.oracle.com/en-us/iaas/Content/Compute/References/computeshapes.htm) for OCI Compute shapes.
 - **name** &ndash; The instance name.
 - **platform_type** &ndash; (Optional) The platform type. Assigning this attribute enables important platform security features in the Compute service. See [Enabling Platform Features](#platform-features) for more information. Valid values are "AMD_MILAN_BM", "AMD_MILAN_BM_GPU", "AMD_ROME_BM", "AMD_ROME_BM_GPU", "AMD_VM", "GENERIC_BM", "INTEL_ICELAKE_BM", "INTEL_SKYLAKE_BM", "INTEL_VM". By default, no platform features are enabled.
+- **cluster_id** &ndash; (Optional) The Compute cluster the instance is added to. It can take either a literal cluster OCID or cluster key defined in the *clusters_configuration* variable.
 - **ssh_public_key_path** &ndash; (Optional) The SSH public key path used to access the instance. *default_ssh_public_key_path* is used if undefined.
 - **defined_tags** &ndash; (Optional) The instance defined tags. *default_defined_tags* is used if undefined.
 - **freeform_tags** &ndash; (Optional) The instance freeform tags. *default_freeform_tags* is used if undefined.
@@ -203,6 +246,9 @@ The instances themselves are defined within the **instances** attribute, In Terr
   - **plugins** &ndash; (Optional) The list of plugins to manage. Each plugin has a name and a boolean flag that enables it.
     - **name** &ndash; The plugin name. **It must be a valid plugin name**. The plugin names are available in [Oracle Cloud Agent documentation](https://docs.oracle.com/en-us/iaas/Content/Compute/Tasks/manage-plugins.htm) and in [compute-only example](./examples/compute-only/input.auto.tfvars.template) as well.
     - **enabled** &ndash; Whether or not the plugin should be enabled. In order to disable a previously enabled plugin, set this value to false. Simply removing the plugin from the list will not disable it.
+- **cloud_init** &ndash; (Optional) a script that is automatically executed once the instance starts out. Use either *heredoc_script* (when the script cannot be made available in the file system) or *script_file* (when the script is available in the file system). **Any further changes to the script (supplied in either way) triggers instance recreation on subsequent plan/apply.**
+  - **heredoc_script** &ndash; (Optional) cloud-init script in [Terraform heredoc style](https://developer.hashicorp.com/terraform/language/expressions/strings#heredoc-strings) that is applied to the instance. It has precedence over *script_file*.
+  - **script_file** &ndash; (Optional) cloud-init script file that is applied to the instance.    
 
 #### <a name="cloud-agent-requirements">Cloud Agent Requirements</a>
 ##### IAM Policy Requirements
@@ -281,7 +327,7 @@ Additionally, in-transit encryption is only available to paravirtualized volumes
 
 ### <a name="storage">Storage</a>
 
-Storage is managed using the **storage_configuration** object. It contains a set of attributes starting with the prefix **default_** and two attribute named **block_volumes** and **file_storage**. The **default_** attribute values are applied to all storage units within **block_volumes** and **file_storage**, unless overridden at the storage unit level.
+Storage is managed using the **storage_configuration** variable. It contains a set of attributes starting with the prefix **default_** and two attribute named **block_volumes** and **file_storage**. The **default_** attribute values are applied to all storage units within **block_volumes** and **file_storage**, unless overridden at the storage unit level.
 
 The defined **default_** attributes are the following:
 - **default_compartment_id** &ndash; (Optional) The default compartment for all storage units. It can be overridden by *compartment_id* attribute in each unit. This attribute is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *compartments_dependency* variable. See [External Dependencies](#ext-dep) for details.
@@ -563,6 +609,63 @@ Snapshot policies are defined using the optional attribute **snapshot_policies**
 - **freeform_tags** &ndash; (Optional) Snapshot policy freeform tags. *storage_configuration*'s *default_freeform_tags* is used if undefined.
 
 As mentioned, default snapshot policies are created for file systems that do not have a snapshot policy. The default snapshot policies are defined with a single schedule, set to run weekly at 23:00 UTC on sundays.
+
+
+#### <a name="clusters">Clusters</a>
+
+The module can manage cluster networks and compute clusters.
+
+A [cluster network](https://docs.oracle.com/en-us/iaas/Content/Compute/Tasks/managingclusternetworks.htm) is a pool of high performance computing (HPC) instances that are connected with a high-bandwidth, ultra low-latency network. They're designed for highly demanding parallel computing jobs.
+
+A [Compute cluster](https://docs.oracle.com/iaas/Content/Compute/Tasks/compute-clusters.htm) is a remote direct memory access (RDMA) network group. You can create high performance computing (HPC) instances in the network and manage them individually.
+
+Clusters are managed using the **clusters_configuration** variable. It contains a set of attributes starting with the prefix **default_** and one attribute named **clusters**. The **default_** attribute values are applied to all clusters within **clusters**, unless overridden at the cluster level.
+
+The *default_* attributes are the following:
+- **default_compartment_id** &ndash; Default compartment for all clusters. It can be overridden by *compartment_id* attribute in each cluster. This attribute is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *compartments_dependency* variable. See [External Dependencies](#ext-dep) for details.
+- **default_defined_tags** &ndash; (Optional) Default defined tags for all clusters. It can be overridden by *defined_tags* attribute in each cluster.
+- **default_freeform_tags** &ndash; (Optional) Default freeform tags for all clusters. It can be overridden by *freeform_tags* attribute in each cluster.
+
+The clusters themselves are defined within the **clusters** attribute, In Terraform terms, it is a map of objects. where each object is referred by an identifying key. The supported attributes are listed below. For better usability, most attributes are grouped in logical blocks. They are properly indented in the list.
+
+- **compartment_id** &ndash; (Optional) The cluster compartment. *default_compartment_id* is used if undefined. This attribute is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *compartments_dependency* variable. See [External Dependencies](#ext-dep) for details.
+- **type** &ndash; (Optional) The cluster type. Valid values: "cluster_network", "compute_cluster". Default is "cluster_network".
+- **availability_domain** &ndash; (Optional) The availability domain for cluster instances. Default is 1.
+- **name** &ndash; The cluster display name.
+- **defined_tags** &ndash; (Optional) The cluster defined_tags. *default_defined_tags* is used if undefined.
+- **freeform_tags** &ndash; (Optional) The cluster freeform_tags. *default_freeform_tags* is used if undefined.
+- **cluster_network_settings** &ndash; (Optional) Cluster network settings. **Only applicable if type is "cluster_network"**.
+  - **instance_configuration_id** &ndash; The instance configuration id to use in this cluster. It can be a literal OCID or a configuration key defined in *cluster_instances_configuration* variable.
+  - **instance_pool** &ndash; (Optional) Cluster instance pool settings.
+    - **name** &ndash; (Optional) The instance pool name.
+    - **size** &ndash; (Optional) The number of instances in the instance pool. Default is 1.
+  - **networking** &ndash; Networking settings.
+    - **subnet_id** &ndash; The subnet where instances primary VNIC is placed.
+    - **ipv6_enable** &ndash; (Optional) Whether IPv6 is enabled for instances primary VNIC. Default is false.
+    - **ipv6_subnet_cidrs** = &ndash; (Optional) A list of IPv6 subnet CIDR ranges from which the primary VNIC is assigned an IPv6 address. Only applicable if ipv6_enable for primary VNIC is true. Default is [].
+    - **secondary_vnic_settings** &ndash; (Optional) Secondary VNIC settings
+      - **subnet_id** &ndash; The subnet where instances secondary VNIC are created.
+      - **name** &ndash; (Optional) The secondary VNIC name.
+      - **ipv6_enable** &ndash; (Optional) Whether IPv6 is enabled for the secondary VNIC. Default is false.
+      - **ipv6_subnet_cidrs** &ndash; (Optional) A list of IPv6 subnet CIDR ranges from which the secondary VNIC is assigned an IPv6 address. Only applicable if ipv6_enable for secondary VNIC is true. Default is [].
+
+Cluster instance configurations required by cluster networks are managed using the **cluster_instances_configuration** variable. It contains a set of attributes starting with the prefix **default_** and one attribute named **configurations**. The **default_** attribute values are applied to all instance configurations within **configurations**, unless overridden at the configuration level.
+
+The *default_* attributes are the following:
+- **default_compartment_id** &ndash; Default compartment for all configurations. It can be overridden by *compartment_id* attribute in each configurations. This attribute is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *compartments_dependency* variable. See [External Dependencies](#ext-dep) for details.
+- **default_defined_tags** &ndash; (Optional) Default defined tags for all configurations. It can be overridden by *defined_tags* attribute in each configuration.
+- **default_freeform_tags** &ndash; (Optional) Default freeform tags for all configurations. It can be overridden by *freeform_tags* attribute in each configuration.
+
+The configurations themselves are defined within the **configurations** attribute, In Terraform terms, it is a map of objects. where each object is referred by an identifying key. The supported attributes are listed below.
+
+- **compartment_id** &ndash; (Optional) The compartment where the instance configuration is created. *default_compartment_id* is used if undefined.
+- **name** &ndash; (Optional) The instance configuration display name.
+- **instance_type** &ndash; (Optional) the instance type. Default is "compute".
+- **template_instance_id** &ndash; The existing instance id to use as the configuration template for all instances in the cluster instance pool. It can be a literal instance OCID, an instance key defined in the *instances_configuration* variable, or an instance key defined in the *instances_dependency* variable. 
+    **NOTE: The instance must have a <a href='https://docs.oracle.com/en-us/iaas/Content/Compute/Tasks/managingclusternetworks.htm#supported-shapes'>shape that supports cluster networks</a>**.
+- **defined_tags** &ndash; (Optional) The instance configuration defined_tags. *default_defined_tags* is used if undefined.
+- **freeform_tags** &ndash; (Optional) The instance configuration freeform_tags. *default_freeform_tags* is used if undefined.
+
 
 ### <a name="ext-dep">External Dependencies</a>
 An optional feature, external dependencies are resources managed elsewhere that resources managed by this module depends on. The following dependencies are supported:

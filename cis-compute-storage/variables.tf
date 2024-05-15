@@ -4,13 +4,15 @@
 variable "instances_configuration" {
   description = "Compute instances configuration attributes."
   type = object({
-    default_compartment_id      = string,                # the default compartment where all resources are defined. It's overriden by the compartment_ocid attribute within each object.
-    default_subnet_id           = optional(string),      # the default subnet where all Compute instances are defined. It's overriden by the subnet_id attribute within each Compute instance.
-    default_ssh_public_key_path = optional(string),      # the default ssh public key path used to access the Compute instance. It's overriden by the ssh_public_key attribute within each Compute instance.
-    default_kms_key_id          = optional(string),      # the default KMS key to assign as the master encryption key. It's overriden by the kms_key_id attribute within each object.
-    default_cis_level           = optional(string)       # The CIS OCI Benchmark profile level. Level "1" is be practical and prudent. Level "2" is intended for environments where security is more critical than manageability and usability. Default is "1".
-    default_defined_tags        = optional(map(string)), # the default defined tags. It's overriden by the defined_tags attribute within each object.
-    default_freeform_tags       = optional(map(string)), # the default freeform tags. It's overriden by the freeform_tags attribute within each object.
+    default_compartment_id      = string,                 # the default compartment where all resources are defined. It's overriden by the compartment_ocid attribute within each object.
+    default_subnet_id           = optional(string),       # the default subnet where all Compute instances are defined. It's overriden by the subnet_id attribute within each Compute instance.
+    default_ssh_public_key_path = optional(string),       # the default ssh public key path used to access the Compute instance. It's overriden by the ssh_public_key attribute within each Compute instance.
+    default_kms_key_id          = optional(string),       # the default KMS key to assign as the master encryption key. It's overriden by the kms_key_id attribute within each object.
+    default_cis_level           = optional(string)        # the CIS OCI Benchmark profile level. Level "1" is be practical and prudent. Level "2" is intended for environments where security is more critical than manageability and usability. Default is "1".
+    default_defined_tags        = optional(map(string)),  # the default defined tags. It's overriden by the defined_tags attribute within each object.
+    default_freeform_tags       = optional(map(string)),  # the default freeform tags. It's overriden by the freeform_tags attribute within each object.
+    default_cloud_init_heredoc_script = optional(string), # the default cloud-init script in Terraform heredoc style that is applied to all instances. It has precedence over default_cloud_init_script_file.
+    default_cloud_init_script_file    = optional(string), # the default cloud-init script file that is applied to all instances.
 
     instances = map(object({ # the instances to manage in this configuration.
       cis_level        = optional(string)
@@ -18,6 +20,7 @@ variable "instances_configuration" {
       shape            = string           # the instance shape.
       name             = string           # the instance display name.
       platform_type    = optional(string) # the platform type. Assigning this variable enables various platform security features in the Compute service. Valid values: "AMD_MILAN_BM", "AMD_MILAN_BM_GPU", "AMD_ROME_BM", "AMD_ROME_BM_GPU", "AMD_VM", "GENERIC_BM", "INTEL_ICELAKE_BM", "INTEL_SKYLAKE_BM", "INTEL_VM".
+      cluster_id       = optional(string) # the Compute cluster the instance is added to. It can take either a literal cluster OCID or cluster key defined in the clusters_configuration variable.
       image = object({ # the base image. You must provider either the id or (name and publisher name).
         id = optional(string) # the base image id for creating the instance. It takes precedence over name and publisher_name.
         name = optional(string) # the image name to search for in marketplace.
@@ -90,6 +93,10 @@ variable "instances_configuration" {
           name = string # the plugin name. It must be a valid plugin name. The plugin names are available in https://docs.oracle.com/en-us/iaas/Content/Compute/Tasks/manage-plugins.htm and in compute-only example(./examples/compute-only/input.auto.tfvars.template) as well.
           enabled = bool #Whether or not the plugin should be enabled. In order to disable a previously enabled plugin, set this value to false. Simply removing the plugin from the list will not disable it.
         })))
+      }))
+      cloud_init = optional(object({
+        heredoc_script = optional(string) # the cloud-init script in Terraform heredoc style that is applied to the instance. It has precedence over script_file.
+        script_file = optional(string)    # the cloud-init script file that is applied to the instance.    
       }))
       ssh_public_key_path = optional(string) # the SSH public key path used to access the instance.
       defined_tags        = optional(map(string)) # instances defined_tags. default_defined_tags is used if this is not defined.
@@ -190,6 +197,69 @@ variable "storage_configuration" {
   default = null
 }
 
+variable "clusters_configuration" {
+  description = "Clusters configuration attributes."
+  type = object({
+    default_compartment_id         = optional(string),      # the default compartment where all resources are defined. It's overriden by the compartment_ocid attribute within each object.
+    default_defined_tags           = optional(map(string)), # the default defined tags. It's overriden by the defined_tags attribute within each object.
+    default_freeform_tags          = optional(map(string)), # the default freeform tags. It's overriden by the freeform_tags attribute within each object.
+
+    clusters = map(object({                         # the clusters to manage in this configuration.
+      type                 = optional(string)       # the cluster type. Valid values: "cluster_network", "compute_cluster". Default is "cluster_network".
+      compartment_id       = optional(string)       # the compartment where the cluster is created. default_compartment_ocid is used if this is not defined.
+      availability_domain  = optional(number)       # the availability domain for cluster instances. Default is 1.
+      name                 = string                 # the cluster display name.
+      defined_tags         = optional(map(string))  # clusters defined_tags. default_defined_tags is used if this is not defined.
+      freeform_tags        = optional(map(string))  # clusters freeform_tags. default_freeform_tags is used if this is not defined.
+      cluster_network_settings = optional(object({  # cluster network settings. Only applicable if type is "cluster_network".
+        instance_configuration_id = string          # the instance configuration id to use in this cluster.
+        instance_pool = optional(object({           # Cluster instance pool settings.
+          name  = optional(string)                  # The instance pool name.
+          size  = optional(number)                  # The number of instances in the instance pool. Defauls is 1.
+        }))
+        networking = object({
+          subnet_id = string                          # The subnet where instances primary VNIC is placed.
+          ipv6_enable = optional(bool)                # Whether IPv6 is enabled for instances primary VNIC. Default is false.
+          ipv6_subnet_cidrs = optional(list(string))  # A list of IPv6 subnet CIDR ranges from which the primary VNIC is assigned an IPv6 address. Only applicable if ipv6_enable for primary VNIC is true. Default is [].
+          secondary_vnic_settings = optional(object({ # Secondary VNIC settings
+            subnet_id = string                        # The subnet where instances secondary VNIC are created.
+            name = optional(string)                   # The secondary VNIC name.
+            ipv6_enable = optional(bool)              # Whether IPv6 is enabled for the secondary VNIC. Default is false.
+            ipv6_subnet_cidrs = optional(list(string)) # A list of IPv6 subnet CIDR ranges from which the secondary VNIC is assigned an IPv6 address. Only applicable if ipv6_enable for secondary VNIC is true. Default is [].
+          }))
+        })  
+      }))  
+    }))
+  })
+  default = null
+}
+
+variable "cluster_instances_configuration" {
+  description = "Cluster instances configuration attributes"
+  type = object({
+    default_compartment_id      = optional(string)       # the default compartment where all resources are defined. It's overriden by the compartment_ocid attribute within each object.
+    default_defined_tags        = optional(map(string)), # the default defined tags. It's overriden by the defined_tags attribute within each object.
+    default_freeform_tags       = optional(map(string)), # the default freeform tags. It's overriden by the freeform_tags attribute within each object.
+    #default_ssh_public_key_path = optional(string)       # the default SSH public key path used to access the workers.
+    #default_kms_key_id          = optional(string)       # the default KMS key to assign as the master encryption key. It's overriden by the kms_key_id attribute within each object.
+    configurations = map(object({                         # the instance configurations to manage in this configuration.
+      compartment_id       = optional(string)  # the compartment where the instance configuration is created. default_compartment_id is used if this is not defined.
+      name                 = optional(string)  # the instance configuration display name.
+      instance_type        = optional(string)  # the instance type. Default is "compute".
+      # instance_details     = optional(object({ # The instance details to use as the configuration template. If provided, an instance is created and used as template for all instances in the cluster instance pool.
+      #   shape          = optional(string)      # the instance shape. Default is "BM.Optimized3.36".
+      #   source_type    = optional(string)
+      #   image_id       = optional(string) # the image id used to boot the instance.
+      #   compartment_id = optional(string) # the instance compartment. It defaults to the configuration compartment_id if undefined.
+      # }))
+      template_instance_id = optional(string)       # the existing instance id to use as the configuration template for all instances in the cluster instance pool.
+      defined_tags         = optional(map(string))  # instance configuration defined_tags. default_defined_tags is used if this is not defined.
+      freeform_tags        = optional(map(string))  # instance configuration freeform_tags. default_freeform_tags is used if this is not defined.
+    }))
+  })
+  default = null
+}
+
 variable "enable_output" {
   description = "Whether Terraform should enable the module output."
   type        = bool
@@ -202,33 +272,49 @@ variable "module_name" {
   default     = "cis-compute-storage"
 }
 
-variable compartments_dependency {
+variable "compartments_dependency" {
   description = "A map of objects containing the externally managed compartments this module may depend on. All map objects must have the same type and must contain at least an 'id' attribute (representing the compartment OCID) of string type." 
-  type = map(any)
+  type = map(object({
+    id = string # the compartment OCID
+  }))
   default = null
 }
 
-variable network_dependency {
-  description = "A map of objects containing the externally managed network resources this module may depend on. All map objects must have the same type and must contain at least an 'id' attribute (representing the network resource OCID) of string type." 
-  type = map(any)
+variable "network_dependency" {
+  description = "An object containing the externally managed network resources this module may depend on. Supported resources are 'subnets', and 'network_security_groups', represented as map of objects. Each object, when defined, must have an 'id' attribute of string type set with the subnet or NSG OCID."
+  type = object({
+    subnets = optional(map(object({
+      id = string # the subnet OCID
+    })))
+    network_security_groups = optional(map(object({
+      id = string # the NSG OCID
+    })))
+  })
   default = null
 }
 
-variable kms_dependency {
+variable "kms_dependency" {
   description = "A map of objects containing the externally managed encryption keys this module may depend on. All map objects must have the same type and must contain at least an 'id' attribute (representing the key OCID) of string type." 
-  type = map(any)
+  type = map(object({
+    id = string # the key OCID.
+  }))
   default = null
 }
 
-variable instances_dependency {
-  description = "A map of objects containing the externally managed Compute instances this module may depend on. All map objects must have the same type and must contain at least an 'id' attribute (representing the instance OCID) of string type." 
-  type = map(any)
+variable "instances_dependency" {
+  description = "A map of objects containing the externally managed Compute instances this module may depend on. The objects, when defined, must contain at least an 'id' attribute (representing the instance OCID) of string type." 
+  type = map(object({
+    id = string # the instance OCID
+  }))
   default = null
 }
 
-variable file_system_dependency {
+
+variable "file_system_dependency" {
   description = "A map of objects containing the externally managed file storage resources this module may depend on. This is used when setting file system replication using target file systems managed in another Terraform configuration. All map objects must have the same type and must contain at least an 'id' attribute (representing the file system OCID) of string type." 
-  type = map(any)
+  type = map(object({
+    id = string # the file system OCID.
+  }))
   default = null
 }
 
