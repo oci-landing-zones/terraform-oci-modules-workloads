@@ -69,6 +69,15 @@ instances_configuration = {
           {name = "Bastion", enabled = true}
         ]
       }
+      cloud_init = {
+        script_file = "./cloud-init.yaml"
+## Comment the line above and uncomment the following five lines if you want provide the script inlined in heredoc style.        
+#         heredoc_script = <<YAML
+# #cloud-config
+# runcmd:
+#   - echo 'This instance was provisioned by Terraform.' >> /etc/motd
+# YAML
+      }        
     }
     INSTANCE-2 = { # Shielded instance, per platform_type and boot_volume.measured_boot settings.
       shape = "VM.Standard.E4.Flex"
