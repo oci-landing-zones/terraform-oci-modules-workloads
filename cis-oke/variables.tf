@@ -179,21 +179,35 @@ variable "module_name" {
 }
 
 variable "compartments_dependency" {
-  description = "A map of objects containing the externally managed compartments this module may depend on. All map objects must have the same type and must contain at least an 'id' attribute (representing the compartment OCID) of string type."
-  type        = map(any)
-  default     = null
+  description = "A map of objects containing the externally managed compartments this module may depend on. All map objects must have the same type and must contain at least an 'id' attribute (representing the compartment OCID) of string type." 
+  type = map(object({
+    id = string # the compartment OCID
+  }))
+  default = null
 }
 
 variable "network_dependency" {
-  description = "A map of objects containing the externally managed network resources this module may depend on. All map objects must have the same type and must contain at least an 'id' attribute (representing the network resource OCID) of string type."
-  type        = map(any)
-  default     = null
+  description = "An object containing the externally managed network resources this module may depend on. Supported resources are 'vcns', 'subnets', and 'network_security_groups', represented as map of objects. Each object, when defined, must have an 'id' attribute of string type set with the VCN, subnet, or NSG OCID."
+  type = object({
+    vcns = optional(map(object({
+      id = string # the VCN OCID
+    })))
+    subnets = optional(map(object({
+      id = string # the subnet OCID
+    })))
+    network_security_groups = optional(map(object({
+      id = string # the NSG OCID
+    })))
+  })
+  default = null
 }
 
 variable "kms_dependency" {
-  description = "A map of objects containing the externally managed encryption keys this module may depend on. All map objects must have the same type and must contain at least an 'id' attribute (representing the key OCID) of string type."
-  type        = map(any)
-  default     = null
+  description = "A map of objects containing the externally managed encryption keys this module may depend on. All map objects must have the same type and must contain at least an 'id' attribute (representing the key OCID) of string type." 
+  type = map(object({
+    id = string # the key OCID.
+  }))
+  default = null
 }
 
 

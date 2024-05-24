@@ -4,14 +4,14 @@
 
 This example shows how to deploy OKE clusters and node pools in OCI using the [cis-oke module](https://github.com/oracle-quickstart/terraform-oci-secure-workloads/tree/main/cis-oke). It deploys one Flannel-based basic OKE Cluster, one node pool, one Bastion service endpoint, one Bastion session, and one Compute instance with the characteristics described below. 
 
-Once the cluster is provisioned, cluster access is automatically enabled from the provisioned Compute instance, which is accessible via the OCI Bastion service endpoint. We refer to this Compute instance as the OKE operator host.
+Once the cluster is provisioned, cluster access is automatically enabled from the provisioned Compute instance, which is accessible via the OCI Bastion service endpoint. We refer to this Compute instance as the Operator host.
 
 ### Pre-Requisites
 
 #### Networking
 The OKE cluster and the node pool depend on a pre existing Virtual Cloud Network (VCN). A VCN built specifically for this deployment is available in [flannel network example](https://github.com/oracle-quickstart/terraform-oci-cis-landing-zone-networking/tree/main/examples/oke-examples/flannel).
 
-Additionally, the operator host requires an instance principal credential properly authorized for managing the OKE cluster. That means a dynamic group and a policy are required.
+Additionally, the Operator host requires an instance principal credential properly authorized for managing the OKE cluster. That means a dynamic group and a policy are required.
 
 #### IAM Dynamic Group and Policy
 ##### Dynamic Group Matching Rule
@@ -43,18 +43,19 @@ Node pool (NODEPOOL1):
 - node has 16 GB memory and 1 OCPU by default;
 - node boot volume size is 60GB and is terminated when the node is destroyed.
 
-Compute instance (INSTANCE-1), a.k.a. operator host:
+Compute instance (INSTANCE-1), a.k.a. Operator host:
 - based on "VM.Standard.E4.Flex" shape, as defined by the *shape* attribute.
-- based on the "Oracle-Linux-Cloud-Developer-8.7-2023.04.28-1" platform image, as defined by *image.id* attribute. Use the [platform-images module](https://github.com/oracle-quickstart/terraform-oci-secure-workloads/tree/main/platform-images) to find Platform images information based on a search filter.
+- based on the "Oracle-Linux-Cloud-Developer-8.7-2023.04.28-1" platform image, as defined by *image.id* attribute. 
+   - Either use the [platform-images module](https://github.com/oracle-quickstart/terraform-oci-secure-workloads/tree/main/platform-images) to find Platform images information based on a search filter or search for the region-specific image OCID in [All Image Families](https://docs.oracle.com/en-us/iaas/images/).
 - it does **not** have the boot volume preserved on termination, as defined by *boot_volume.preserve_on_instance_deletion* attribute.
 - the boot volume is set to be backed up per Oracle-managed *bronze* backup policy (enforced by the module by default).
 - the instance enables the Cloud Agent Bastion plugin, enabling it to accept SSH connections from OCI Bastion service.
 
 Bastion Service endpoint (BASTION-1):
-- created in the same subnet as the Compute Instance.
+- created in the same subnet as the Operator host.
 
 Bastion session (SESSION-1):
-- of **MANAGED_SSH** type, allowing SSH connectivity to the operator host.
+- of **MANAGED_SSH** type, allowing SSH connectivity to the Operator host.
 
 See [input.auto.tfvars.template](./input.auto.tfvars.template) for the variables configuration.
 
@@ -75,34 +76,42 @@ terraform apply plan.out
 
 ## Accessing the Cluster
 
-Managing Kubernetes applications in OCI includes the ability to invoke OKE API endpoint and SSH'ing into Worker nodes. 
-Invoking the OKE API endpoint and accessing Worker nodes differs depending on whether they are in a private or public subnet. This example assumes the API endpoint and worker nodes are in private subnets and are invoked/accessed via an OCI Bastion Service endpoint that is deployed in the *access* subnet, which is also private. This Compute instance (operator host) is accessed via an OCI Bastion service endpoint also deployed in the *access* subnet.
+Managing Kubernetes applications in OCI includes the ability to invoke OKE API endpoint and SSH'ing into worker nodes. 
+Invoking the OKE API endpoint and accessing worker nodes differs depending on whether they are in a private or public subnet. This example assumes the API endpoint and worker nodes are in private subnets and are invoked/accessed from the Operator host, which is reachable via the OCI Bastion service.
 
-The code automatically connects to the operator host using the Bastion service session to configure the *kubeconfig* file, install *kubectl* tool and set the instance with instance principal authentication.
+The code automatically connects to the Operator host using the Bastion service session to configure the *kubeconfig* file, install *kubectl* tool and set the instance with instance principal authentication.
 
-For connecting to the operator host, execute the command provided in the **sessions** output, that would look like:
+For connecting to the Operator host, execute the command provided in the **sessions** output, that would look like:
 ```
 ssh -i <private-key> -o ProxyCommand='ssh -i <private-key> -W %h:%p -p 22 ocid1.bastionsession.XXXXXXXX@host.bastion.<region>oci.oraclecloud.com' -p 22 opc@<operator-host-ip-address>
 ```
 
 ### Accessing OKE API Endpoint
 
-One connected to the operator host, use *kubectl* tool to manage your OKE applications. As an example, you can try deploying a sample application, checking and deleting it: 
+One connected to the Operator host, use *kubectl* tool to manage your OKE applications. As an example, you can try deploying a sample application, checking and deleting it: 
 ```
 > kubectl create -f https://k8s.io/examples/application/deployment.yaml
 > kubectl get deployments
 > kubectl delete -f https://k8s.io/examples/application/deployment.yaml
 ```
 
-### SSH'ing to Worker Nodes
+If for some reason *kubectl* does not get installed, once connected to the host, execute the [install_kubectl.sh](./install_kubectl.sh) script manually.
 
-This can done via the operator host:
+After installing *kubectl*, if you can't get access to the cluster, confirm there is a *config* file under *$HOME/.kube*. Otherwise, manually create *kubeconfig* file, by executing:
+```
+oci ce cluster create-kubeconfig --cluster-id <CLUSTER-OCID> --file $HOME/.kube/config --region <REGION-NAME> --token-version 2.0.0  --kube-endpoint PRIVATE_ENDPOINT
+```
+**Note**: the command above can be obtained in OCI Console, navigating to the "Quick Start" link within the OKE cluster.
 
-1. Make the SSH private key that matches the SSH public key in the worker node available in the operator host. If the private key is available in your local machine, it can be copied to the operator host like:
+### Connecting to Worker Nodes via SSH
+
+This is done from the Operator host:
+
+1. Make the SSH private key that matches the SSH public key in the worker node available in the Operator host. If the private key is available in your local machine, it can be copied to the Operator host like:
 ```
 scp -J ocid1.bastionsession.XXXXXXXX@host.bastion.<region>oci.oraclecloud.com <private-key> opc@<operator-host-ip-address>:<private-key>
 ```
-2. Connect to the operator host using the SSH command in the **sessions** output:
+2. Connect to the Operator host using the SSH command in the **sessions** output:
 ```
 ssh -i <private-key> -o ProxyCommand='ssh -i <private-key> -W %h:%p -p 22 ocid1.bastionsession.XXXXXXXX@host.bastion.<region>oci.oraclecloud.com' -p 22 opc@<operator-host-ip-address>
 ```
@@ -115,4 +124,11 @@ chmod 600 <private-key>
 ssh -i <private-key> opc@<worker-node-ip-address>
 ```
 
-Optionally, you can manually create a Bastion endpoint for the worker node subnet and a session for the worker node, bypassing the operator host altogether.
+Optionally, you can manually create a managed SSH session for the worker node in the provisioned OCI Bastion service, bypassing the Operator host altogether.
+
+1. Using the Console, enable the Cloud Agent Bastion plugin in the worker node.
+2. Using the Console, create a managed SSH session for the worker node in the provisioned OCI Bastion service.
+3. Connect to worker node using the SSH command provided for the managed SSH session. The command looks like:
+```
+ssh -o ProxyCommand="ssh -W %h:%p -p 22 ocid1.bastionsession.XXXXXXXXX@host.bastion.us-phoenix-1.oci.oraclecloud.com" -p 22 opc@<worker-node-ip-address>
+```

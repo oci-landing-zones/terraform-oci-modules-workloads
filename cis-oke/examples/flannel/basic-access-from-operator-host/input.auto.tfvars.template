@@ -1,4 +1,4 @@
-# Copyright (c) 2023 Oracle and/or its affiliates.
+# Copyright (c) 2024 Oracle and/or its affiliates.
 # Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
 #--------------------------------------------------------------------------------------------------------------------------------------
@@ -18,6 +18,7 @@
 # private_key_password = ""                          # This is the password that protects the private key, if any.
 # region               = "<your tenancy region>"     # The region name.
 
+
 #---------------------------------------
 # Input variable
 #---------------------------------------
@@ -26,11 +27,9 @@ clusters_configuration = {
   default_compartment_id = "<REPLACE-BY-COMPARTMENT-OCID>"
   clusters = {
     OKE1 = {
-      name        = "oke-npn-cluster"
-      cni_type    = "native"
-      is_enhanced = false
+      name = "<REPLACE-BY-CLUSTER-NAME>"
       networking = {
-        vcn_id             = "<REPLACE-BY-VCN-OCID>"
+        vcn_id                 = "<REPLACE-BY-VCN-OCID>"
         api_endpoint_subnet_id = "<REPLACE-BY-API-ENDPOINT-SUBNET-OCID>"
         services_subnet_id     = ["<REPLACE-BY-SERVICES-SUBNET-OCID>"]
         api_endpoint_nsg_ids   = ["<REPLACE-BY-API-ENDPOINT-NSG-OCIDS>"]
@@ -44,32 +43,16 @@ workers_configuration = {
   node_pools = {
     NODEPOOL1 = {
       cluster_id = "OKE1"
-      name       = "node-pool"
+      name       = "<REPLACE-BY-NODE_POOL-NAME>"
       size       = 1
       networking = {
         workers_subnet_id = "<REPLACE-BY-WORKERS-SUBNET-OCID>"
-        pods_subnet_id    = "<REPLACE-BY-PODS-SUBNET-OCID>"
         workers_nsg_ids   = ["<REPLACE-BY-WORKERS-NSG-OCID>"]
-        pods_nsg_ids      = ["<REPLACE-BY-PODS-NSG-OCID>"]
       }
       node_config_details = {
         node_shape = "VM.Standard.E4.Flex"
       }
     }
-    #  virtual_node_pools = {
-    #   VIRTUALPOOL1 = {
-    #     cluster_id = "OKE1"
-    #     name       = "virtual-node-pool"
-    #     pod_shape = "Pod.Standard.E4.Flex"
-    #     size       = 1
-    #     networking = {
-    #       workers_subnet_id = "<REPLACE-BY-WORKERS-SUBNET-OCID>"
-    #       pods_subnet_id    = "<REPLACE-BY-PODS-SUBNET-OCID>"  
-    #       workers_nsg_ids   = ["<REPLACE-BY-WORKERS-NSG-OCID>"]
-    #       pods_nsg_ids      = ["<REPLACE-BY-PODS-NSG-OCID>"]
-    #     }
-    #   }
-    #  }
   }
 }
 
@@ -91,27 +74,13 @@ instances_configuration = {
       }
       networking = {
         hostname                = "oke-operator-instance"
-        network_security_groups = ["<REPLACE-BY-MGMG-NSG-OCID>"]
+        network_security_groups = ["<REPLACE-BY-MGMT-NSG-OCID>"]
       }
       image = {
         id = "<REPLACE-BY-PLATFORM-IMAGE-OCID>" # As an example, you can use "Oracle-Linux-Cloud-Developer-8.7-2023.04.28-1" platform image, but you need its OCID, that is region-specific. Either use the https://github.com/oracle-quickstart/terraform-oci-secure-workloads/tree/main/platform-images to find platform images information based on a search filter or search for the region-specific image OCID in https://docs.oracle.com/en-us/iaas/images/.
       }
       cloud_agent = {
-        #disable_monitoring = true
-        #disable_management = true
         plugins = [
-          { name = "Vulnerability Scanning", enabled = true },
-          { name = "Oracle Java Management Service", enabled = false },
-          { name = "Oracle Autonomous Linux", enabled = false },
-          { name = "Management Agent", enabled = true },
-          { name = "OS Management Service Agent", enabled = true }, # management plugin, impacted by disable_management attribute if not set.
-          { name = "Custom Logs Monitoring", enabled = true },      # monitoring plugin, impacted by disable_monitoring attribute if not set.
-          { name = "Compute RDMA GPU Monitoring", enabled = false },
-          { name = "Compute Instance Run Command", enabled = true }, # management plugin, impacted by disable_management attribute if not set.
-          { name = "Compute Instance Monitoring", enabled = true },  # monitoring plugin, impacted by disable_monitoring attribute if not set.
-          { name = "Compute HPC RDMA Auto-Configuration", enabled = false },
-          { name = "Compute HPC RDMA Authentication", enabled = false },
-          { name = "Block Volume Management", enabled = false },
           { name = "Bastion", enabled = true }
         ]
       }
@@ -144,3 +113,5 @@ sessions_configuration = {
     }
   }
 }
+
+ssh_private_key = "<REPLACE-BY-SSH-PRIVATE-KEY-PATH>" # Used for generating the command for managed ssh. The private key contents aren't sent anywhere.

@@ -27,12 +27,12 @@ clusters_configuration = {
   default_compartment_id = "<REPLACE-BY-COMPARTMENT-OCID>"
   clusters = {
     OKE1 = {
-      name     = "<REPLACE-BY-CLUSTER-NAME>"
+      name     = "oke-flannel-cluster"
       networking = {
         vcn_id                 = "<REPLACE-BY-VCN-OCID>"
-        api_endpoint_nsg_ids   = ["<REPLACE-BY-NSG-IDS>"]
-        api_endpoint_subnet_id = "<REPLACE-BY-ENDPOINT-SUBNET-OCID>"
+        api_endpoint_subnet_id = "<REPLACE-BY-API-ENDPOINT-SUBNET-OCID>"
         services_subnet_id     = ["<REPLACE-BY-SERVICES-SUBNET-OCID>"]
+        api_endpoint_nsg_ids   = ["<REPLACE-BY-API-ENDPOINT-NSG-OCIDS>"]
       }
     }
   }
@@ -43,11 +43,11 @@ workers_configuration = {
   node_pools = {
     NODEPOOL1 = {
       cluster_id = "OKE1"
-      name       = "<REPLACE-BY-NODE_POOL-NAME>"
-      size       = 3
+      name       = "node-pool"
+      size       = 1
       networking = {
-        workers_nsg_ids   = ["<REPLACE-BY-NODES-NSG-OCID>"]
-        workers_subnet_id = "<REPLACE-BY-WORKER-SUBNET-OCID>"
+        workers_subnet_id = "<REPLACE-BY-WORKERS-SUBNET-OCID>"
+        workers_nsg_ids   = ["<REPLACE-BY-WORKERS-NSG-OCID>"]
       }
       node_config_details = {
         node_shape = "VM.Standard.E4.Flex"

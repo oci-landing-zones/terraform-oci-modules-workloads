@@ -20,7 +20,7 @@ variable "instances_configuration" {
       shape            = string           # the instance shape.
       name             = string           # the instance display name.
       platform_type    = optional(string) # the platform type. Assigning this variable enables various platform security features in the Compute service. Valid values: "AMD_MILAN_BM", "AMD_MILAN_BM_GPU", "AMD_ROME_BM", "AMD_ROME_BM_GPU", "AMD_VM", "GENERIC_BM", "INTEL_ICELAKE_BM", "INTEL_SKYLAKE_BM", "INTEL_VM".
-      cluster_id       = optional(string) # the cluster id this instance should be added to.
+      cluster_id       = optional(string) # the Compute cluster the instance is added to. It can take either a literal cluster OCID or cluster key defined in the clusters_configuration variable.
       image = object({ # the base image. You must provider either the id or (name and publisher name).
         id = optional(string) # the base image id for creating the instance. It takes precedence over name and publisher_name.
         name = optional(string) # the image name to search for in marketplace.
@@ -201,7 +201,6 @@ variable "clusters_configuration" {
   description = "Clusters configuration attributes."
   type = object({
     default_compartment_id         = optional(string),      # the default compartment where all resources are defined. It's overriden by the compartment_ocid attribute within each object.
-    default_cis_level              = optional(string)       # The CIS OCI Benchmark profile level. Level "1" is be practical and prudent. Level "2" is intended for environments where security is more critical than manageability and usability. Default is "1".
     default_defined_tags           = optional(map(string)), # the default defined tags. It's overriden by the defined_tags attribute within each object.
     default_freeform_tags          = optional(map(string)), # the default freeform tags. It's overriden by the freeform_tags attribute within each object.
 
@@ -238,24 +237,21 @@ variable "clusters_configuration" {
 variable "cluster_instances_configuration" {
   description = "Cluster instances configuration attributes"
   type = object({
-    #defaults
-    default_cis_level           = optional(string)       # the CIS OCI Benchmark profile level. Level "1" is be practical and prudent. Level "2" is intended for environments where security is more critical than manageability and usability. Default is "1".
     default_compartment_id      = optional(string)       # the default compartment where all resources are defined. It's overriden by the compartment_ocid attribute within each object.
     default_defined_tags        = optional(map(string)), # the default defined tags. It's overriden by the defined_tags attribute within each object.
     default_freeform_tags       = optional(map(string)), # the default freeform tags. It's overriden by the freeform_tags attribute within each object.
     #default_ssh_public_key_path = optional(string)       # the default SSH public key path used to access the workers.
     #default_kms_key_id          = optional(string)       # the default KMS key to assign as the master encryption key. It's overriden by the kms_key_id attribute within each object.
     configurations = map(object({                         # the instance configurations to manage in this configuration.
-      cis_level            = optional(string)
       compartment_id       = optional(string)  # the compartment where the instance configuration is created. default_compartment_id is used if this is not defined.
       name                 = optional(string)  # the instance configuration display name.
       instance_type        = optional(string)  # the instance type. Default is "compute".
-      instance_details     = optional(object({ # The instance details to use as the configuration template. If provided, an instance is created and used as template for all instances in the cluster instance pool.
-        shape          = optional(string)      # the instance shape. Default is "BM.Optimized3.36".
-        source_type    = optional(string)
-        image_id       = optional(string) # the image id used to boot the instance.
-        compartment_id = optional(string) # the instance compartment. It defaults to the configuration compartment_id if undefined.
-      }))
+      # instance_details     = optional(object({ # The instance details to use as the configuration template. If provided, an instance is created and used as template for all instances in the cluster instance pool.
+      #   shape          = optional(string)      # the instance shape. Default is "BM.Optimized3.36".
+      #   source_type    = optional(string)
+      #   image_id       = optional(string) # the image id used to boot the instance.
+      #   compartment_id = optional(string) # the instance compartment. It defaults to the configuration compartment_id if undefined.
+      # }))
       template_instance_id = optional(string)       # the existing instance id to use as the configuration template for all instances in the cluster instance pool.
       defined_tags         = optional(map(string))  # instance configuration defined_tags. default_defined_tags is used if this is not defined.
       freeform_tags        = optional(map(string))  # instance configuration freeform_tags. default_freeform_tags is used if this is not defined.
@@ -276,33 +272,49 @@ variable "module_name" {
   default     = "cis-compute-storage"
 }
 
-variable compartments_dependency {
+variable "compartments_dependency" {
   description = "A map of objects containing the externally managed compartments this module may depend on. All map objects must have the same type and must contain at least an 'id' attribute (representing the compartment OCID) of string type." 
-  type = map(any)
+  type = map(object({
+    id = string # the compartment OCID
+  }))
   default = null
 }
 
-variable network_dependency {
-  description = "A map of objects containing the externally managed network resources this module may depend on. All map objects must have the same type and must contain at least an 'id' attribute (representing the network resource OCID) of string type." 
-  type = map(any)
+variable "network_dependency" {
+  description = "An object containing the externally managed network resources this module may depend on. Supported resources are 'subnets', and 'network_security_groups', represented as map of objects. Each object, when defined, must have an 'id' attribute of string type set with the subnet or NSG OCID."
+  type = object({
+    subnets = optional(map(object({
+      id = string # the subnet OCID
+    })))
+    network_security_groups = optional(map(object({
+      id = string # the NSG OCID
+    })))
+  })
   default = null
 }
 
-variable kms_dependency {
+variable "kms_dependency" {
   description = "A map of objects containing the externally managed encryption keys this module may depend on. All map objects must have the same type and must contain at least an 'id' attribute (representing the key OCID) of string type." 
-  type = map(any)
+  type = map(object({
+    id = string # the key OCID.
+  }))
   default = null
 }
 
-variable instances_dependency {
-  description = "A map of objects containing the externally managed Compute instances this module may depend on. All map objects must have the same type and must contain at least an 'id' attribute (representing the instance OCID) of string type." 
-  type = map(any)
+variable "instances_dependency" {
+  description = "A map of objects containing the externally managed Compute instances this module may depend on. The objects, when defined, must contain at least an 'id' attribute (representing the instance OCID) of string type." 
+  type = map(object({
+    id = string # the instance OCID
+  }))
   default = null
 }
 
-variable file_system_dependency {
+
+variable "file_system_dependency" {
   description = "A map of objects containing the externally managed file storage resources this module may depend on. This is used when setting file system replication using target file systems managed in another Terraform configuration. All map objects must have the same type and must contain at least an 'id' attribute (representing the file system OCID) of string type." 
-  type = map(any)
+  type = map(object({
+    id = string # the file system OCID.
+  }))
   default = null
 }
 

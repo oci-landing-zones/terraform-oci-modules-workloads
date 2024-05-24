@@ -1,0 +1,90 @@
+# Copyright (c) 2023 Oracle and/or its affiliates.
+# Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
+
+#--------------------------------------------------------------------------------------------------------------------------------------
+# 1. Rename this file to <project-name>.auto.tfvars, where <project-name> is a name of your choice.
+# 2. Provide values for "Tenancy Connectivity Variables".
+# 3. Replace <REPLACE-WITH-*> placeholders with appropriate values.
+#--------------------------------------------------------------------------------------------------------------------------------------
+
+#---------------------------------------
+# Tenancy Connectivity Variables
+#---------------------------------------
+
+tenancy_ocid         = "<tenancy OCID>"            # Get this from OCI Console (after logging in, go to top-right-most menu item and click option "Tenancy: <your tenancy name>").
+user_ocid            = "<user OCID>"               # Get this from OCI Console (after logging in, go to top-right-most menu item and click option "My profile").
+fingerprint          = "<PEM key fingerprint>"     # The fingerprint can be gathered from your user account. In the "My profile page, click "API keys" on the menu in left hand side.
+private_key_path     = "<path to the private key>" # This is the full path on your local system to the API signing private key.
+private_key_password = ""                          # This is the password that protects the private key, if any.
+region               = "<your tenancy region>"     # The region name.
+
+#---------------------------------------
+# Input variables
+#---------------------------------------
+
+# This variable defines the RDMA clusters configuration. 
+# The clusters attribute allows for the definition of an arbitrary number of clusters.
+clusters_configuration = {
+  default_compartment_id = "<REPLACE-WITH-CLUSTER-COMPARTMENT-OCID>"
+  clusters = {
+    "CLUSTER-NETWORK" = {
+      name = "basic-cluster-network"
+      type = "cluster_network"
+      availability_domain = 2
+      cluster_network_settings = {
+        instance_configuration_id = "INSTANCE-CONFIG"
+        instance_pool = {
+          size = 1
+        }
+        networking = {
+          subnet_id = "<REPLACE-WITH-CLUSTER-SUBNET-OCID>"
+          ipv6_enable = true
+        }
+      }
+    }  
+  }
+}
+
+# This variable defines the instances configuration that clusters are built on.
+# The configurations attribute allows for the definition of an arbitrary number of configurations.
+# Each configuration must provide a template_instance_id attribute, which value must be the key of a Compute instance within the instances_configuration variable above.
+cluster_instances_configuration = {
+  default_compartment_id = "<REPLACE-WITH-CLUSTER-COMPARTMENT-OCID>"
+  configurations = {
+    INSTANCE-CONFIG = {
+      name = "cluster-instance-configuration"
+      template_instance_id = "CLUSTER-NETWORK-INSTANCE" 
+    }
+  }
+}
+
+# This variable defines the Compute instances used as templates for the cluster.
+# The instances attribute allows for the definition of an arbitrary number on Compute instances.
+# Cluster networks require that Compute instance shapes is one of: "BM.Optimized3.36", "BM.HPC2.36", "BM.GPU.A100-v2.8", "BM.GPU4.8"
+instances_configuration = {
+  default_compartment_id = "<REPLACE-WITH-INSTANCE-COMPARTMENT-OCID>" 
+  default_subnet_id = "<REPLACE-WITH-INSTANCE-SUBNET-OCID>" 
+  default_ssh_public_key_path = "~/.ssh/id_rsa.pub"
+  instances = {
+    CLUSTER-NETWORK-INSTANCE = {
+      shape = "BM.Optimized3.36"
+      name  = "BM.Optimized3.36 Template Instance"
+      placement = {
+        availability_domain = 2
+        fault_domain = 2
+      }
+      boot_volume = {
+        size = 120
+        preserve_on_instance_deletion = false
+      }
+      networking = {
+        hostname  = "bm-optimized336-template-instance"
+        network_security_groups = ["<REPLACE-WITH-INSTANCE-NSG-OCID>"]
+      }
+      image = {
+        name = "Oracle Linux 7 STIG" # Marketplace image
+        publisher_name = "Oracle Linux"
+      }
+    }
+  }
+}

@@ -38,3 +38,13 @@ output "file_systems_mount_targets" {
 output "file_systems_snapshot_policies" {
   value       = var.enable_output ? oci_file_storage_filesystem_snapshot_policy.these : null
 }
+
+output "cluster_networks" {
+  description = "The cluster networks."
+  value       = var.enable_output ? oci_core_cluster_network.these : null
+}
+
+output "compute_clusters" {
+  description = "The Compute clusters."
+  value       = var.enable_output ? oci_core_compute_cluster.these : null
+}

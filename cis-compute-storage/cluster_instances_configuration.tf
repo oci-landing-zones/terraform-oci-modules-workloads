@@ -31,12 +31,12 @@ resource "oci_core_instance_configuration" "these" {
     compartment_id = each.value.compartment_id != null ? (length(regexall("^ocid1.*$", each.value.compartment_id)) > 0 ? each.value.compartment_id : var.compartments_dependency[each.value.compartment_id].id) : (length(regexall("^ocid1.*$", var.cluster_instances_configuration.default_compartment_id)) > 0 ? var.cluster_instances_configuration.default_compartment_id : var.compartments_dependency[var.cluster_instances_configuration.default_compartment_id].id)
 
     #Optional
-    display_name = each.value.name != null ? each.value.name : null
+    display_name = each.value.name
     defined_tags = each.value.defined_tags != null ? each.value.defined_tags : var.cluster_instances_configuration.default_defined_tags
     freeform_tags = each.value.freeform_tags != null ? each.value.freeform_tags : var.cluster_instances_configuration.default_freeform_tags
 
     # instance_id and source are relevant when the instance configuration is created based on a EXISTING instance (when instance_details attribute is not provided)
-    instance_id = each.value.instance_details == null ? (contains(keys(oci_core_instance.these),each.value.template_instance_id) ? oci_core_instance.these[each.value.template_instance_id].id : length(regexall("^ocid1.*$", each.value.template_instance_id)) > 0 ? each.value.template_instance_id : var.instances_dependency[each.value.template_instance_id].id) : null
+    instance_id = contains(keys(oci_core_instance.these),each.value.template_instance_id) ? oci_core_instance.these[each.value.template_instance_id].id : (length(regexall("^ocid1.*$", each.value.template_instance_id)) > 0 ? each.value.template_instance_id : var.instances_dependency[each.value.template_instance_id].id)
     source = each.value.template_instance_id != null ? "INSTANCE" : "NONE"
 
     ### instance_details {

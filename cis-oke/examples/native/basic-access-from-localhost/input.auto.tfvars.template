@@ -18,6 +18,7 @@
 # private_key_password = ""                          # This is the password that protects the private key, if any.
 # region               = "<your tenancy region>"     # The region name.
 
+
 #---------------------------------------
 # Input variable
 #---------------------------------------
@@ -30,7 +31,7 @@ clusters_configuration = {
       cni_type    = "native"
       is_enhanced = false
       networking = {
-        vcn_id             = "<REPLACE-BY-VCN-OCID>"
+        vcn_id                 = "<REPLACE-BY-VCN-OCID>"
         api_endpoint_subnet_id = "<REPLACE-BY-API-ENDPOINT-SUBNET-OCID>"
         services_subnet_id     = ["<REPLACE-BY-SERVICES-SUBNET-OCID>"]
         api_endpoint_nsg_ids   = ["<REPLACE-BY-API-ENDPOINT-NSG-OCIDS>"]
@@ -73,74 +74,93 @@ workers_configuration = {
   }
 }
 
-instances_configuration = {
-  default_compartment_id      = "<REPLACE-BY-COMPARTMENT-OCID>"
-  default_subnet_id           = "<REPLACE-BY-MGMT-SUBNET-OCID>"
-  default_ssh_public_key_path = "~/.ssh/id_rsa.pub"
-  instances = {
-    INSTANCE-1 = {
-      shape = "VM.Standard.E4.Flex"
-      name  = "OKE operator instance"
-      placement = {
-        availability_domain = 1
-        fault_domain        = 1
-      }
-      boot_volume = {
-        size                          = 120
-        preserve_on_instance_deletion = false
-      }
-      networking = {
-        hostname                = "oke-operator-instance"
-        network_security_groups = ["<REPLACE-BY-MGMG-NSG-OCID>"]
-      }
-      image = {
-        id = "<REPLACE-BY-PLATFORM-IMAGE-OCID>" # As an example, you can use "Oracle-Linux-Cloud-Developer-8.7-2023.04.28-1" platform image, but you need its OCID, that is region-specific. Either use the https://github.com/oracle-quickstart/terraform-oci-secure-workloads/tree/main/platform-images to find platform images information based on a search filter or search for the region-specific image OCID in https://docs.oracle.com/en-us/iaas/images/.
-      }
-      cloud_agent = {
-        #disable_monitoring = true
-        #disable_management = true
-        plugins = [
-          { name = "Vulnerability Scanning", enabled = true },
-          { name = "Oracle Java Management Service", enabled = false },
-          { name = "Oracle Autonomous Linux", enabled = false },
-          { name = "Management Agent", enabled = true },
-          { name = "OS Management Service Agent", enabled = true }, # management plugin, impacted by disable_management attribute if not set.
-          { name = "Custom Logs Monitoring", enabled = true },      # monitoring plugin, impacted by disable_monitoring attribute if not set.
-          { name = "Compute RDMA GPU Monitoring", enabled = false },
-          { name = "Compute Instance Run Command", enabled = true }, # management plugin, impacted by disable_management attribute if not set.
-          { name = "Compute Instance Monitoring", enabled = true },  # monitoring plugin, impacted by disable_monitoring attribute if not set.
-          { name = "Compute HPC RDMA Auto-Configuration", enabled = false },
-          { name = "Compute HPC RDMA Authentication", enabled = false },
-          { name = "Block Volume Management", enabled = false },
-          { name = "Bastion", enabled = true }
-        ]
-      }
-    }
-  }
-}
-
 bastions_configuration = {
-  bastions = {
-    BASTION-1 = {
-      bastion_type          = "STANDARD"
-      compartment_id        = "<REPLACE-BY-COMPARTMENT-OCID>"
-      subnet_id             = "<REPLACE-BY-MGMT-SUBNET-OCID>"
-      cidr_block_allow_list = ["<REPLACE-BY-CIDR-BLOCK>"] # Try to be as much specific as possible, and avoid entering "0.0.0.0/0".
-      name                  = "OkeFlannelBastionByTerraform"
+    bastions = { 
+      BASTION-1 = {
+        bastion_type          = "STANDARD"
+        compartment_id        = "<REPLACE-BY-COMPARTMENT-OCID>"
+        subnet_id             = "<REPLACE-BY-OKE-MGMT-SUBNET-OCID>"
+        cidr_block_allow_list = ["<REPLACE-BY-CIDR>"] # Try to be as much specific as possible, and avoid entering "0.0.0.0/0".
+        name                  = "OkeNpnBastionByTerraform"
     }
   }
 }
 
 sessions_configuration = {
-  sessions = {
-    SESSION-1 = {
-      bastion_id      = "BASTION-1"
-      ssh_public_key  = "<REPLACE-BY-SSH-PUBLIC-KEY-PATH>"
-      session_type    = "MANAGED_SSH"
-      target_user     = "opc"
-      target_resource = "INSTANCE-1"
-      target_port     = "22"
-      session_name    = "ManagedSSHByTerraform"
-    }
+    sessions = {
+      SESSION-1 = {
+        bastion_id      = "BASTION-1"
+        ssh_public_key  = "<REPLACE-BY-SSH-PUBLIC-KEY-PATH>"
+        session_type    = "PORT_FORWARDING"
+        target_resource = "OKE1"
+        target_port     = "6443"
+        session_name    = "PortForwardingByTerraform"
+      }
   }
 }
+
+###----------------------------------------------------------------------
+### Below a real assignment with OCIDs redacted.
+###----------------------------------------------------------------------
+
+#clusters_configuration = {
+#  default_compartment_id = "ocid1.compartment.oc1..aaaaaaaaa...w2q"
+#  clusters = {
+#    OKE1 = {
+#      name        = "oke-npn-cluster"
+#      cni_type    = "native"
+#      is_enhanced = false
+#      networking = {
+#        vcn_id                 = "ocid1.vcn.oc1.phx.amaaaaaa...h5q"
+#         api_endpoint_nsg_ids   = ["ocid1.networksecuritygroup.oc1.phx.aaaaaaaa...p5a"]
+#         api_endpoint_subnet_id = "ocid1.subnet.oc1.phx.aaaaaaaa...yxa"
+#         services_subnet_id     = ["ocid1.subnet.oc1.phx.aaaaaaaa...rfq"]
+#      }
+#    }
+#  }
+#}
+
+#workers_configuration = {
+#  default_ssh_public_key_path = "~/.ssh/id_rsa.pub"
+#  node_pools = {
+#    NODEPOOL1 = {
+#      cluster_id = "OKE1"
+#      name       = "node-pool"
+#      size       = 1
+#      networking = {
+#        workers_nsg_ids   = ["ocid1.networksecuritygroup.oc1.phx.aaaaaaaa...fyq"]
+#        workers_subnet_id = "ocid1.subnet.oc1.phx.aaaaaaaa...voa"
+#        pods_subnet_id    = "ocid1.subnet.oc1.phx.aaaaaaaa...c4q"
+#        pods_nsg_ids      = ["ocid1.networksecuritygroup.oc1.phx.aaaaaaaa...wdq"]
+#      }
+#      node_config_details = {
+#        node_shape = "VM.Standard.E4.Flex"
+#      }
+#    }
+#  }
+#}
+
+#bastions_configuration = {
+#    bastions = { 
+#      BASTION-1 = {
+#        bastion_type          = "STANDARD"
+#        compartment_id        = "ocid1.compartment.oc1..aaaaaaaa...qfa" 
+#        subnet_id             = "ocid1.subnet.oc1.phx.aaaaaaaa...uja"
+#        cidr_block_allow_list = ["999.9.99.999/32"]
+#        name                  = "OkeNpnBastionByTerraform"
+#    }
+#  }
+#}
+
+#sessions_configuration = {
+#    sessions = {
+#      PORT-FORWARDING-SESSION = {
+#        bastion_id      = "BASTION-1"
+#        ssh_public_key  = "~/.ssh/id_rsa.pub"
+#        session_type    = "PORT_FORWARDING"
+#        target_resource = "OKE1"
+#        target_port     = "6443"
+#        session_name    = "PortForwardingByTerraform"
+#      }
+# }
+#}

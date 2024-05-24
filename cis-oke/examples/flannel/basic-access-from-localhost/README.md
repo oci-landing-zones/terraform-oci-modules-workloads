@@ -2,7 +2,7 @@
 
 ## Introduction
 
-This example shows how to deploy OKE clusters and node pools in OCI using the [cis-oke module](https://github.com/oracle-quickstart/terraform-oci-secure-workloads/tree/main/cis-oke). It deploys one Flannel-based basic OKE Cluster, one node pool, one Bastion service endpoint and one Bastion session for application management with the characteristics described below. 
+This example shows how to deploy OKE clusters and node pools in OCI using the [cis-oke module](https://github.com/oracle-quickstart/terraform-oci-secure-workloads/tree/main/cis-oke). It deploys one Flannel-based basic OKE Cluster, one node pool, one Bastion service endpoint and one Bastion session for cluster management with the characteristics described below. 
 
 Once the cluster is provisioned, cluster access is automatically enabled from localhost via the OCI Bastion service endpoint.
 
@@ -64,7 +64,10 @@ To connect to the OKE API endpoint, in a terminal, execute the command provided 
 ssh -i ~/.ssh/id_rsa -N -L 6443:10.0.x.x:6443 -p 22 ocid1.bastionsession.oc1...@host.bastion.eu-frankfurt-1.oci.oraclecloud.com
 ```
 
-Following that, in another terminal, set the KUBECONFIG environment variable to the *kubeconfig* file that was created in the Terraform configuration folder. Example: ```export KUBECONFIG = <full-path-to-kubeconfig>```
+Following that, in another terminal, set the KUBECONFIG environment variable to the *kubeconfig* file that was created in the Terraform configuration folder. 
+```
+export KUBECONFIG = <full-path-to-kubeconfig>
+```
 
 You are now all set to use *kubectl* tool to manage your OKE applications. As an example, you can try deploying a sample application, checking and deleting it: 
 ```
@@ -73,6 +76,11 @@ You are now all set to use *kubectl* tool to manage your OKE applications. As an
 > kubectl delete -f https://k8s.io/examples/application/deployment.yaml
 ```
 
-### SSH'ing to Worker Nodes
+### Connecting to Worker Nodes with SSH
 
-Create a Bastion session in the provisioned OCI Bastion service for accessing specific worker nodes in the cluster.
+1. Using the Console, enable the Cloud Agent Bastion plugin in the worker node.
+2. Using the Console, create a managed SSH session for the worker node in the provisioned OCI Bastion service.
+3. Connect to worker node using the SSH command provided for the managed SSH session. The command looks like:
+```
+ssh -o ProxyCommand="ssh -W %h:%p -p 22 ocid1.bastionsession.XXXXXXXXX@host.bastion.us-phoenix-1.oci.oraclecloud.com" -p 22 opc@<worker-node-ip-address>
+```
