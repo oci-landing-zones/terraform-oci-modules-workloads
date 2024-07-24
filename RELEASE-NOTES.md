@@ -1,34 +1,38 @@
+# July 24, 2024 Release Notes - 0.1.5
+## Updates    
+1. Folders *cis-compute-storage* and *cis-oke* renamed to *compute-storage* and *oke*, respectively.
+
 # May 15, 2024 Release Notes - 0.1.4
 
 ## New
-1. OKE module added, supporting basic and enhanced clusters, with managed node pools and virtual node pools. See [OKE module](./cis-oke/README.md) for details.
+1. OKE module added, supporting basic and enhanced clusters, with managed node pools and virtual node pools. See [OKE module](./oke/README.md) for details.
 
 ## Updates
-1. Compute module can now manage cluster networks and compute clusters. See [Clusters](./cis-compute-storage/README.md#clusters-1) for details.
-2. Compute module now supports cloud-init scripts passed in as a file or as a string in [Terraform heredoc style](https://developer.hashicorp.com/terraform/language/expressions/strings#heredoc-strings). See [Compute](./cis-compute-storage/README.md#compute-1) for details.
+1. Compute module can now manage cluster networks and compute clusters. See [Clusters](./compute-storage/README.md#clusters-1) for details.
+2. Compute module now supports cloud-init scripts passed in as a file or as a string in [Terraform heredoc style](https://developer.hashicorp.com/terraform/language/expressions/strings#heredoc-strings). See [Compute](./compute-storage/README.md#compute-1) for details.
 3. Compute module now supports SSH public keys passed in as a file or as a string.
 
 # February 29, 2024 Release Notes - 0.1.3
 
 ## Updates
-### CIS Compute & Storage Module
+### Compute & Storage Module
 1. Compute aligns with CIS Benchmark 2.0.0: in additional to encryption at rest, CIS profile level now drives in-transit encryption, secure Boot (Shielded instances), and the availability of legacy Metadata service endpoint.
     - CIS profile level 1 enables in-transit encryption.
     - CIS profile level 2 enables secure boot and disables legacy Metadata service endpoint.
     
-2. [Cloud Agent Requirements](./cis-compute-storage/README.md#cloud-agent-requirements) documented.
+2. [Cloud Agent Requirements](./compute-storage/README.md#cloud-agent-requirements) documented.
 
 # October 30, 2023 Release Notes - 0.1.2
 
 ## Updates
 1. [How to Mount Block Volumes](#0-1-2-bv-mount-doc)
-2. [Network dependency aligned with CIS Landing Zone Networking Module Output](#0-1-2-net-dep)
+2. [Network dependency aligned with OCI Landing Zones Networking Module Output](#0-1-2-net-dep)
 
 ### <a name="0-1-2-bv-mount-doc">How to Mount Block Volumes</a>
 Instructions are provided in [README.md](./README.md) for mounting block volumes. The modules does not mount volumes automatically.
 
-### <a name="0-1-2-net-dep">Network dependency aligned with CIS Landing Zone Networking Module Output</a>
-*network_dependency* input variable aligns with [CIS Landing Zone Networking](https://github.com/oracle-quickstart/terraform-oci-cis-landing-zone-networking) module output. The Networking module outputs resources grouped by resource type ("vcns", "subnets", "network_security_groups", etc.). All modules in this repository have been updated accordingly. This impacts the contents of *network_dependency* variable. See [external-dependencies](./cis-compute-storage/examples/external-dependencies/) for an example.
+### <a name="0-1-2-net-dep">Network dependency aligned with OCI Landing Zones Networking Module Output</a>
+*network_dependency* input variable aligns with [OCI Landing Zones Networking](https://github.com/oracle-quickstart/terraform-oci-cis-landing-zone-networking) module output. The Networking module outputs resources grouped by resource type ("vcns", "subnets", "network_security_groups", etc.). All modules in this repository have been updated accordingly. This impacts the contents of *network_dependency* variable. See [external-dependencies](./compute-storage/examples/external-dependencies/) for an example.
 
 # October 05, 2023 Release Notes - 0.1.1
 
@@ -46,7 +50,7 @@ Compute module can configure instances with secondary VNICs and secondary IPs pe
 ### <a name="0-1-0-initial">Initial Release</a>
 Modules for Compute, Storage, Platform Images and Marketplace Images
 
-#### [Compute](./cis-compute-storage/)
+#### [Compute](./compute-storage/)
 - CIS profile level drives data at rest encryption configuration.
 - Boot volumes encryption with customer managed keys from OCI Vault service.
 - In-transit encryption for boot volumes and attached block volumes.
@@ -55,7 +59,7 @@ Modules for Compute, Storage, Platform Images and Marketplace Images
 - Boot volumes backup with Oracle managed policies.
 - [Cloud Agent Plugins](https://docs.oracle.com/en-us/iaas/Content/Compute/Tasks/manage-plugins.htm).
 
-#### [Block Volumes](./cis-compute-storage/)
+#### [Block Volumes](./compute-storage/)
 - CIS profile level drives data at rest encryption configuration.
 - Data at rest encryption with customer managed keys from OCI Vault service.
 - In-transit encryption for attached Compute instances.
@@ -63,7 +67,7 @@ Modules for Compute, Storage, Platform Images and Marketplace Images
 - Backups with Oracle managed policies.
 - [Shareable block volume attachments](https://docs.oracle.com/en-us/iaas/Content/Block/Tasks/attachingvolumetomultipleinstances.htm).
 
-#### [File Storage](./cis-compute-storage/)
+#### [File Storage](./compute-storage/)
 - CIS profile level drives data at rest encryption configuration.
 - Data at rest encryption with customer managed keys from OCI Vault service.
 - Cross-region replication for strong cyber resilience posture.
