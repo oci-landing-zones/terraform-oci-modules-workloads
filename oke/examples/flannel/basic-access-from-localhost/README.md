@@ -2,7 +2,7 @@
 
 ## Introduction
 
-This example shows how to deploy OKE clusters and node pools in OCI using the [OKE module](../../..). It deploys one Flannel-based basic OKE Cluster, one node pool, one Bastion service endpoint and one Bastion session for cluster management with the characteristics described below. 
+This example shows how to deploy OKE clusters and node pools in OCI using the [OKE module](../../../README.md). It deploys one Flannel-based basic OKE Cluster, one node pool, one Bastion service endpoint and one Bastion session for cluster management with the characteristics described below. 
 
 Once the cluster is provisioned, cluster access is automatically enabled from localhost via the OCI Bastion service endpoint.
 

@@ -2,7 +2,7 @@
 
 ## Introduction
 
-This example shows how to deploy Compute instances in OCI using the [compute-storage module](../../). It deploys three Compute instances with the following characteristics:
+This example shows how to deploy Compute instances in OCI using the [compute-storage module](../../README.md). It deploys three Compute instances with the following characteristics:
 - All instances are deployed in the same compartment and same subnet, defined by *default_compartment_id* and *default_subnet_id* attributes.
 - All instances can be accessed over SSH with the private key corresponding to the public key defined by *default_ssh_public_key_path* attribute.
 - All instances are placed in the network security groups defined by *networking.network_security_groups* attribute within each instance.

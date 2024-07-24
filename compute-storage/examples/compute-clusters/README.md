@@ -1,7 +1,7 @@
 # OCI Compute & Storage Module - Compute Cluster Example
 
 ## Introduction
-This example shows how to deploy RDMA cluster networks in OCI using the [compute-storage module](../../). It deploys one Compute instance, one cluster instance configuration, and one cluster network with the characteristics described below. Refer to [input.auto.tfvars.template](./input.auto.tfvars.template) for the variables configuration.
+This example shows how to deploy a Compute cluster in OCI using the [compute-storage module](../../README.md). It deploys one Compute instance, one cluster instance configuration, and one cluster network with the characteristics described below. Refer to [input.auto.tfvars.template](./input.auto.tfvars.template) for the variables configuration.
 
 A [Compute cluster](https://docs.oracle.com/iaas/Content/Compute/Tasks/compute-clusters.htm) is a remote direct memory access (RDMA) network group. You can create high performance computing (HPC) instances in the network and manage them individually.
 

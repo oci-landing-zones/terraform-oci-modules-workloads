@@ -2,7 +2,7 @@
 
 ## Introduction
 
-This example shows how to deploy Kubernetes clusters and node pools in OCI using the [OKE module](../../..). It deploys Flannel-based basic OKE cluster and one node pool with the characteristics described below. 
+This example shows how to deploy Kubernetes clusters and node pools in OCI using the [OKE module](../../../README.md). It deploys Flannel-based basic OKE cluster and one node pool with the characteristics described below. 
 
 This example provides no cluster access automation. Automating access to the cluster can be implemented with the [OCI Bastion service module](https://github.com/oracle-quickstart/terraform-oci-cis-landing-zone-security/tree/main/bastion). See the [available examples](https://github.com/oracle-quickstart/terraform-oci-cis-landing-zone-security/tree/main/bastion/examples).
 

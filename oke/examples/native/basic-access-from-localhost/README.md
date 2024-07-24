@@ -2,7 +2,7 @@
 
 ## Introduction
 
-This example shows how to deploy OKE clusters and node pools in OCI using the [OKE module](../../..). It deploys one NPN basic OKE Cluster, one node pool, one Bastion service endpoint and one Bastion session for cluster management with the characteristics described below. 
+This example shows how to deploy OKE clusters and node pools in OCI using the [OKE module](../../../README.md). It deploys one NPN basic OKE Cluster, one node pool, one Bastion service endpoint and one Bastion session for cluster management with the characteristics described below. 
 
 ### Pre-Requisite
 

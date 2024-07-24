@@ -2,7 +2,7 @@
 
 ## Introduction
 
-This example shows how to deploy Block volumes and File Storage in OCI using the [compute-storage module](../../). It deploys two block volumes, two file systems, one mount target with two exports, and one file system snapshot policy with the following characteristics:
+This example shows how to deploy Block volumes and File Storage in OCI using the [compute-storage module](../../README.md). It deploys two block volumes, two file systems, one mount target with two exports, and one file system snapshot policy with the following characteristics:
 - All resources are deployed in the same compartment, defined by *default_compartment_id* attribute.
 - The file systems have their mount targets (if specified) in the subnet defined by *default_subnet_id* attribute.
 
