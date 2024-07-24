@@ -1,4 +1,4 @@
-# Oracle Cloud Infrastructure (OCI) Marketplace Images Module
+# OCI Marketplace Images Module
 
 ![Landing Zone logo](../landing_zone_300.png)
 
