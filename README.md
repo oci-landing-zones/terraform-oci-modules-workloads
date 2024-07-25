@@ -1,11 +1,11 @@
-# OCI Secure Workload Modules
+# OCI Landing Zones Secure Workload Modules
 
 ![Landing Zone logo](./landing_zone_300.png)
 
 This repository contains Terraform modules for managing workload resources in OCI (Oracle Cloud Infrastructure). By workload we mean resources that are typically deployed within a landing zone, and may trigger OCI consumption. By secure we mean they are designed to cover the key security features available in the OCI platform. When appropriate, the modules align with CIS OCI Foundations Benchmark recommendations.
 
 The following modules are available:
-- [CIS Compute & Storage](./cis-compute-storage/)
+- [Compute](./cis-compute-storage/) - supporting Compute, Block Volumes, File Storage, Compute Clusters and Cluster Networks.
 - [OKE (Oracle Kubernetes Engine)](./cis-oke/)
 
 Helper modules:

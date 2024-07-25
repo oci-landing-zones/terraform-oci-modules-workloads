@@ -1,8 +1,8 @@
-# OKE NPN (Native Pod Networking) with Operator Access Example
+# OCI Landing Zones OKE Module - NPN (Native Pod Networking) with Operator Access Example
 
 ## Introduction
 
-This example shows how to deploy OKE clusters and node pools in OCI using the [cis-oke module](https://github.com/oracle-quickstart/terraform-oci-secure-workloads/tree/main/cis-oke). It deploys one NPN basic OKE Cluster, one node pool, one Bastion service endpoint, one Bastion session, and one Compute instance with the characteristics described below. 
+This example shows how to deploy OKE clusters and node pools in OCI using the [OCI Landing Zones OKE module](../../../README.md). It deploys one NPN basic OKE Cluster, one node pool, one Bastion service endpoint, one Bastion session, and one Compute instance with the characteristics described below. 
 
 Once the cluster is provisioned, cluster access is automatically enabled from the provisioned Compute instance, which is accessible via the OCI Bastion service endpoint. We refer to this Compute instance as the Operator host.
 
