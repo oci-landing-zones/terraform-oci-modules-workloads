@@ -1,8 +1,8 @@
-# CIS OCI Compute/Storage Example - Compute instances and Block volumes with External Dependencies
+# OCI Landing Zones Compute Module - Compute Instances and Block Volumes with External Dependencies Example
 
 ## Introduction
 
-This example shows how to deploy Compute instances and Block volumes in OCI using the [cis-compute-storage module](../../). It obtains its dependencies from OCI Object Storage objects, specified in *oci_compartments_dependency*, *oci_network_dependency*, *oci_kms_dependency* and *oci_compute_dependency* variables. 
+This example shows how to deploy Compute instances and Block volumes in OCI using the [OCI Landing Zones Compute module](../../README.md). It obtains its dependencies from OCI Object Storage objects, specified in *oci_compartments_dependency*, *oci_network_dependency*, *oci_kms_dependency* and *oci_compute_dependency* variables. 
 
 As this example needs to read from an OCI Object Storage bucket, the following extra permissions are required for the executing user, in addition to the permissions required by the [cis-compute-storage module](../..) itself.
 

@@ -1,8 +1,8 @@
-# OKE NPN (Native Pod Networking) Basic Example 
+# OCI Landing Zones OKE Module - NPN (Native Pod Networking) Basic Example 
 
 ## Introduction
 
-This example shows how to deploy Kubernetes clusters and node pools in OCI using the [cis-oke module](https://github.com/oracle-quickstart/terraform-oci-secure-workloads/tree/main/cis-oke). It deploys one NPN basic OKE cluster with one node pool with the characteristics described below. 
+This example shows how to deploy OKE clusters and node pools in OCI using the [OCI Landing Zones OKE module](../../../README.md). It deploys one NPN basic OKE cluster with one node pool with the characteristics described below. 
 
 This example provides no cluster access automation. Automating access to the cluster can be implemented with the [OCI Bastion service module](https://github.com/oracle-quickstart/terraform-oci-cis-landing-zone-security/tree/main/bastion). See [Bastion available examples](https://github.com/oracle-quickstart/terraform-oci-cis-landing-zone-security/tree/main/bastion/examples).
 
