@@ -1,11 +1,11 @@
-# OCI Secure Workload Modules
+# OCI Landing Zones Secure Workload Modules
 
 ![Landing Zone logo](./landing_zone_300.png)
 
 This repository contains Terraform modules for managing workload resources in OCI (Oracle Cloud Infrastructure). By workload we mean resources that are typically deployed within a landing zone, and may trigger OCI consumption. By secure we mean they are designed to cover the key security features available in the OCI platform. When appropriate, the modules align with CIS OCI Foundations Benchmark recommendations.
 
 The following modules are available:
-- [CIS Compute & Storage](./cis-compute-storage/)
+- [Compute](./cis-compute-storage/) - supporting Compute, Block Volumes, File Storage, Compute Clusters and Cluster Networks.
 - [OKE (Oracle Kubernetes Engine)](./cis-oke/)
 
 Helper modules:
@@ -28,15 +28,24 @@ The modules in this collection are designed for flexibility, are straightforward
 
 Using these modules does not require a user extensive knowledge of Terraform or OCI resource types usage. Users declare a JSON object describing the OCI resources according to each module’s specification and minimal Terraform code to invoke the modules. The modules generate outputs that can be consumed by other modules as inputs, allowing for the creation of independently managed operational stacks to automate your entire OCI infrastructure.
 
+## Help
+
+Open an issue in this repository.
+
 ## Contributing
-See [CONTRIBUTING.md](./CONTRIBUTING.md).
+
+This project welcomes contributions from the community. Before submitting a pull request, please [review our contribution guide](./CONTRIBUTING.md).
+
+## Security
+
+Please consult the [security guide](./SECURITY.md) for our responsible security vulnerability disclosure process.
 
 ## License
-Copyright (c) 2023, Oracle and/or its affiliates.
 
-Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
+Copyright (c) 2023,2024 Oracle and/or its affiliates.
 
-See [LICENSE](./LICENSE) for more details.
+Released under the Universal Permissive License v1.0 as shown at
+<https://oss.oracle.com/licenses/upl/>.
 
 ## Known Issues
 None.

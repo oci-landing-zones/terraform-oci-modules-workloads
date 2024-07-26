@@ -1,4 +1,4 @@
-# Oracle Cloud Infrastructure (OCI) Platform Images Module
+# OCI Landing Zones Platform Images Module
 
 ![Landing Zone logo](../landing_zone_300.png)
 
