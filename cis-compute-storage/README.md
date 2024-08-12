@@ -55,6 +55,10 @@ The following security features are currently supported by the module:
 - Deployment of cluster networks and compute clusters.
 
 ## <a name="requirements">Requirements</a>
+### Terraform Version >= 1.3.0
+
+This module requires Terraform binary version 1.3.0 or greater, as it relies on Optional Object Type Attributes feature. The feature shortens the amount of input values in complex object types, by having Terraform automatically inserting a default value for any missing optional attributes.
+
 ### IAM Permissions
 
 This module requires the following OCI IAM permissions in the compartments where instances, block volumes, and file systems are defined. 
@@ -98,10 +102,6 @@ Allow group <GROUP-NAME> to manage private-ips in compartment <NETWORK-COMPARTME
 Allow group <GROUP-NAME> to read keys in compartment <ENCRYPTION-KEYS-COMPARTMENT-NAME>
 Allow group <GROUP-NAME> to use key-delegate in compartment <ENCRYPTION-KEYS-COMPARTMENT-NAME>
 ```
-
-### Terraform Version > 1.3.x
-
-This module relies on [Terraform Optional Object Type Attributes feature](https://developer.hashicorp.com/terraform/language/expressions/type-constraints#optional-object-type-attributes), which has been promoted and no longer experimental in versions greater than 1.3.x. The feature shortens the amount of input values in complex object types, by having Terraform automatically inserting a default value for any missing optional attributes.
 
 ## <a name="invoke">How to Invoke the Module</a>
 
