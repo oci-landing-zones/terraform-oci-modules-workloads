@@ -1,7 +1,7 @@
-# CIS Cluster Network Example
+# OCI Landing Zones Compute Module - Cluster Network Example
 
 ## Introduction
-This example shows how to deploy an RDMA cluster network in OCI using the [cis-compute-storage module](../../). It deploys one Compute instance, one cluster instance configuration, and one cluster network with the characteristics described below. Refer to [input.auto.tfvars.template](./input.auto.tfvars.template) for the variables configuration.
+This example shows how to deploy an RDMA cluster network in OCI using the [OCI Landing Zones Compute module](../../README.md). It deploys one Compute instance, one cluster instance configuration, and one cluster network with the characteristics described below. Refer to [input.auto.tfvars.template](./input.auto.tfvars.template) for the variables configuration.
 
 A [cluster network](https://docs.oracle.com/en-us/iaas/Content/Compute/Tasks/managingclusternetworks.htm) is a pool of high performance computing (HPC) instances that are connected with a high-bandwidth, ultra low-latency network. They're designed for highly demanding parallel computing jobs.
 

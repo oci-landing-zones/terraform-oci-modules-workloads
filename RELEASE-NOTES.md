@@ -1,3 +1,7 @@
+# July 25, 2024 Release Notes - 0.1.5
+## Updates    
+1. Aligned README.md structure to Oracle's GitHub organizations requirements.
+
 # May 15, 2024 Release Notes - 0.1.4
 
 ## New

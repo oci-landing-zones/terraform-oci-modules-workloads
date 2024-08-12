@@ -1,4 +1,4 @@
-# Oracle Cloud Infrastructure (OCI) Terraform CIS OKE Module
+# OCI Landing Zones OKE Module
 
 ![Landing Zone logo](../landing_zone_300.png)
 

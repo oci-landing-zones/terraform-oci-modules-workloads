@@ -1,8 +1,8 @@
-# Oracle Cloud Infrastructure (OCI) Terraform CIS Compute & Storage (Block Volumes and File System Storage) Module
+# OCI Landing Zones Compute Module
 
 ![Landing Zone logo](../landing_zone_300.png)
 
-This module manages Compute instances, Block Volume and File System Storage in Oracle Cloud Infrastructure (OCI). These resources and their associated resources can be deployed together in the same configuration or separately. The module enforces Center for Internet Security (CIS) Benchmark recommendations for all supported resource types and provides features for strong cyber resilience posture, including cross-region replication and storage backups. Additionally, the module supports bringing in external dependencies that managed resources depend on, including compartments, subnets, network security groups, encryption keys, and others. 
+This module manages Compute instances, Block Volume, File System Storage, Compute Clusters, and Cluster Networks in Oracle Cloud Infrastructure (OCI). These resources and their associated resources can be deployed together in the same configuration or separately. The module enforces Center for Internet Security (CIS) Benchmark recommendations when appropriate and provides features for strong cyber resilience posture, including cross-region replication and storage backups. Additionally, the module supports bringing in external dependencies that managed resources depend on, including compartments, subnets, network security groups, encryption keys, and others. 
 
 Check [module specification](./SPEC.md) for a full description of module requirements, supported variables, managed resources and outputs.
 
