@@ -1,3 +1,8 @@
+# August XX, 2024 Release Notes - 0.1.6
+
+## Updates
+1. Modules now require Terraform binary equal or greater than 1.3.0.
+
 # July 25, 2024 Release Notes - 0.1.5
 ## Updates    
 1. Aligned README.md structure to Oracle's GitHub organizations requirements.
