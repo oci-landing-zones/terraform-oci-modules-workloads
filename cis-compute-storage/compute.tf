@@ -284,6 +284,11 @@ resource "oci_core_vnic_attachment" "these" {
     }
 }
 
+data "oci_core_vnic" "these" {
+  for_each = oci_core_vnic_attachment.these
+    vnic_id = each.value.vnic_id
+}
+
 resource "oci_core_private_ip" "these" {
   for_each = { for v in concat(local.primary_vnic_secondary_ips, local.secondary_vnics_secondary_ips) : v.key => {
                                                                                                                   vnic_id       = v.vnic_id
