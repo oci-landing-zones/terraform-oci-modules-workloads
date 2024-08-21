@@ -108,7 +108,7 @@ resource "oci_core_instance" "these" {
     defined_tags         = each.value.defined_tags != null ? each.value.defined_tags : var.instances_configuration.default_defined_tags
     freeform_tags        = merge(local.cislz_module_tag, each.value.freeform_tags != null ? each.value.freeform_tags : var.instances_configuration.default_freeform_tags)
     # some images don't allow encrypt in transit
-    is_pv_encryption_in_transit_enabled = coalesce(each.value.cis_level,var.instances_configuration.default_cis_level,"1") >= "1" ? true : (each.value.encryption != null ? each.value.encryption.encrypt_in_transit_on_instance_create : null)
+    is_pv_encryption_in_transit_enabled = coalesce(each.value.cis_level,var.instances_configuration.default_cis_level,"1") == "2" ? true : (each.value.encryption != null ? each.value.encryption.encrypt_in_transit_on_instance_create : null)
     create_vnic_details {
       private_ip       = each.value.networking != null ? each.value.networking.private_ip : null
       assign_public_ip = each.value.networking != null ? coalesce(each.value.networking.assign_public_ip,false) : false
