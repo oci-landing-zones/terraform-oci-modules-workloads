@@ -53,4 +53,3 @@ output "compute_clusters" {
   description = "The Compute clusters."
   value       = var.enable_output ? oci_core_compute_cluster.these : null
 }
-

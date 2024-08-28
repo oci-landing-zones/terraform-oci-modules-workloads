@@ -136,6 +136,39 @@ For referring to a specific module version, add an extra slash before the folder
   source = "github.com/oracle-quickstart/terraform-oci-secure-workloads//cis-compute-storage?ref=v0.1.0"
 ```
 
+## <a name="invoke">How to Invoke the Module</a>
+
+Terraform modules can be invoked locally or remotely. 
+
+For invoking the module locally, just set the module *source* attribute to the module file path (relative path works). The following example assumes the module is two folders up in the file system.
+```
+module "compute" {
+  source = "../.."
+  providers = {
+    oci = oci
+    oci.block_volumes_replication_region = oci.block_volumes_replication_region
+  }
+  instances_configuration = var.instances_configuration
+  storage_configuration   = var.storage_configuration
+}
+```
+For invoking the module remotely, set the module *source* attribute to the *cis-compute-storage* module folder in this repository, as shown:
+```
+module "compute" {
+  source = "github.com/oracle-quickstart/terraform-oci-secure-workloads/cis-compute-storage"
+  providers = {
+    oci = oci
+    oci.block_volumes_replication_region = oci.block_volumes_replication_region
+  }
+  instances_configuration = var.instances_configuration
+  storage_configuration   = var.storage_configuration
+}
+```
+For referring to a specific module version, add an extra slash before the folder name and append *ref=\<version\>* to the *source* attribute value, as in:
+```
+  source = "github.com/oracle-quickstart/terraform-oci-secure-workloads//cis-compute-storage?ref=v0.1.0"
+```
+
 ## <a name="functioning">Module Functioning</a>
 
 The module defines two top level variables used to manage instances, storage, clusters and cluster configurations: 
