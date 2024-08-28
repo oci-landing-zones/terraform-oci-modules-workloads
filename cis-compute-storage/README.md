@@ -55,6 +55,10 @@ The following security features are currently supported by the module:
 - Deployment of cluster networks and compute clusters.
 
 ## <a name="requirements">Requirements</a>
+### Terraform Version >= 1.3.0
+
+This module requires Terraform binary version 1.3.0 or greater, as it relies on Optional Object Type Attributes feature. The feature shortens the amount of input values in complex object types, by having Terraform automatically inserting a default value for any missing optional attributes.
+
 ### IAM Permissions
 
 This module requires the following OCI IAM permissions in the compartments where instances, block volumes, and file systems are defined. 
@@ -99,9 +103,38 @@ Allow group <GROUP-NAME> to read keys in compartment <ENCRYPTION-KEYS-COMPARTMEN
 Allow group <GROUP-NAME> to use key-delegate in compartment <ENCRYPTION-KEYS-COMPARTMENT-NAME>
 ```
 
-### Terraform Version > 1.3.x
+## <a name="invoke">How to Invoke the Module</a>
 
-This module relies on [Terraform Optional Object Type Attributes feature](https://developer.hashicorp.com/terraform/language/expressions/type-constraints#optional-object-type-attributes), which has been promoted and no longer experimental in versions greater than 1.3.x. The feature shortens the amount of input values in complex object types, by having Terraform automatically inserting a default value for any missing optional attributes.
+Terraform modules can be invoked locally or remotely. 
+
+For invoking the module locally, just set the module *source* attribute to the module file path (relative path works). The following example assumes the module is two folders up in the file system.
+```
+module "compute" {
+  source = "../.."
+  providers = {
+    oci = oci
+    oci.block_volumes_replication_region = oci.block_volumes_replication_region
+  }
+  instances_configuration = var.instances_configuration
+  storage_configuration   = var.storage_configuration
+}
+```
+For invoking the module remotely, set the module *source* attribute to the *cis-compute-storage* module folder in this repository, as shown:
+```
+module "compute" {
+  source = "github.com/oracle-quickstart/terraform-oci-secure-workloads/cis-compute-storage"
+  providers = {
+    oci = oci
+    oci.block_volumes_replication_region = oci.block_volumes_replication_region
+  }
+  instances_configuration = var.instances_configuration
+  storage_configuration   = var.storage_configuration
+}
+```
+For referring to a specific module version, add an extra slash before the folder name and append *ref=\<version\>* to the *source* attribute value, as in:
+```
+  source = "github.com/oracle-quickstart/terraform-oci-secure-workloads//cis-compute-storage?ref=v0.1.0"
+```
 
 ## <a name="invoke">How to Invoke the Module</a>
 
