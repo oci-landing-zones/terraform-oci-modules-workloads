@@ -43,6 +43,7 @@ No modules.
 | [oci_core_app_catalog_listings.existing](https://registry.terraform.io/providers/oracle/oci/latest/docs/data-sources/core_app_catalog_listings) | data source |
 | [oci_core_image.these](https://registry.terraform.io/providers/oracle/oci/latest/docs/data-sources/core_image) | data source |
 | [oci_core_instance.these](https://registry.terraform.io/providers/oracle/oci/latest/docs/data-sources/core_instance) | data source |
+| [oci_core_vnic.these](https://registry.terraform.io/providers/oracle/oci/latest/docs/data-sources/core_vnic) | data source |
 | [oci_core_vnic_attachments.these](https://registry.terraform.io/providers/oracle/oci/latest/docs/data-sources/core_vnic_attachments) | data source |
 | [oci_identity_availability_domains.ads](https://registry.terraform.io/providers/oracle/oci/latest/docs/data-sources/identity_availability_domains) | data source |
 | [oci_identity_availability_domains.bv_ads](https://registry.terraform.io/providers/oracle/oci/latest/docs/data-sources/identity_availability_domains) | data source |
@@ -81,4 +82,6 @@ No modules.
 | <a name="output_file_systems_snapshot_policies"></a> [file\_systems\_snapshot\_policies](#output\_file\_systems\_snapshot\_policies) | n/a |
 | <a name="output_instances"></a> [instances](#output\_instances) | The Compute instances |
 | <a name="output_private_ips"></a> [private\_ips](#output\_private\_ips) | The private IPs |
-| <a name="output_vnic_attachments"></a> [vnic\_attachments](#output\_vnic\_attachments) | The VNIC attachments |
+| <a name="output_secondary_private_ips"></a> [secondary\_private\_ips](#output\_secondary\_private\_ips) | The secondary private IPs in all instances VNICs |
+| <a name="output_secondary_vnic_attachments"></a> [secondary\_vnic\_attachments](#output\_secondary\_vnic\_attachments) | The secondary VNIC attachments |
+| <a name="output_secondary_vnics"></a> [secondary\_vnics](#output\_secondary\_vnics) | The secondary VNICs |
