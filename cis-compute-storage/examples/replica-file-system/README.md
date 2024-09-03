@@ -1,8 +1,8 @@
-# CIS OCI Compute/Storage Example - Replica File System
+# OCI Landing Zones Compute Module - Replica File System Example
 
 ## Introduction
 
-This example shows how to deploy a file system used as a replica file system in OCI using the [cis-compute-storage module](../../). The replica file system has the following characteristics:
+This example shows how to deploy a file system used as a replica file system in OCI using the [OCI Landing Zones Compute module](../../README.md). The replica file system has the following characteristics:
 - It is deployed in the region defined by the *region* attribute.
 - It is deployed in the compartment defined by *default_compartment_id* attribute.
 - It is configured as replication target, as defined by *replication.is_target* attribute.
