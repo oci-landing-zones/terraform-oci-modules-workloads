@@ -1,3 +1,9 @@
+# September XX, 2024 Release Notes - 0.1.7
+## Updates
+1. Custom images and Marketplace images split for clarity in module interface. *publisher_name* attribute has been removed. See [Compute section](./README.md#compute) for usage guidance.
+2. Marketplace images configured with automatic Marketplace agreements.
+
+
 # August 28, 2024 Release Notes - 0.1.6
 ## Updates
 1. All modules now require Terraform binary equal or greater than 1.3.0.
