@@ -54,3 +54,18 @@ output "compute_clusters" {
   value       = var.enable_output ? oci_core_compute_cluster.these : null
 }
 
+output "oci_core_app_catalog_listing_resource_version" {
+  value = data.oci_core_app_catalog_listing_resource_version.this
+}
+
+output "oci_core_app_catalog_listings" {
+  value = data.oci_core_app_catalog_listings.these
+}
+
+output "oci_core_app_catalog_listing_resource_versions" {
+  value = data.oci_core_app_catalog_listing_resource_versions.these
+}
+
+output "all_oci_core_app_catalog_listings" {
+  value = data.oci_core_app_catalog_listings.all
+}
