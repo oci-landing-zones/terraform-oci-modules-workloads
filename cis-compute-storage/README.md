@@ -186,13 +186,16 @@ The instances themselves are defined within the **instances** attribute, In Terr
 - **ssh_public_key_path** &ndash; (Optional) The SSH public key path used to access the instance. *default_ssh_public_key_path* is used if undefined.
 - **defined_tags** &ndash; (Optional) The instance defined tags. *default_defined_tags* is used if undefined.
 - **freeform_tags** &ndash; (Optional) The instance freeform tags. *default_freeform_tags* is used if undefined.
-- **custom_image** &ndash; (Optional) The custom image information. Either the *ocid* or (*name* and *compartment_id*) must be provided. **Use either *custom_image* or *marketplace_image*.**
+- **marketplace_image** &ndash; (Optional) The Marketplace image information. *name* is required, *version* is optional. If *version* is not provided, the latest available version is used. See [Obtaining OCI Marketplace Images Information](#marketplace-images) for how to get OCI Marketplace images. **Use one of *marketplace_image*, *platform_image* or *custom_image*.**
+  - **name** &ndash; The Marketplace image name.
+  - **version** &ndash; (Optional) The Marketplace image version. If not provided, the latest available version is used.
+- **platform_image** &ndash; (Optional) The platform image information. Either the *ocid* or *name* must be provided. See [Obtaining OCI Platform Images Information](#platform-images) for how to get OCI Platform images. **Use one of *marketplace_image*, *platform_image* or *custom_image*.**
+  - **ocid** &ndash; (Optional) The Platform image ocid. It takes precedence over name.
+  - **name** &ndash; (Optional) The Platform image name. If *name* is provided, variable *tenancy_ocid* is required for looking up the image.
+- **custom_image** &ndash; (Optional) The custom image information. Either the *ocid* or (*name* and *compartment_id*) must be provided. **Use one of *marketplace_image*, *platform_image* or *custom_image*.**
   - **ocid** &ndash; (Optional) The custom image ocid. It takes precedence over name.
   - **name** &ndash; (Optional) The custom image name.
   - **compartment_id** &ndash; (Optional) The custom image compartment. It is required if name is used.
-- **marketplace_image** &ndash; (Optional) The Marketplace image information. *name* is required, *version* is optional. If *version* is not provided, the latest available version is used. See [Obtaining OCI Marketplace Images Information](#marketplace-images) for how to get OCI Marketplace images. **Use either *marketplace_image* or *custom_image*.**
-  - **name** &ndash; The Marketplace image name.
-  - **version** &ndash; (Optional) The Marketplace image version. If not provided, the latest available version is used.
 - **placement** &ndash; (Optional) Instance placement settings.
   - **availability_domain** &ndash; (Optional) The instance availability domain. Default is 1.
   - **fault_domain** &ndash; (Optional) The instance fault domain. Default is 1.
