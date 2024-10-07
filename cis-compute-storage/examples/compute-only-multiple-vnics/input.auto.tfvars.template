@@ -31,9 +31,8 @@ instances_configuration = {
     INSTANCE-1 = {
       shape = "VM.Standard.E4.Flex"
       name  = "instance-1-compute-only-multiple-vnics"
-      image = {
+      marketplace_image = {
         name = "Oracle Linux 7 STIG" # Marketplace image
-        publisher_name = "Oracle Linux"
       }
       placement = {
         availability_domain = 1

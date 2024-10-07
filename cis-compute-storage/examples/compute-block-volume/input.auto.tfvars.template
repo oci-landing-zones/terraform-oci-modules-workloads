@@ -45,9 +45,8 @@ instances_configuration = {
         hostname  = "<REPLACE-BY-INSTANCE-HOSTNAME>"
         network_security_groups = ["REPLACE-BY-NETWORK-SECURITY-GROUP-OCID"]
       }
-      image = {
-        name = "<REPLACE-BY-IMAGE-NAME>"
-        publisher_name = "<REPLACE-BY-IMAGE-PUBLISHER-NAME>"
+      marketplace_image = {
+        name = "Oracle Linux 7 STIG"
       }
     }
     INSTANCE-2 = {
@@ -69,8 +68,8 @@ instances_configuration = {
         hostname  = "<REPLACE-BY-INSTANCE-HOSTNAME>"
         network_security_groups = ["REPLACE-BY-NETWORK-SECURITY-GROUP-OCID"]
       }
-      image = {
-        id = "ocid1.image.oc1.iad.aaaaaaaamf35m2qg5krijvq4alf6qmvdqiroq4i5zdwqqdijmstn4ryes36q" # Oracle-Linux-8.8-2023.08.31-0 platform image
+      platform_image = {
+        name = "Oracle-Linux-8.10-2024.08.29-0"
       }
     }
     INSTANCE-3 = {
@@ -92,8 +91,8 @@ instances_configuration = {
         hostname  = "<REPLACE-BY-INSTANCE-HOSTNAME>"
         network_security_groups = ["REPLACE-BY-NETWORK-SECURITY-GROUP-OCID"]
       }
-      image = {
-        id = "ocid1.image.oc1.iad.aaaaaaaamf35m2qg5krijvq4alf6qmvdqiroq4i5zdwqqdijmstn4ryes36q" # Oracle-Linux-8.8-2023.08.31-0 platform image
+      platform_image = {
+        name = "Oracle-Linux-8.10-2024.08.29-0"
       }
     }
   }

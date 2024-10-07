@@ -1,6 +1,11 @@
 # Copyright (c) 2023, Oracle and/or its affiliates. All rights reserved.
 # Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
+variable "tenancy_ocid" {
+  description = "The tenancy OCID" # Used when looking up platform images
+  default = null
+}
+
 variable "instances_configuration" {
   description = "Compute instances configuration attributes."
   type = object({
@@ -21,14 +26,18 @@ variable "instances_configuration" {
       name             = string           # the instance display name.
       platform_type    = optional(string) # the platform type. Assigning this variable enables various platform security features in the Compute service. Valid values: "AMD_MILAN_BM", "AMD_MILAN_BM_GPU", "AMD_ROME_BM", "AMD_ROME_BM_GPU", "AMD_VM", "GENERIC_BM", "INTEL_ICELAKE_BM", "INTEL_SKYLAKE_BM", "INTEL_VM".
       cluster_id       = optional(string) # the Compute cluster the instance is added to. It can take either a literal cluster OCID or cluster key defined in the clusters_configuration variable.
-      custom_image = optional(object({ # the custom image. You must provider either the ocid or name and compartment.
-        ocid = optional(string) # the custom image ocid. It takes precedence over name.
-        name = optional(string) # the custom image name.
-        compartment_id = optional(string) # the custom image compartment. Required if name is used.
-      }))
       marketplace_image = optional(object({ # the marketplace image. You must provider the name, and optionally the version. If version is not provided, the latest available version is used.
         name    = string # the marketplace image name.
         version = optional(string) # the marketplace image version.
+      }))
+      platform_image = optional(object({ # the platform image. You must provider the name and assign the tenancy_ocid variable.
+        ocid = optional(string) # the platform image ocid. It takes precedence over name.
+        name = optional(string) # the platform image name.
+      }))
+      custom_image = optional(object({ # the custom image. You must provider either the ocid or name and compartment_id.
+        ocid = optional(string) # the custom image ocid. It takes precedence over name.
+        name = optional(string) # the custom image name.
+        compartment_id = optional(string) # the custom image compartment. Required if name is used.
       }))
       placement = optional(object({ # placement settings
         availability_domain  = optional(number,1) # the instance availability domain. Default is 1.
