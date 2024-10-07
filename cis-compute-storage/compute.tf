@@ -34,6 +34,10 @@ data "oci_core_images" "these_custom" {
         condition = each.value.custom_image.compartment_id != null || var.instances_configuration.default_compartment_id != null
         error_message = "VALIDATION FAILURE in instance \"${each.key}\": either \"compartment_id\" attribute or \"default_compartment_id\" attribute is required when providing a custom image name."
       }
+      postcondition {
+        condition = self.images != null
+        error_message = "VALIDATION FAILURE in instance \"${each.key}\": image \"${each.value.custom_image.name}\" not found in compartment \"${each.value.custom_image.compartment_id != null ? (length(regexall("^ocid1.*$", each.value.custom_image.compartment_id)) > 0 ? each.value.custom_image.compartment_id : var.compartments_dependency[each.value.custom_image.compartment_id].id) : (length(regexall("^ocid1.*$", var.instances_configuration.default_compartment_id)) > 0 ? var.instances_configuration.default_compartment_id : var.compartments_dependency[var.instances_configuration.default_compartment_id].id)}\"."
+      }
     }
     compartment_id = each.value.custom_image.compartment_id != null ? (length(regexall("^ocid1.*$", each.value.custom_image.compartment_id)) > 0 ? each.value.custom_image.compartment_id : var.compartments_dependency[each.value.custom_image.compartment_id].id) : (length(regexall("^ocid1.*$", var.instances_configuration.default_compartment_id)) > 0 ? var.instances_configuration.default_compartment_id : var.compartments_dependency[var.instances_configuration.default_compartment_id].id)
     filter {
@@ -86,8 +90,9 @@ locals {
   #------------------------------
 
   custom_images = length(data.oci_core_images.these_custom) > 0 ? flatten([
-    for v in data.oci_core_images.these_custom : [
+    for k, v in data.oci_core_images.these_custom : [
       for i in v.images : {
+        key = k
         display_name = i.display_name
         id = i.id
         operating_system = i.operating_system
@@ -95,7 +100,7 @@ locals {
     ]
   ]) : []
   
-  custom_images_by_name = { for i in local.custom_images : i.display_name => {id = i.id, operating_system = i.operating_system }}
+  custom_images_by_name = { for i in local.custom_images : "${i.key}.${i.display_name}" => {id = i.id, operating_system = i.operating_system }}
 
   platform_types = ["AMD_MILAN_BM", "AMD_MILAN_BM_GPU", "AMD_ROME_BM", "AMD_ROME_BM_GPU", "AMD_VM", "GENERIC_BM", "INTEL_ICELAKE_BM", "INTEL_SKYLAKE_BM", "INTEL_VM"]
 }
@@ -165,7 +170,7 @@ resource "oci_core_instance" "these" {
       }
       # Check 13: Check custom image (by name) exists
       precondition {
-        condition = try(each.value.custom_image.name,null) != null ? contains(keys(local.custom_images_by_name),each.value.custom_image.name) : true
+        condition = try(each.value.custom_image.name,null) != null ? contains(keys(local.custom_images_by_name),"${each.key}.${each.value.custom_image.name}") : true
         error_message = try(each.value.custom_image.name,null) != null ? "VALIDATION FAILURE in instance \"${each.key}\": custom image \"${each.value.custom_image.name}\" not found in compartment \"${coalesce(each.value.custom_image.compartment_id,var.instances_configuration.default_compartment_id)}\"." : "__void__"
       }
       # Check 14: Check compatible settings for flexible platform shapes
@@ -195,8 +200,7 @@ resource "oci_core_instance" "these" {
     source_details {
       boot_volume_size_in_gbs = each.value.boot_volume != null ? each.value.boot_volume.size : 50
       source_type = "image"
-      #source_id   = each.value.custom_image != null ? (each.value.custom_image.ocid != null ? each.value.custom_image.ocid : each.value.custom_image.name != null ? local.custom_images_by_name[each.value.custom_image.name].id : "undefined") : (local.mkp_image_details[each.key] != null ? local.mkp_image_details[each.key].mkp_image_ocid : "undefined")
-      source_id   = each.value.marketplace_image != null ? (local.mkp_image_details[each.key] != null ? local.mkp_image_details[each.key].mkp_image_ocid : "undefined") : (each.value.platform_image != null ? (each.value.platform_image.ocid != null ? each.value.platform_image.ocid : each.value.platform_image.name != null ? local.platform_images_by_name[each.value.platform_image.name].id : "undefined") : (each.value.custom_image != null ? (each.value.custom_image.ocid != null ? each.value.custom_image.ocid : each.value.custom_image.name != null ? local.custom_images_by_name[each.value.custom_image.name].id : "undefined") : "undefined"))
+      source_id   = each.value.marketplace_image != null ? (local.mkp_image_details[each.key] != null ? local.mkp_image_details[each.key].mkp_image_ocid : "undefined") : (each.value.platform_image != null ? (each.value.platform_image.ocid != null ? each.value.platform_image.ocid : each.value.platform_image.name != null ? local.platform_images_by_name[each.value.platform_image.name].id : "undefined") : (each.value.custom_image != null ? (each.value.custom_image.ocid != null ? each.value.custom_image.ocid : each.value.custom_image.name != null ? local.custom_images_by_name["${each.key}.${each.value.custom_image.name}"].id : "undefined") : "undefined"))
       kms_key_id  = each.value.encryption != null ? (each.value.encryption.kms_key_id != null ? (length(regexall("^ocid1.*$", each.value.encryption.kms_key_id)) > 0 ? each.value.encryption.kms_key_id : var.kms_dependency[each.value.encryption.kms_key_id].id) : (var.instances_configuration.default_kms_key_id != null ? (length(regexall("^ocid1.*$", var.instances_configuration.default_kms_key_id)) > 0 ? var.instances_configuration.default_kms_key_id : var.kms_dependency[var.instances_configuration.default_kms_key_id].id) : null)) : (var.instances_configuration.default_kms_key_id != null ? (length(regexall("^ocid1.*$", var.instances_configuration.default_kms_key_id)) > 0 ? var.instances_configuration.default_kms_key_id : var.kms_dependency[var.instances_configuration.default_kms_key_id].id) : null)
     }
     launch_options {
