@@ -2,14 +2,14 @@
 
 ## Introduction
 
-This example shows how to deploy Compute instances in OCI using the [OCI Landing Zones Compute module](../../README.md). It deploys three Compute instances with the following characteristics:
+This example shows how to deploy Compute instances in OCI using the [OCI Landing Zones Compute module](../../README.md). It deploys four Compute instances with the following characteristics:
 - All instances are deployed in the same compartment and same subnet, defined by *default_compartment_id* and *default_subnet_id* attributes.
 - All instances can be accessed over SSH with the private key corresponding to the public key defined by *default_ssh_public_key_path* attribute.
 - All instances are placed in the network security groups defined by *networking.network_security_groups* attribute within each instance.
 
 For INSTANCE-1:
 - The instance is based on "VM.Standard.E4.Flex" shape, as defined by the *shape* attribute.
-- The instance is based on the "Oracle Linux 7 STIG" Marketplace image published by "Oracle Linux", as defined by *image.name* and *image.publisher_name* attributes. Use the [markeplace-images module](../../../marketplace-images/) to find Marketplace images information based on a search filter.
+- The instance is based on the "Oracle Linux 7 STIG" Marketplace image, as defined by *marketplace_image.name* attribute. Use the [markeplace-images module](../../../marketplace-images/) to find Marketplace images information based on a search filter.
 - The instance will **not** have the boot volume preserved on termination, as defined by *boot_volume.preserve_on_instance_deletion* attribute.
 - The instance requires a customer managed key for boot volume encryption, as defined by *cis_level* attribute.
 - The instance boot volume is encrypted with a customer managed key referred by *encryption.kms_key_id* attribute.
@@ -19,7 +19,7 @@ For INSTANCE-1:
 
 For INSTANCE-2:
 - The instance is based on "VM.Standard.E4.Flex" shape, as defined by the *shape* attribute.
-- The instance is based on the "Oracle-Linux-8.8-2023.08.31-0" image published, as defined by *image.id* attributes. Use the [platform-images module](../../../platform-images/) to obtain platform images information based on a search filter.
+- The instance is based on the "Oracle-Linux-8.10-2024.08.29-0" platform image, as defined by *platform_image.name* attribute. Use the [platform-images module](../../../platform-images/) to obtain platform images information based on a search filter.
 - The instance will have the boot volume preserved on termination, as defined by *boot_volume.preserve_on_instance_deletion* attribute.
 - The instance boot volume is encrypted with an Oracle-managed key (OCI default) as it does not define *encryption.kms_key_id* attribute and there's no applicable *default_kms_key_id* attribute.
 - The instance boot volume is set to be backed up per Oracle-managed *silver* backup policy, as defined by *boot_volume.backup_policy* attribute.
@@ -29,11 +29,19 @@ For INSTANCE-2:
 
 For INSTANCE-3:
 - The instance is based on "VM.Standard.E4.Flex" shape, as defined by the *shape* attribute.
-- The instance is based on the "Oracle-Linux-8.8-2023.08.31-0" image published, as defined by *image.id* attributes. Use the [platform-images module](../../../platform-images/) to obtain platform images information based on a search filter.
+- The instance is based on the "Oracle-Linux-8.10-2024.08.29-0" platform image, as defined by *platform_image.name* attributes. Use the [platform-images module](../../../platform-images/) to obtain platform images information based on a search filter.
 - The instance will have the boot volume preserved on termination, as defined by *boot_volume.preserve_on_instance_deletion* attribute.
 - The instance boot volume is encrypted with an Oracle-managed key (OCI default) as it does not define *encryption.kms_key_id* attribute and there's no applicable *default_kms_key_id* attribute.
 - The instance boot volume is set to be backed up per Oracle-managed *gold* backup policy, as defined by *boot_volume.backup_policy* attribute.
 - The instance has confidential computing enabled, as defined by *platform_type* and *encryption.encrypt_data_in_use* attributes.
+- The instance has only default Cloud Agent plugins (management and monitoring) enabled, as *cloud_agent.plugins* attribute is undefined.
+
+For INSTANCE-4:
+- The instance is based on "VM.Standard.E4.Flex" shape, as defined by the *shape* attribute.
+- The instance is based on a custom image available in a user-provided compartment, as defined by *custom_image.name* and *custom_image.compartment_id* attributes, respectively.
+- The instance will have the boot volume preserved on termination, as defined by *boot_volume.preserve_on_instance_deletion* attribute.
+- The instance boot volume is encrypted with an Oracle-managed key (OCI default) as it does not define *encryption.kms_key_id* attribute and there's no applicable *default_kms_key_id* attribute.
+- The instance boot volume is set to be backed up per Oracle-managed *gold* backup policy, as defined by *boot_volume.backup_policy* attribute.
 - The instance has only default Cloud Agent plugins (management and monitoring) enabled, as *cloud_agent.plugins* attribute is undefined.
 
 See [input.auto.tfvars.template](./input.auto.tfvars.template) for the variables configuration.
