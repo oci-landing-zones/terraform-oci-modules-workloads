@@ -188,7 +188,7 @@ The instances themselves are defined within the **instances** attribute, In Terr
 - **freeform_tags** &ndash; (Optional) The instance freeform tags. *default_freeform_tags* is used if undefined.
 - **marketplace_image** &ndash; (Optional) The Marketplace image information. *name* is required, *version* is optional. If *version* is not provided, the latest available version is used. See [Obtaining OCI Marketplace Images Information](#marketplace-images) for how to get OCI Marketplace images. **Use one of *marketplace_image*, *platform_image* or *custom_image*.**
   - **name** &ndash; The Marketplace image name.
-  - **version** &ndash; (Optional) The Marketplace image version. If not provided, the latest available version is used.
+  - **version** &ndash; (Optional) The Marketplace image version. If not provided, the latest available version is used. For versions with empty spaces, like "7.4.3 ( X64 )", replace any empty spaces by the _ character, so it becomes "7.4.3\_(\_X64\_)".
 - **platform_image** &ndash; (Optional) The platform image information. Either the *ocid* or *name* must be provided. See [Obtaining OCI Platform Images Information](#platform-images) for how to get OCI Platform images. **Use one of *marketplace_image*, *platform_image* or *custom_image*.**
   - **ocid** &ndash; (Optional) The Platform image ocid. It takes precedence over name.
   - **name** &ndash; (Optional) The Platform image name. If *name* is provided, variable *tenancy_ocid* is required for looking up the image.
