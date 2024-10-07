@@ -1,0 +1,54 @@
+# Copyright (c) 2023 Oracle and/or its affiliates.
+# Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
+
+#--------------------------------------------------------------------------------------------------------------------------------------
+# 1. Rename this file to <project-name>.auto.tfvars, where <project-name> is a name of your choice.
+# 2. Provide values for "Tenancy Connectivity Variables".
+# 3. Replace <REPLACE-BY-*> placeholders with appropriate values.
+#--------------------------------------------------------------------------------------------------------------------------------------
+
+#---------------------------------------
+# Tenancy Connectivity Variables
+#---------------------------------------
+
+tenancy_ocid         = "<tenancy OCID>"            # Get this from OCI Console (after logging in, go to top-right-most menu item and click option "Tenancy: <your tenancy name>").
+user_ocid            = "<user OCID>"               # Get this from OCI Console (after logging in, go to top-right-most menu item and click option "My profile").
+fingerprint          = "<PEM key fingerprint>"     # The fingerprint can be gathered from your user account. In the "My profile page, click "API keys" on the menu in left hand side.
+private_key_path     = "<path to the private key>" # This is the full path on your local system to the API signing private key.
+private_key_password = ""                          # This is the password that protects the private key, if any.
+region               = "<your tenancy region>"     # The region name.
+
+#---------------------------------------
+# Input variable
+#---------------------------------------
+
+instances_configuration = {
+  default_compartment_id = "<REPLACE-BY-COMPARTMENT-OCID>"
+  default_ssh_public_key_path = "~/.ssh/id_rsa.pub"
+  instances = {
+    FORTIGATE-INSTANCE = {
+      shape = "VM.Standard.E4.Flex"
+      name  = "fortigate-instance"
+      placement = {
+        availability_domain = 1
+        fault_domain = 1
+      }
+      boot_volume = {
+        size = 120
+        preserve_on_instance_deletion = false
+      }
+      networking = {
+        hostname  = "fortigate-instance"
+        subnet_id = "<REPLACE-BY-SUBNET-OCID>"
+        network_security_groups = ["<REPLACE-BY-NETWORK-SECURITY-GROUP-OCID>"]
+      }
+      marketplace_image = {
+        name = "FortiGate Next-Gen Firewall (BYOL)"
+        # For deploying the latest version, omit the version attribute.
+        # For deploying versions with empty spaces, replace any empty spaces with the _ character, as in the example below.
+        # version = "7.4.3_(_X64_)" 
+      }     
+    }
+  }
+}
+
