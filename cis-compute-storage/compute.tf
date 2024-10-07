@@ -28,8 +28,14 @@ data "oci_core_image_shapes" "these_platform" {
 # Custom images data source
 #------------------------------
 data "oci_core_images" "these_custom" {
-  for_each = var.instances_configuration != null ? {for k, v in var.instances_configuration["instances"] : k => v if v.custom_image != null} : {}
-    compartment_id = each.value.compartment_id != null ? (length(regexall("^ocid1.*$", each.value.compartment_id)) > 0 ? each.value.compartment_id : var.compartments_dependency[each.value.compartment_id].id) : (length(regexall("^ocid1.*$", var.instances_configuration.default_compartment_id)) > 0 ? var.instances_configuration.default_compartment_id : var.compartments_dependency[var.instances_configuration.default_compartment_id].id)
+  for_each = var.instances_configuration != null ? {for k, v in var.instances_configuration["instances"] : k => v if try(v.custom_image.name,null) != null} : {}
+    lifecycle {
+      precondition {
+        condition = each.value.custom_image.compartment_id != null || var.instances_configuration.default_compartment_id != null
+        error_message = "VALIDATION FAILURE in instance \"${each.key}\": either \"compartment_id\" attribute or \"default_compartment_id\" attribute is required when providing a custom image name."
+      }
+    }
+    compartment_id = each.value.custom_image.compartment_id != null ? (length(regexall("^ocid1.*$", each.value.custom_image.compartment_id)) > 0 ? each.value.custom_image.compartment_id : var.compartments_dependency[each.value.custom_image.compartment_id].id) : (length(regexall("^ocid1.*$", var.instances_configuration.default_compartment_id)) > 0 ? var.instances_configuration.default_compartment_id : var.compartments_dependency[var.instances_configuration.default_compartment_id].id)
     filter {
       name   = "state"
       values = ["AVAILABLE"]
@@ -102,7 +108,7 @@ resource "oci_core_instance" "these" {
         condition = coalesce(each.value.cis_level,var.instances_configuration.default_cis_level,"1") == "2" ? (each.value.encryption != null ? (each.value.encryption.kms_key_id != null || var.instances_configuration.default_kms_key_id != null) : var.instances_configuration.default_kms_key_id != null) : true # false triggers this.
         error_message = "VALIDATION FAILURE (CIS Storage 4.1.2) in instance \"${each.key}\": a customer managed key is required when CIS level is set to 2. Either \"encryption.kms_key_id\" or \"default_kms_key_id\" must be provided."
       }
-      # Check 2: Either customer image or marketplace image must be provided.
+      # Check 2: Either custom image or marketplace image or platform image must be provided.
       precondition {
         condition = each.value.marketplace_image != null || each.value.platform_image != null || each.value.custom_image != null
         error_message = "VALIDATION FAILURE in instance \"${each.key}\": either \"marketplace_image\" or \"platform_image\" or \"custom_image\" must be provided. Precedence, from higher to lower, is \"marketplace_image\", \"platform_image\", \"custom_image\"."
@@ -157,7 +163,12 @@ resource "oci_core_instance" "these" {
         condition = try(each.value.platform_image.name,null) != null ? contains(local.platform_images_by_name[each.value.platform_image.name].shapes,each.value.shape) : true
         error_message = try(each.value.platform_image.name,null) != null ? "VALIDATION FAILURE in instance \"${each.key}\": invalid image shape \"${each.value.shape}\" in \"shape\" attribute. Ensure it is spelled correctly. Valid shapes for platform image \"${try(each.value.platform_image.name,"")}\" are: ${join(", ",[for v in local.platform_images_by_name[each.value.platform_image.name].shapes : "\"${v}\""])}." : "__void__"
       }
-      # Check 13: Check compatible settings for flexible platform shapes
+      # Check 13: Check custom image (by name) exists
+      precondition {
+        condition = try(each.value.custom_image.name,null) != null ? contains(keys(local.custom_images_by_name),each.value.custom_image.name) : true
+        error_message = try(each.value.custom_image.name,null) != null ? "VALIDATION FAILURE in instance \"${each.key}\": custom image \"${each.value.custom_image.name}\" not found in compartment \"${coalesce(each.value.custom_image.compartment_id,var.instances_configuration.default_compartment_id)}\"." : "__void__"
+      }
+      # Check 14: Check compatible settings for flexible platform shapes
       # precondition {
       #   condition = try(each.value.platform_image.name,null) != null && length(regexall("FLEX",upper(each.value.shape))) > 0 && each.value.flex_shape_settings != null ? local.platform_images_by_name[each.value.platform_image.name].min_ocpu <= try(each.value.flex_shape_settings.ocpus,0) && local.platform_images_by_name[each.value.platform_image.name].max_ocpu >= try(each.value.flex_shape_settings.ocpus,0) : true
       #   error_message = try(each.value.platform_image.name,null) != null && length(regexall("FLEX",upper(each.value.shape))) > 0 && each.value.flex_shape_settings != null ? "VALIDATION FAILURE in instance \"${each.key}\": invalid ocpu setting \"${each.value.flex_shape_settings.ocpus}\" in \"flexible_shape_settings.ocpu\" attribute for \"${try(each.value.platform_image.name,"")}\". Number of ocpus range from \"${try(local.platform_images_by_name[each.value.platform_image.name].min_ocpu,"")}\" to \"${try(local.platform_images_by_name[each.value.platform_image.name].max_ocpu,"")}\"." : "__void__"
