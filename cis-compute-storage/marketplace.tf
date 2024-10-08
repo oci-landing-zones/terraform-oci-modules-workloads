@@ -32,8 +32,8 @@ resource "oci_marketplace_listing_package_agreement" "these" {
   for_each = local.mkp_instances
     lifecycle {
       precondition {
-        condition = each.value.marketplace_image != null ? (each.value.marketplace_image.version != null ? contains([for v in data.oci_core_app_catalog_listing_resource_versions.these[each.key].app_catalog_listing_resource_versions : v.listing_resource_version],each.value.marketplace_image.version) : true) : true
-        error_message = "VALIDATION FAILURE in instance \"${each.key}\": invalid Marketplace image version \"${coalesce(each.value.marketplace_image.version,replace(data.oci_marketplace_listing.this[each.key].default_package_version," ","_"))}\" in \"marketplace_image.version\" attribute. Ensure it is spelled correctly. Valid versions for image name \"${each.value.marketplace_image.name}\" are: ${join(", ",[for v in data.oci_core_app_catalog_listing_resource_versions.these[each.key].app_catalog_listing_resource_versions : "\"${v.listing_resource_version}\""])}."
+        condition = try(each.value.marketplace_image.version,null) != null ? contains([for v in data.oci_core_app_catalog_listing_resource_versions.these[each.key].app_catalog_listing_resource_versions : v.listing_resource_version],each.value.marketplace_image.version) : true
+        error_message = try(each.value.marketplace_image.version,null) != null ? "VALIDATION FAILURE in instance \"${each.key}\": invalid Marketplace image version \"${coalesce(each.value.marketplace_image.version,replace(data.oci_marketplace_listing.this[each.key].default_package_version," ","_"))}\" in \"marketplace_image.version\" attribute. Ensure it is spelled correctly. Valid versions for image name \"${each.value.marketplace_image.name}\" are: ${join(", ",[for v in data.oci_core_app_catalog_listing_resource_versions.these[each.key].app_catalog_listing_resource_versions : "\"${v.listing_resource_version}\""])}." : "__void__"
       }
     }    
     agreement_id    = data.oci_marketplace_listing_package_agreements.these[each.key].agreements.0.id
@@ -62,8 +62,8 @@ data "oci_marketplace_listing" "this" {
   for_each = local.mkp_instances
   lifecycle {  
      precondition {
-        condition = each.value.marketplace_image != null ? contains([for v in data.oci_core_app_catalog_listings.all.app_catalog_listings : v.display_name],each.value.marketplace_image.name) : true
-        error_message = "VALIDATION FAILURE in instance \"${each.key}\": invalid marketplace image name \"${each.value.marketplace_image.name}\" in \"marketplace_image.name\" attribute. Ensure it is spelled correctly. Valid values are: ${join(", ",[for v in data.oci_core_app_catalog_listings.all.app_catalog_listings : "\"${v.display_name}\""])}"
+        condition = try(each.value.marketplace_image.name,null) != null ? contains([for v in data.oci_core_app_catalog_listings.all.app_catalog_listings : v.display_name],each.value.marketplace_image.name) : true
+        error_message = try(each.value.marketplace_image.name,null) != null ? "VALIDATION FAILURE in instance \"${each.key}\": invalid marketplace image name \"${each.value.marketplace_image.name}\" in \"marketplace_image.name\" attribute. Ensure it is spelled correctly. Valid values are: ${join(", ",[for v in data.oci_core_app_catalog_listings.all.app_catalog_listings : "\"${v.display_name}\""])}" : "__void__"
       }
     }
     listing_id = data.oci_marketplace_listings.these[each.key].listings.0.id
@@ -83,8 +83,8 @@ data "oci_core_app_catalog_listing_resource_version" "this" {
   for_each = local.mkp_instances
     lifecycle {  
      precondition {
-        condition = each.value.marketplace_image != null ? contains([for v in data.oci_core_app_catalog_listings.all.app_catalog_listings : v.display_name],each.value.marketplace_image.name) : true
-        error_message = "VALIDATION FAILURE in instance \"${each.key}\": invalid marketplace image name \"${each.value.marketplace_image.name}\" in \"marketplace_image.name\" attribute. Ensure it is spelled correctly."
+        condition = try(each.value.marketplace_image.name,null) != null ? contains([for v in data.oci_core_app_catalog_listings.all.app_catalog_listings : v.display_name],each.value.marketplace_image.name) : true
+        error_message = try(each.value.marketplace_image.name,null) != null ? "VALIDATION FAILURE in instance \"${each.key}\": invalid marketplace image name \"${each.value.marketplace_image.name}\" in \"marketplace_image.name\" attribute. Ensure it is spelled correctly." : "__void__"
       }
     }
     listing_id       = data.oci_core_app_catalog_listings.these[each.key].app_catalog_listings[0].listing_id
@@ -95,8 +95,8 @@ resource "oci_core_app_catalog_listing_resource_version_agreement" "these" {
   for_each =  local.mkp_instances
     lifecycle {  
       precondition {
-        condition = each.value.marketplace_image != null ? contains([for v in data.oci_core_app_catalog_listings.all.app_catalog_listings : v.display_name],each.value.marketplace_image.name) : true
-        error_message = "VALIDATION FAILURE in instance \"${each.key}\": invalid marketplace image name \"${each.value.marketplace_image.name}\" in \"marketplace_image.name\" attribute. Ensure it is spelled correctly."
+        condition = try(each.value.marketplace_image.name,null) != null ? contains([for v in data.oci_core_app_catalog_listings.all.app_catalog_listings : v.display_name],each.value.marketplace_image.name) : true
+        error_message = try(each.value.marketplace_image.name,null) != null ? "VALIDATION FAILURE in instance \"${each.key}\": invalid marketplace image name \"${each.value.marketplace_image.name}\" in \"marketplace_image.name\" attribute. Ensure it is spelled correctly." : "__void__"
       }
     }
     listing_id               = data.oci_core_app_catalog_listings.these[each.key].app_catalog_listings[0].listing_id
@@ -118,8 +118,8 @@ resource "oci_core_app_catalog_subscription" "these" {
   for_each = local.mkp_instances
     lifecycle {  
       precondition {
-        condition = each.value.marketplace_image != null ? contains([for v in data.oci_core_app_catalog_listings.all.app_catalog_listings : v.display_name],each.value.marketplace_image.name) : true
-        error_message = "VALIDATION FAILURE in instance \"${each.key}\": invalid marketplace image name \"${each.value.marketplace_image.name}\" in \"marketplace_image.name\" attribute. Ensure it is spelled correctly."
+        condition = try(each.value.marketplace_image.name,null) != null ? contains([for v in data.oci_core_app_catalog_listings.all.app_catalog_listings : v.display_name],each.value.marketplace_image.name) : true
+        error_message = try(each.value.marketplace_image.name,null) != null ? "VALIDATION FAILURE in instance \"${each.key}\": invalid marketplace image name \"${each.value.marketplace_image.name}\" in \"marketplace_image.name\" attribute. Ensure it is spelled correctly." : "__void__"
       }
     }  
     listing_id = data.oci_core_app_catalog_listings.these[each.key].app_catalog_listings[0].listing_id
