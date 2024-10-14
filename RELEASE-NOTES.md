@@ -5,12 +5,10 @@
 3. Marketplace images configured with automatic Marketplace agreements.
 4. Module now validates whether provided shape is compatible with provided marketplace or platform image. 
 
-
 # August 28, 2024 Release Notes - 0.1.6
 ## Updates
 1. All modules now require Terraform binary equal or greater than 1.3.0.
 2. *cislz-terraform-module* tag renamed to *ocilz-terraform-module*.
-
 
 # July 25, 2024 Release Notes - 0.1.5
 ## Updates    
