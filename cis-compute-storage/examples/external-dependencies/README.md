@@ -80,7 +80,7 @@ Note the identifying references like *APP-CMP*, *APP-SUBNET*, *APP-NSG*, *APP-KE
 2. Within *\<project-name\>.auto.tfvars*, provide tenancy connectivity information and adjust the input variables, by making the appropriate substitutions:
    - Replace *\<REPLACE-BY-\*\>* placeholders with appropriate values. 
    
-Refer to [cis-compute-storage module README.md](../../README.md) for overall attributes usage.
+Refer to [Compute/Storage module README.md](../../README.md) for overall attributes usage.
 
 3. In this folder, run the typical Terraform workflow:
 ```

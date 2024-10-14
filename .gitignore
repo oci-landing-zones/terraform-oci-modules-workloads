@@ -16,3 +16,4 @@ mounting-block-volumes.txt
 **/examples/clusters/*
 **/creds
 **/clean-setup
+**/object-storage

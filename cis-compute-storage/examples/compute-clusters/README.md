@@ -10,7 +10,7 @@ A [Compute cluster](https://docs.oracle.com/iaas/Content/Compute/Tasks/compute-c
 - The Compute instance shape is "BM.Optimized3.36".
 - The Compute instance is created in the compartment and subnet specified by *default_compartment_id* and *default_subnet_id* attributes, respectively, within *instances_configuration* variable.
 
-Note that you must provide the image *name* and *publisher_name* for provisioning the Compute instance. Use the [marketplace-images module](../../../marketplace-images/) to obtain Marketplace images information based on a search filter. It will also return the image OCID that can be used instead of the image name/publisher pair.
+Note that you must provide the marketplace image *name* for provisioning the Compute instance. Use the [marketplace-images module](../../../marketplace-images/) to obtain Marketplace images information based on a search filter.
 
 ### Cluster Instance Configuration
 - A cluster instance configuration is created based on the Compute instance. This is indicated by *template_instance_id* attribute within *cluster_instances_configuration* variable.
@@ -30,7 +30,7 @@ Note that you must provide the image *name* and *publisher_name* for provisionin
 2. Within *\<project-name\>.auto.tfvars*, provide tenancy connectivity information and adjust the input variables, by making the appropriate substitutions:
    - Replace \<REPLACE-WITH-\*\> placeholders with appropriate values. 
    
-Refer to [cis-compute-storage module README.md](../../README.md) for overall attributes usage.
+Refer to [Compute/Storage module README.md](../../README.md) for overall attributes usage.
 
 3. In this folder, run the typical Terraform workflow:
 ```

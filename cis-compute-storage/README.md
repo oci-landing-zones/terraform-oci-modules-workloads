@@ -136,39 +136,6 @@ For referring to a specific module version, add an extra slash before the folder
   source = "github.com/oracle-quickstart/terraform-oci-secure-workloads//cis-compute-storage?ref=v0.1.0"
 ```
 
-## <a name="invoke">How to Invoke the Module</a>
-
-Terraform modules can be invoked locally or remotely. 
-
-For invoking the module locally, just set the module *source* attribute to the module file path (relative path works). The following example assumes the module is two folders up in the file system.
-```
-module "compute" {
-  source = "../.."
-  providers = {
-    oci = oci
-    oci.block_volumes_replication_region = oci.block_volumes_replication_region
-  }
-  instances_configuration = var.instances_configuration
-  storage_configuration   = var.storage_configuration
-}
-```
-For invoking the module remotely, set the module *source* attribute to the *cis-compute-storage* module folder in this repository, as shown:
-```
-module "compute" {
-  source = "github.com/oracle-quickstart/terraform-oci-secure-workloads/cis-compute-storage"
-  providers = {
-    oci = oci
-    oci.block_volumes_replication_region = oci.block_volumes_replication_region
-  }
-  instances_configuration = var.instances_configuration
-  storage_configuration   = var.storage_configuration
-}
-```
-For referring to a specific module version, add an extra slash before the folder name and append *ref=\<version\>* to the *source* attribute value, as in:
-```
-  source = "github.com/oracle-quickstart/terraform-oci-secure-workloads//cis-compute-storage?ref=v0.1.0"
-```
-
 ## <a name="functioning">Module Functioning</a>
 
 The module defines two top level variables used to manage instances, storage, clusters and cluster configurations: 
@@ -219,10 +186,16 @@ The instances themselves are defined within the **instances** attribute, In Terr
 - **ssh_public_key_path** &ndash; (Optional) The SSH public key path used to access the instance. *default_ssh_public_key_path* is used if undefined.
 - **defined_tags** &ndash; (Optional) The instance defined tags. *default_defined_tags* is used if undefined.
 - **freeform_tags** &ndash; (Optional) The instance freeform tags. *default_freeform_tags* is used if undefined.
-- **image** &ndash; The instance base image. You must provider either the id or (name and publisher name). See [Obtaining OCI Platform Images Information](#platform-images) for how to get OCI Platform images and [Obtaining OCI Marketplace Images Information](#marketplace-images) for how to get OCI Marketplace images.
-  - **id** &ndash; (Optional) The image id for the instance. It takes precedence over name and publisher.
-  - **name** &ndash; (Optional) The image name to search for in OCI Marketplace. 
-  - **publisher** &ndash; (Optional) The image's publisher name.
+- **marketplace_image** &ndash; (Optional) The Marketplace image information. *name* is required, *version* is optional. If *version* is not provided, the latest available version is used. See [Obtaining OCI Marketplace Images Information](#marketplace-images) for how to get OCI Marketplace images. **Use one of *marketplace_image*, *platform_image* or *custom_image*.**
+  - **name** &ndash; The Marketplace image name.
+  - **version** &ndash; (Optional) The Marketplace image version. If not provided, the latest available version is used. For versions with empty spaces, like "7.4.3 ( X64 )", replace any empty spaces by the _ character, so it becomes "7.4.3\_(\_X64\_)".
+- **platform_image** &ndash; (Optional) The platform image information. Either the *ocid* or *name* must be provided. See [Obtaining OCI Platform Images Information](#platform-images) for how to get OCI Platform images. **Use one of *marketplace_image*, *platform_image* or *custom_image*.**
+  - **ocid** &ndash; (Optional) The Platform image ocid. It takes precedence over name.
+  - **name** &ndash; (Optional) The Platform image name. If *name* is provided, variable *tenancy_ocid* is required for looking up the image.
+- **custom_image** &ndash; (Optional) The custom image information. Either the *ocid* or (*name* and *compartment_id*) must be provided. **Use one of *marketplace_image*, *platform_image* or *custom_image*.**
+  - **ocid** &ndash; (Optional) The custom image ocid. It takes precedence over name.
+  - **name** &ndash; (Optional) The custom image name.
+  - **compartment_id** &ndash; (Optional) The custom image compartment. It is required if name is used.
 - **placement** &ndash; (Optional) Instance placement settings.
   - **availability_domain** &ndash; (Optional) The instance availability domain. Default is 1.
   - **fault_domain** &ndash; (Optional) The instance fault domain. Default is 1.

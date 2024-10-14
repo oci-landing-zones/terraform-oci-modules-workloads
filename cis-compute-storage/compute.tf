@@ -1,59 +1,109 @@
 # Copyright (c) 2023, Oracle and/or its affiliates. All rights reserved.
 # Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
-data "oci_core_image" "these" {
-  for_each = var.instances_configuration != null ? {for k, v in var.instances_configuration["instances"] : k => v if v.image.id != null} : {}
-    image_id = each.value.image.id
+#------------------------------
+# Platform images data sources
+#------------------------------
+data "oci_core_images" "these_platform" {
+  count = local.deploy_platform_image ? 1 : 0
+    lifecycle {
+      precondition {
+          condition = var.tenancy_ocid != null
+          error_message = "VALIDATION FAILURE: variable \"tenancy_ocid\" is required when deploying a Compute instance based on a platform image."
+        }
+    }
+    compartment_id = var.tenancy_ocid
+    filter {
+      name   = "state"
+      values = ["AVAILABLE"]
+    }
 }
 
+data "oci_core_image_shapes" "these_platform" {
+  for_each =  length(data.oci_core_images.these_platform) > 0 ? {for i in data.oci_core_images.these_platform[0].images : i.id => {"display_name" : i.display_name}} : {}
+    image_id = each.key
+}
+
+#------------------------------
+# Custom images data source
+#------------------------------
+data "oci_core_images" "these_custom" {
+  for_each = var.instances_configuration != null ? {for k, v in var.instances_configuration["instances"] : k => v if try(v.custom_image.name,null) != null} : {}
+    lifecycle {
+      precondition {
+        condition = each.value.custom_image.compartment_id != null || var.instances_configuration.default_compartment_id != null
+        error_message = "VALIDATION FAILURE in instance \"${each.key}\": either \"compartment_id\" attribute or \"default_compartment_id\" attribute is required when providing a custom image name."
+      }
+      postcondition {
+        condition = self.images != null
+        error_message = "VALIDATION FAILURE in instance \"${each.key}\": image \"${each.value.custom_image.name}\" not found in compartment \"${each.value.custom_image.compartment_id != null ? (length(regexall("^ocid1.*$", each.value.custom_image.compartment_id)) > 0 ? each.value.custom_image.compartment_id : var.compartments_dependency[each.value.custom_image.compartment_id].id) : (length(regexall("^ocid1.*$", var.instances_configuration.default_compartment_id)) > 0 ? var.instances_configuration.default_compartment_id : var.compartments_dependency[var.instances_configuration.default_compartment_id].id)}\"."
+      }
+    }
+    compartment_id = each.value.custom_image.compartment_id != null ? (length(regexall("^ocid1.*$", each.value.custom_image.compartment_id)) > 0 ? each.value.custom_image.compartment_id : var.compartments_dependency[each.value.custom_image.compartment_id].id) : (length(regexall("^ocid1.*$", var.instances_configuration.default_compartment_id)) > 0 ? var.instances_configuration.default_compartment_id : var.compartments_dependency[var.instances_configuration.default_compartment_id].id)
+    filter {
+      name   = "state"
+      values = ["AVAILABLE"]
+    }
+    filter {
+      name   = "display_name"
+      values = [each.value.custom_image.name]
+    }
+}
+
+#------------------------------
+# AD data source
+#------------------------------
 data "oci_identity_availability_domains" "ads" {
   for_each       = var.instances_configuration != null ? var.instances_configuration["instances"] : {}
   compartment_id = each.value.compartment_id != null ? (length(regexall("^ocid1.*$", each.value.compartment_id)) > 0 ? each.value.compartment_id : var.compartments_dependency[each.value.compartment_id].id) : (length(regexall("^ocid1.*$", var.instances_configuration.default_compartment_id)) > 0 ? var.instances_configuration.default_compartment_id : var.compartments_dependency[var.instances_configuration.default_compartment_id].id)
 }
 
-data "oci_core_app_catalog_listings" "existing" {}
-
 locals {
-  listings = {
-    for i in data.oci_core_app_catalog_listings.existing.app_catalog_listings :
-    i.display_name => { "display_name" : i.display_name, "publisher_name" : i.publisher_name, "listing_id" : i.listing_id }...
-  }
-  helper = {
-    for i in local.listings :
-    format("%s: %s", i[0].publisher_name, i[0].display_name) => i[0].listing_id
-  }
-  versions = {
-    for key, value in data.oci_core_app_catalog_listing_resource_versions.existing :
-    key => { "publisher" : split(":", key)[0], "display_name" : split(": ", key)[1], "listing_id" : value.app_catalog_listing_resource_versions[0].listing_id, "listing_resource_id" : value.app_catalog_listing_resource_versions[0].listing_resource_id, "resource_version" : value.app_catalog_listing_resource_versions[0].listing_resource_version } if length(value.app_catalog_listing_resource_versions) != 0
-  }
+  
+  #------------------------------
+  # Platform images
+  #------------------------------
+
+  deploy_platform_image = var.instances_configuration != null ? length([for v in var.instances_configuration["instances"] : v if v.platform_image != null]) > 0 : false
+
+  platform_images = length(data.oci_core_images.these_platform) > 0 ? [
+    for i in data.oci_core_images.these_platform[0].images : {
+      display_name = i.display_name 
+      id = i.id
+      operating_system = i.operating_system
+      operating_system_version = i.operating_system_version
+      encryption_in_transit = i.launch_options[0].is_pv_encryption_in_transit_enabled
+      state : i.state
+      shapes : [for s in data.oci_core_image_shapes.these_platform[i.id].image_shape_compatibilities : s.shape]
+      # min_memory : [for s in data.oci_core_image_shapes.these_platform[i.id].image_shape_compatibilities : try(s.memory_constraints.min_in_gbs,0)]
+      # max_memory : [for s in data.oci_core_image_shapes.these_platform[i.id].image_shape_compatibilities : try(s.memory_constraints.max_in_gbs,0)]
+      # min_ocpu   : [for s in data.oci_core_image_shapes.these_platform[i.id].image_shape_compatibilities : try(s.ocpu_constraints.min,0)]
+      # max_ocpu   : [for s in data.oci_core_image_shapes.these_platform[i.id].image_shape_compatibilities : try(s.ocpu_constraints.max,0)]
+    }
+  ] : []
+
+  platform_images_by_name = { for i in local.platform_images : i.display_name => {id = i.id, operating_system = i.operating_system, shapes = i.shapes/*, min_memory = i.min_memory, max_memory = i.max_memory, min_ocpu = i.min_ocpu, max_ocpu = i.max_ocpu*/ }}
+  platform_images_by_id   = { for i in local.platform_images : i.id => {display_name = i.display_name, operating_system = i.operating_system, shapes = i.shapes/*, min_memory = i.min_memory, max_memory = i.max_memory, min_ocpu = i.min_ocpu, max_ocpu = i.max_ocpu*/ }}
+
+  #------------------------------
+  # Custom images
+  #------------------------------
+
+  custom_images = length(data.oci_core_images.these_custom) > 0 ? flatten([
+    for k, v in data.oci_core_images.these_custom : [
+      for i in v.images : {
+        key = k
+        display_name = i.display_name
+        id = i.id
+        operating_system = i.operating_system
+      }
+    ]
+  ]) : []
+  
+  custom_images_by_name = { for i in local.custom_images : "${i.key}.${i.display_name}" => {id = i.id, operating_system = i.operating_system }}
+
   platform_types = ["AMD_MILAN_BM", "AMD_MILAN_BM_GPU", "AMD_ROME_BM", "AMD_ROME_BM_GPU", "AMD_VM", "GENERIC_BM", "INTEL_ICELAKE_BM", "INTEL_SKYLAKE_BM", "INTEL_VM"]
 }
-
-data "oci_core_app_catalog_listing_resource_versions" "existing" {
-  for_each = var.instances_configuration != null ? local.helper : {}
-    listing_id = each.value
-}
-
-locals {
-  accept_app_catalog = { for k, v in (var.instances_configuration != null ? var.instances_configuration["instances"] : {}) : k => v if v.image.id == null }
-}
-
-resource "oci_core_app_catalog_listing_resource_version_agreement" "these" {
-  for_each = local.accept_app_catalog
-    listing_id               = [for i in local.versions : i.listing_id if i.publisher == each.value.image.publisher_name && i.display_name == each.value.image.name][0]
-    listing_resource_version = [for i in local.versions : i.resource_version if i.publisher == each.value.image.publisher_name && i.display_name == each.value.image.name][0]
-}
-
-resource "oci_core_app_catalog_subscription" "these" {
-  for_each = local.accept_app_catalog
-    compartment_id           = each.value.compartment_id != null ? (length(regexall("^ocid1.*$", each.value.compartment_id)) > 0 ? each.value.compartment_id : var.compartments_dependency[each.value.compartment_id].id) : (length(regexall("^ocid1.*$", var.instances_configuration.default_compartment_id)) > 0 ? var.instances_configuration.default_compartment_id : var.compartments_dependency[var.instances_configuration.default_compartment_id].id)
-    eula_link                = oci_core_app_catalog_listing_resource_version_agreement.these[each.key].eula_link
-    listing_id               = oci_core_app_catalog_listing_resource_version_agreement.these[each.key].listing_id
-    listing_resource_version = oci_core_app_catalog_listing_resource_version_agreement.these[each.key].listing_resource_version
-    oracle_terms_of_use_link = oci_core_app_catalog_listing_resource_version_agreement.these[each.key].oracle_terms_of_use_link
-    signature                = oci_core_app_catalog_listing_resource_version_agreement.these[each.key].signature
-    time_retrieved           = oci_core_app_catalog_listing_resource_version_agreement.these[each.key].time_retrieved
-  }
 
 resource "oci_core_instance" "these" {
   for_each = var.instances_configuration != null ? var.instances_configuration["instances"] : {}
@@ -63,21 +113,21 @@ resource "oci_core_instance" "these" {
         condition = coalesce(each.value.cis_level,var.instances_configuration.default_cis_level,"1") == "2" ? (each.value.encryption != null ? (each.value.encryption.kms_key_id != null || var.instances_configuration.default_kms_key_id != null) : var.instances_configuration.default_kms_key_id != null) : true # false triggers this.
         error_message = "VALIDATION FAILURE (CIS Storage 4.1.2) in instance \"${each.key}\": a customer managed key is required when CIS level is set to 2. Either \"encryption.kms_key_id\" or \"default_kms_key_id\" must be provided."
       }
-      ## Check 2: Either image.id or image.name and image.publisher_name pair must be provided.
+      # Check 2: Either custom image or marketplace image or platform image must be provided.
       precondition {
-        condition = each.value.image.id != null || (each.value.image.name != null && each.value.image.publisher_name != null) 
-        error_message = "VALIDATION FAILURE in instance \"${each.key}\": either \"image.id\" or (\"image.name\" and \"image.publisher_name\") must be provided. \"image.id\" takes precedence over the pair \"image.name\"/\"image.publisher_name\"."
+        condition = each.value.marketplace_image != null || each.value.platform_image != null || each.value.custom_image != null
+        error_message = "VALIDATION FAILURE in instance \"${each.key}\": either \"marketplace_image\" or \"platform_image\" or \"custom_image\" must be provided. Precedence, from higher to lower, is \"marketplace_image\", \"platform_image\", \"custom_image\"."
       }
-      ## Check 3: In-transit encryption is only available to paravirtualized boot volumes.
+      # Check 3: In-transit encryption is only available to paravirtualized boot volumes.
       precondition {
         condition = each.value.encryption != null ? (each.value.boot_volume != null ? (upper(each.value.boot_volume.type) != "PARAVIRTUALIZED" ? each.value.encryption.encrypt_in_transit_on_instance_create == false && each.value.encryption.encrypt_in_transit_on_instance_update == false : true) : true) : true 
         error_message = "VALIDATION FAILURE in instance \"${each.key}\": in-transit encryption (during instance creation and instance update) is only available to instances with PARAVIRTUALIZED boot volume."
       }
       ## Check 4: In-transit encryption is only available to images that have it enabled.
-      precondition {
-        condition = each.value.encryption != null ? (each.value.encryption.encrypt_in_transit_on_instance_create == true || each.value.encryption.encrypt_in_transit_on_instance_update == true ? (contains(keys(data.oci_core_image.these),each.key) ? (data.oci_core_image.these[each.key].launch_options[0].is_pv_encryption_in_transit_enabled == false ? false : true) : true) : true) : true
-        error_message = "VALIDATION FAILURE in instance \"${each.key}\": in-transit encryption is not enabled in the underlying image. Unset both \"encryption.encrypt_in_transit_at_instance_create\" and \"encryption.encrypt_in_transit_at_instance_update\" attributes."
-      }
+      # precondition {
+      #   condition = each.value.encryption != null ? (each.value.encryption.encrypt_in_transit_on_instance_create == true || each.value.encryption.encrypt_in_transit_on_instance_update == true ? (contains(keys(data.oci_core_image.these),each.key) ? (data.oci_core_image.these[each.key].launch_options[0].is_pv_encryption_in_transit_enabled == false ? false : true) : true) : true) : true
+      #   error_message = "VALIDATION FAILURE in instance \"${each.key}\": in-transit encryption is not enabled in the underlying image. Unset both \"encryption.encrypt_in_transit_at_instance_create\" and \"encryption.encrypt_in_transit_at_instance_update\" attributes."
+      # }
       ## Check 5: Valid platform types.
       precondition {
         condition = each.value.platform_type != null ? contains(local.platform_types, each.value.platform_type) : true
@@ -98,6 +148,36 @@ resource "oci_core_instance" "these" {
         condition = coalesce(each.value.cis_level,var.instances_configuration.default_cis_level,"1") == "2" ? (each.value.encryption != null ? (each.value.encryption.encrypt_data_in_use == true ? false : true) : true) : true
         error_message = "VALIDATION FAILURE in instance \"${each.key}\": confidential computing must be disabled when CIS level is set to 2. CIS level 2 automatically enables shielded instances, which cannot be enabled simultaneously with confidential computing in OCI. Either set \"encryption.encrypt_data_in_use\" to false or set CIS level to \"1\"."
       }
+      # Check 9: Check marketplace_image.version
+      precondition {
+        condition = try(each.value.marketplace_image.name,null) != null ? (each.value.marketplace_image.version != null ? contains([for v in data.oci_core_app_catalog_listing_resource_versions.these[each.key].app_catalog_listing_resource_versions : v.listing_resource_version],each.value.marketplace_image.version) : true) : true
+        error_message = try(each.value.marketplace_image.name,null) != null ? "VALIDATION FAILURE in instance \"${each.key}\": invalid Marketplace image version \"${coalesce(each.value.marketplace_image.version,replace(data.oci_marketplace_listing.this[each.key].default_package_version," ","_"))}\" in \"marketplace_image.version\" attribute. Ensure it is spelled correctly. Valid versions for image name \"${each.value.marketplace_image.name}\" are: ${join(", ",[for v in data.oci_core_app_catalog_listing_resource_versions.these[each.key].app_catalog_listing_resource_versions : "\"${v.listing_resource_version}\""])}." : "__void__"
+      }
+      # Check 10: Check compatible shapes for given marketplace image name/version
+      precondition {
+        condition = try(each.value.marketplace_image.name,null) != null ? contains(data.oci_core_app_catalog_listing_resource_version.this[each.key].compatible_shapes,each.value.shape) : true
+        error_message = try(each.value.marketplace_image.name,null) != null ? "VALIDATION FAILURE in instance \"${each.key}\": invalid image shape \"${each.value.shape}\" in \"shape\" attribute. Ensure it is spelled correctly. Valid shapes for marketplace image \"${each.value.marketplace_image.name}\" version \"${coalesce(each.value.marketplace_image.version,replace(data.oci_marketplace_listing.this[each.key].default_package_version," ","_"))}\" are: ${join(", ",[for v in data.oci_core_app_catalog_listing_resource_version.this[each.key].compatible_shapes : "\"${v}\""])}." : "__void__"
+      }
+      # Check 11: Check compatible shapes for given platform image ocid
+      precondition {
+        condition = try(each.value.platform_image.ocid,null) != null ? contains(local.platform_images_by_id[each.value.platform_image.ocid].shapes,each.value.shape) : true
+        error_message = try(each.value.platform_image.ocid,null) != null ? "VALIDATION FAILURE in instance \"${each.key}\": invalid image shape \"${each.value.shape}\" in \"shape\" attribute. Ensure it is spelled correctly. Valid shapes for platform image \"${try(each.value.platform_image.ocid,"")}\" are: ${join(", ",[for v in local.platform_images_by_id[each.value.platform_image.ocid].shapes : "\"${v}\""])}." : "__void__"
+      }
+      # Check 12: Check compatible shapes for given platform image name
+      precondition {
+        condition = try(each.value.platform_image.name,null) != null ? contains(local.platform_images_by_name[each.value.platform_image.name].shapes,each.value.shape) : true
+        error_message = try(each.value.platform_image.name,null) != null ? "VALIDATION FAILURE in instance \"${each.key}\": invalid image shape \"${each.value.shape}\" in \"shape\" attribute. Ensure it is spelled correctly. Valid shapes for platform image \"${try(each.value.platform_image.name,"")}\" are: ${join(", ",[for v in local.platform_images_by_name[each.value.platform_image.name].shapes : "\"${v}\""])}." : "__void__"
+      }
+      # Check 13: Check custom image (by name) exists
+      precondition {
+        condition = try(each.value.custom_image.name,null) != null ? contains(keys(local.custom_images_by_name),"${each.key}.${each.value.custom_image.name}") : true
+        error_message = try(each.value.custom_image.name,null) != null ? "VALIDATION FAILURE in instance \"${each.key}\": custom image \"${each.value.custom_image.name}\" not found in compartment \"${coalesce(each.value.custom_image.compartment_id,var.instances_configuration.default_compartment_id)}\"." : "__void__"
+      }
+      # Check 14: Check compatible settings for flexible platform shapes
+      # precondition {
+      #   condition = try(each.value.platform_image.name,null) != null && length(regexall("FLEX",upper(each.value.shape))) > 0 && each.value.flex_shape_settings != null ? local.platform_images_by_name[each.value.platform_image.name].min_ocpu <= try(each.value.flex_shape_settings.ocpus,0) && local.platform_images_by_name[each.value.platform_image.name].max_ocpu >= try(each.value.flex_shape_settings.ocpus,0) : true
+      #   error_message = try(each.value.platform_image.name,null) != null && length(regexall("FLEX",upper(each.value.shape))) > 0 && each.value.flex_shape_settings != null ? "VALIDATION FAILURE in instance \"${each.key}\": invalid ocpu setting \"${each.value.flex_shape_settings.ocpus}\" in \"flexible_shape_settings.ocpu\" attribute for \"${try(each.value.platform_image.name,"")}\". Number of ocpus range from \"${try(local.platform_images_by_name[each.value.platform_image.name].min_ocpu,"")}\" to \"${try(local.platform_images_by_name[each.value.platform_image.name].max_ocpu,"")}\"." : "__void__"
+      # }
     }  
     compartment_id       = each.value.compartment_id != null ? (length(regexall("^ocid1.*$", each.value.compartment_id)) > 0 ? each.value.compartment_id : var.compartments_dependency[each.value.compartment_id].id) : (length(regexall("^ocid1.*$", var.instances_configuration.default_compartment_id)) > 0 ? var.instances_configuration.default_compartment_id : var.compartments_dependency[var.instances_configuration.default_compartment_id].id)
     availability_domain  = data.oci_identity_availability_domains.ads[each.key].availability_domains[(each.value.placement != null ? each.value.placement.availability_domain : 1) - 1].name
@@ -120,7 +200,7 @@ resource "oci_core_instance" "these" {
     source_details {
       boot_volume_size_in_gbs = each.value.boot_volume != null ? each.value.boot_volume.size : 50
       source_type = "image"
-      source_id   = each.value.image.id != null ? each.value.image.id : [for i in local.versions : i.listing_resource_id if i.publisher == each.value.image.publisher_name && i.display_name == each.value.image.name][0]
+      source_id   = each.value.marketplace_image != null ? (local.mkp_image_details[each.key] != null ? local.mkp_image_details[each.key].mkp_image_ocid : "undefined") : (each.value.platform_image != null ? (each.value.platform_image.ocid != null ? each.value.platform_image.ocid : each.value.platform_image.name != null ? local.platform_images_by_name[each.value.platform_image.name].id : "undefined") : (each.value.custom_image != null ? (each.value.custom_image.ocid != null ? each.value.custom_image.ocid : each.value.custom_image.name != null ? local.custom_images_by_name["${each.key}.${each.value.custom_image.name}"].id : "undefined") : "undefined"))
       kms_key_id  = each.value.encryption != null ? (each.value.encryption.kms_key_id != null ? (length(regexall("^ocid1.*$", each.value.encryption.kms_key_id)) > 0 ? each.value.encryption.kms_key_id : var.kms_dependency[each.value.encryption.kms_key_id].id) : (var.instances_configuration.default_kms_key_id != null ? (length(regexall("^ocid1.*$", var.instances_configuration.default_kms_key_id)) > 0 ? var.instances_configuration.default_kms_key_id : var.kms_dependency[var.instances_configuration.default_kms_key_id].id) : null)) : (var.instances_configuration.default_kms_key_id != null ? (length(regexall("^ocid1.*$", var.instances_configuration.default_kms_key_id)) > 0 ? var.instances_configuration.default_kms_key_id : var.kms_dependency[var.instances_configuration.default_kms_key_id].id) : null)
     }
     launch_options {
