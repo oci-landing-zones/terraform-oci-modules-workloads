@@ -1,3 +1,11 @@
+# October 14, 2024 Release Notes - 0.1.7
+## Updates in [Compute module](./cis-compute-storage/)
+1. Marketplace images, platform images and custom images split for clarity in module interface. 
+2. Marketplace image's *publisher_name* attribute has been removed and *version* attribute has been introduced. See [Compute section](./README.md#compute) for usage guidance.
+3. Marketplace images configured with automatic Marketplace agreements.
+4. Module now validates whether provided shape is compatible with provided marketplace or platform image. 
+
+
 # August 28, 2024 Release Notes - 0.1.6
 ## Updates
 1. All modules now require Terraform binary equal or greater than 1.3.0.

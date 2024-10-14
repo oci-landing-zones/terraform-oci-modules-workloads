@@ -30,7 +30,7 @@ Note that you must provide the image *name* and *publisher_name* for provisionin
 2. Within *\<project-name\>.auto.tfvars*, provide tenancy connectivity information and adjust the input variables, by making the appropriate substitutions:
    - Replace \<REPLACE-WITH-\*\> placeholders with appropriate values. 
    
-Refer to [cis-compute-storage module README.md](../../README.md) for overall attributes usage.
+Refer to [Compute/Storage module README.md](../../README.md) for overall attributes usage.
 
 3. In this folder, run the typical Terraform workflow:
 ```

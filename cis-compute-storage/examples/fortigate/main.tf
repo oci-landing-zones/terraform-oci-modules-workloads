@@ -9,5 +9,4 @@ module "compute" {
     oci.block_volumes_replication_region = oci
   }
   instances_configuration = var.instances_configuration
-  tenancy_ocid = var.tenancy_ocid
 }

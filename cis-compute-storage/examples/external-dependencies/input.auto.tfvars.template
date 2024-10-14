@@ -31,8 +31,8 @@ instances_configuration = {
   default_ssh_public_key_path = "~/.ssh/id_rsa.pub"
   instances = {
     INSTANCE-1 = {
-      shape = "<REPLACE-BY-INSTANCE-SHAPE>"
-      name  = "<REPLACE-BY-INSTANCE-NAME>"
+      shape = "VM.Standard.E4.Flex"
+      name  = "my-compute-instance"
       placement = {
         availability_domain = 1
         fault_domain = 1
@@ -43,12 +43,11 @@ instances_configuration = {
       }
       volumes_emulation_type = "PARAVIRTUALIZED"
       networking = {
-        hostname  = "<REPLACE-BY-INSTANCE-HOSTNAME>"
+        hostname  = ""my-compute-instance"
         network_security_groups = ["REPLACE-BY-NETWORK-SECURITY-GROUP-REFERENCE"] # obtained from oci_network_dependency.
       }
-      image = {
-        name = "<REPLACE-BY-IMAGE-NAME>"
-        publisher_name = "<REPLACE-BY-IMAGE-PUBLISHER-NAME>"
+      marketplace_image = {
+        name = "Oracle Linux 7 STIG"
       }
     }
   }

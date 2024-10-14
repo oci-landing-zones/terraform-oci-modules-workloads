@@ -54,9 +54,8 @@ instances_configuration = {
         hostname  = "bm-optimized3-36-instance"
         network_security_groups = ["<REPLACE-WITH-INSTANCE-NSG-OCID>"]
       }
-      image = {
+      marketplace_image = {
         name = "Oracle Linux 7 STIG" # Marketplace image
-        publisher_name = "Oracle Linux"
       }
     }
   }

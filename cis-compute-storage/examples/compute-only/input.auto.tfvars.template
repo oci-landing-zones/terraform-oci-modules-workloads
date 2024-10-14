@@ -30,7 +30,7 @@ instances_configuration = {
     INSTANCE-1 = {
       cis_level = "2"
       shape = "VM.Standard.E4.Flex"
-      name  = "<REPLACE-BY-INSTANCE-NAME>"
+      name  = "compute-only-instance-1"
       placement = {
         availability_domain = 1
         fault_domain = 1
@@ -43,12 +43,11 @@ instances_configuration = {
         kms_key_id = "<REPLACE-BY-KEY-OCID>"
       }
       networking = {
-        hostname  = "<REPLACE-BY-INSTANCE-HOSTNAME>"
+        hostname  = "compute-only-instance-1"
         network_security_groups = ["<REPLACE-BY-NETWORK-SECURITY-GROUP_NAME>"]
       }
-      image = {
-        name = "Oracle Linux 7 STIG" # Marketplace image
-        publisher_name = "Oracle Linux"
+      marketplace_image = {
+        name = "Oracle Linux 7 STIG" # Marketplace image name
       }
       cloud_agent = {
         disable_monitoring = false
@@ -79,9 +78,9 @@ instances_configuration = {
 # YAML
       }        
     }
-    INSTANCE-2 = { # Shielded instance, per platform_type and boot_volume.measured_boot settings.
+    INSTANCE-2 = { # Shielded instance, per platform_type and boot_volume.measured_boot settings. Based on platform image.
       shape = "VM.Standard.E4.Flex"
-      name  = "<REPLACE-BY-INSTANCE-NAME>"
+      name  = "compute-only-instance-2"
       platform_type = "AMD_VM"
       placement = {
         availability_domain = 1
@@ -94,19 +93,19 @@ instances_configuration = {
         backup_policy = "silver"
       }
       networking = {
-        hostname  = "<REPLACE-BY-INSTANCE-HOSTNAME>"
+        hostname  = "compute-only-instance-2"
         network_security_groups = ["<REPLACE-BY-NETWORK-SECURITY-GROUP_NAME>"]
       }
       encryption = {
         encrypt_in_transit_on_instance_create = true
       }
-      image = {
-        id = "ocid1.image.oc1.iad.aaaaaaaamf35m2qg5krijvq4alf6qmvdqiroq4i5zdwqqdijmstn4ryes36q" # Oracle-Linux-8.8-2023.08.31-0 platform image
+      platform_image = {
+        name = "Oracle-Linux-8.10-2024.08.29-0"
       }
     }
-    INSTANCE-3 = { # Confidential computing instance, per platform_type and encryption.encrypt_data_in_use settings.
+    INSTANCE-3 = { # Confidential computing instance, per platform_type and encryption.encrypt_data_in_use settings. Based on platform image.
       shape = "VM.Standard.E4.Flex"
-      name  = "<REPLACE-BY-INSTANCE-NAME>"
+      name  = "compute-only-instance-3"
       platform_type = "AMD_VM"
       placement = {
         availability_domain = 1
@@ -118,14 +117,35 @@ instances_configuration = {
         backup_policy = "gold"
       }
       networking = {
-        hostname  = "<REPLACE-BY-INSTANCE-HOSTNAME>"
+        hostname  = "compute-only-instance-3"
         network_security_groups = ["<REPLACE-BY-NETWORK-SECURITY-GROUP_NAME>"]
       }
       encryption = {
         encrypt_data_in_use = true # applicable when platform_type is set.
       }
-      image = {
-        id = "ocid1.image.oc1.iad.aaaaaaaamf35m2qg5krijvq4alf6qmvdqiroq4i5zdwqqdijmstn4ryes36q" # Oracle-Linux-8.8-2023.08.31-0 platform image
+      platform_image = {
+        name = "Oracle-Linux-8.10-2024.08.29-0"
+      }
+    }
+    INSTANCE-4 = { # Custom image
+      shape = "VM.Standard.E4.Flex"
+      name  = "compute-only-instance-4"
+      placement = {
+        availability_domain = 1
+        fault_domain = 3
+      }
+      boot_volume = {
+        size = 120
+        preserve_on_instance_deletion = true
+        backup_policy = "gold"
+      }
+      networking = {
+        hostname  = "compute-only-instance-4"
+        network_security_groups = ["<REPLACE-BY-NETWORK-SECURITY-GROUP_NAME>"]
+      }
+      custom_image = {
+        name = "<REPLACE-BY-CUSTOM-IMAGE-NAME>"
+        compartment_id = "<REPLACE-BY-CUSTOM-IMAGE-NAME-COMPARTMENT-OCID>"
       }
     }
   }

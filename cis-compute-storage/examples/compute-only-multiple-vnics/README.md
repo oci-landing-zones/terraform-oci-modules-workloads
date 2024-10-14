@@ -7,7 +7,7 @@ This example shows how to deploy Compute instances in OCI using the [OCI Landing
 - The instance can be accessed over SSH with the private key corresponding to the public key defined by *default_ssh_public_key_path* attribute.
 - The instances is placed in the network security groups defined by *networking.network_security_groups* attribute.
 - The instance is based on "VM.Standard.E4.Flex" shape, as defined by the *shape* attribute.
-- The instance is based on the "Oracle Linux 7 STIG" Marketplace image published by "Oracle Linux", as defined by *image.name* and *image.publisher_name* attributes. Use the [markeplace-images module](../../../marketplace-images/) to find Marketplace images information based on a search filter.
+- The instance is based on the "Oracle Linux 7 STIG" Marketplace image, as defined by *marketplace_image.name* attribute. Use the [markeplace-images module](../../../marketplace-images/) to find Marketplace images information based on a search filter.
 - The instance will **not** have the boot volume preserved on termination, as defined by *boot_volume.preserve_on_instance_deletion* attribute.
 - The instance boot volume is encrypted with a customer managed key referred by *encryption.kms_key_id* attribute.
 - The instance boot volume is set to be backed up per Oracle-managed *bronze* backup policy (enforced by the module by default).
@@ -29,7 +29,7 @@ See [input.auto.tfvars.template](./input.auto.tfvars.template) for the variables
 2. Within *\<project-name\>.auto.tfvars*, provide tenancy connectivity information and adjust the input variables, by making the appropriate substitutions:
    - Replace \<REPLACE-BY-\*\> placeholders with appropriate values. 
    
-Refer to [cis-compute-storage module README.md](../../README.md) for overall attributes usage.
+Refer to [Compute/Storage module README.md](../../README.md) for overall attributes usage.
 
 3. In this folder, run the typical Terraform workflow:
 ```

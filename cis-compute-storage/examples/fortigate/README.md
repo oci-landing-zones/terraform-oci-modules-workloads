@@ -1,12 +1,8 @@
-# OCI Landing Zones Compute Module - Replica File System Example
+# OCI Landing Zones Compute Module - Fortigate Next-Gen Firewall
 
 ## Introduction
 
-This example shows how to deploy a file system used as a replica file system in OCI using the [OCI Landing Zones Compute module](../../README.md). The replica file system has the following characteristics:
-- It is deployed in the region defined by the *region* attribute.
-- It is deployed in the compartment defined by *default_compartment_id* attribute.
-- It is configured as replication target, as defined by *replication.is_target* attribute.
-- The replica file system OCID (in the output) is used in the configuration of the file system set as the source file system. See [storage-only example](../storage-only/) for such configuration.
+This example shows how to deploy Fortigate Next-Gen firewall in OCI using the [OCI Landing Zones Compute module](../../README.md). 
 
 See [input.auto.tfvars.template](./input.auto.tfvars.template) for the variables configuration.
 
