@@ -1,4 +1,4 @@
-# October 08, 2024 Release Notes - 0.1.7
+# October 14, 2024 Release Notes - 0.1.7
 ## Updates in [Compute module](./cis-compute-storage/)
 1. Marketplace images, platform images and custom images split for clarity in module interface. 
 2. Marketplace image's *publisher_name* attribute has been removed and *version* attribute has been introduced. See [Compute section](./README.md#compute) for usage guidance.
