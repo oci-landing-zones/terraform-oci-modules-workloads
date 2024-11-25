@@ -103,6 +103,9 @@ locals {
   custom_images_by_name = { for i in local.custom_images : "${i.key}.${i.display_name}" => {id = i.id, operating_system = i.operating_system }}
 
   platform_types = ["AMD_MILAN_BM", "AMD_MILAN_BM_GPU", "AMD_ROME_BM", "AMD_ROME_BM_GPU", "AMD_VM", "GENERIC_BM", "INTEL_ICELAKE_BM", "INTEL_SKYLAKE_BM", "INTEL_VM"]
+
+  zpr_provided_attributes = {for k, v in (var.instances_configuration != null ? var.instances_configuration["instances"] : {}) : k => [for a in v.security.zpr_attributes : "${a.namespace}.${a.attr_name}"] if try(v.security.zpr_attributes,null) != null}
+
 }
 
 resource "oci_core_instance" "these" {
@@ -178,11 +181,18 @@ resource "oci_core_instance" "these" {
       #   condition = try(each.value.platform_image.name,null) != null && length(regexall("FLEX",upper(each.value.shape))) > 0 && each.value.flex_shape_settings != null ? local.platform_images_by_name[each.value.platform_image.name].min_ocpu <= try(each.value.flex_shape_settings.ocpus,0) && local.platform_images_by_name[each.value.platform_image.name].max_ocpu >= try(each.value.flex_shape_settings.ocpus,0) : true
       #   error_message = try(each.value.platform_image.name,null) != null && length(regexall("FLEX",upper(each.value.shape))) > 0 && each.value.flex_shape_settings != null ? "VALIDATION FAILURE in instance \"${each.key}\": invalid ocpu setting \"${each.value.flex_shape_settings.ocpus}\" in \"flexible_shape_settings.ocpu\" attribute for \"${try(each.value.platform_image.name,"")}\". Number of ocpus range from \"${try(local.platform_images_by_name[each.value.platform_image.name].min_ocpu,"")}\" to \"${try(local.platform_images_by_name[each.value.platform_image.name].max_ocpu,"")}\"." : "__void__"
       # }
+      # Check 15: Check ZPR attributes dupes
+      precondition {
+        condition = try(each.value.security.zpr_attributes,null) != null ?  length(distinct([for a in each.value.security.zpr_attributes : "${a.namespace}.${a.attr_name}"])) == length([for a in each.value.security.zpr_attributes : "${a.namespace}.${a.attr_name}"]): true
+        error_message = try(each.value.security.zpr_attributes,null) != null ? "VALIDATION FAILURE in instance \"${each.key}\" for \"security.zpr-attributes\" attribute: ZPR attribute assigned more than once. \"namespace/attr_name\" pairs must be unique." : "__void__"
+        #error_message = try(each.value.security.zpr_attributes,null) != null ? "VALIDATION FAILURE in instance \"${each.key}\" for \"security.zpr-attributes\" attribute: ZPR attribute assigned more than once. ${[for a in each.value.security.zpr_attributes : "${a.namespace}.${a.attr_name}" if contains(local.zpr_provided_attributes[each.key],) ]} \"namespace/attr_name\" pairs must be unique." : "__void__"
+      }
     }  
     compartment_id       = each.value.compartment_id != null ? (length(regexall("^ocid1.*$", each.value.compartment_id)) > 0 ? each.value.compartment_id : var.compartments_dependency[each.value.compartment_id].id) : (length(regexall("^ocid1.*$", var.instances_configuration.default_compartment_id)) > 0 ? var.instances_configuration.default_compartment_id : var.compartments_dependency[var.instances_configuration.default_compartment_id].id)
     availability_domain  = data.oci_identity_availability_domains.ads[each.key].availability_domains[(each.value.placement != null ? each.value.placement.availability_domain : 1) - 1].name
     fault_domain         = format("FAULT-DOMAIN-%s", each.value.placement != null ? each.value.placement.fault_domain : 1)
     shape                = each.value.shape
+    security_attributes = try(each.value.security.zpr_attributes,null) != null ? try(each.value.security.apply_to_primary_vnic_only,false) == false ? merge([for a in each.value.security.zpr_attributes : {"${a.namespace}.${a.attr_name}.value" : a.attr_value, "${a.namespace}.${a.attr_name}.mode" : a.mode}]...) : null : null
     display_name         = each.value.name
     preserve_boot_volume = each.value.boot_volume != null ? each.value.boot_volume.preserve_on_instance_deletion : true
     defined_tags         = each.value.defined_tags != null ? each.value.defined_tags : var.instances_configuration.default_defined_tags
@@ -196,6 +206,7 @@ resource "oci_core_instance" "these" {
       hostname_label   = each.value.networking != null ? (coalesce(each.value.networking.hostname,lower(replace(each.value.name," ","")))) : lower(replace(each.value.name," ",""))
       nsg_ids          = each.value.networking != null ? [for nsg in coalesce(each.value.networking.network_security_groups,[]) : (length(regexall("^ocid1.*$", nsg)) > 0 ? nsg : var.network_dependency["network_security_groups"][nsg].id)] : null
       skip_source_dest_check = each.value.networking != null ? each.value.networking.skip_source_dest_check : false
+      security_attributes = try(each.value.security.zpr_attributes,null) != null ? try(each.value.security.apply_to_primary_vnic_only,false) == true ? merge([for a in each.value.security.zpr_attributes : {"${a.namespace}.${a.attr_name}.value" : a.attr_value, "${a.namespace}.${a.attr_name}.mode" : a.mode}]...) : null : null
     }
     source_details {
       boot_volume_size_in_gbs = each.value.boot_volume != null ? each.value.boot_volume.size : 50
@@ -298,6 +309,7 @@ locals {
         network_security_groups = vnic_value.network_security_groups
         skip_source_dest_check  = vnic_value.skip_source_dest_check
         nic_index               = vnic_value.nic_index
+        security                = vnic_value.security
         defined_tags            = vnic_value.defined_tags
         freeform_tags           = vnic_value.freeform_tags
       } 
@@ -345,9 +357,17 @@ resource "oci_core_vnic_attachment" "these" {
                                                             network_security_groups = v.network_security_groups
                                                             skip_source_dest_check  = v.skip_source_dest_check
                                                             nic_index               = v.nic_index
+                                                            security                = v.security
                                                             defined_tags            = v.defined_tags
                                                             freeform_tags           = v.freeform_tags
                                                          } }
+    # Check 1: Check ZPR attributes dupes
+    lifecycle {
+      precondition {
+        condition = try(each.value.security.zpr_attributes,null) != null ?  length(toset([for a in each.value.security.zpr_attributes : "${a.namespace}.${a.attr_name}"])) ==  length([for a in each.value.security.zpr_attributes : "${a.namespace}.${a.attr_name}"]): true
+        error_message = try(each.value.security.zpr_attributes,null) != null ? "VALIDATION FAILURE in instance \"${each.key}\": ZPR security attribute assigned more than once. \"security.zpr-attributes.namespace/security.zpr-attributes.attr_name\" pairs must be unique." : "__void__"
+      } 
+    }                                                      
     display_name = each.value.display_name
     instance_id  = oci_core_instance.these[each.value.inst_key].id
     nic_index    = each.value.nic_index
@@ -359,8 +379,9 @@ resource "oci_core_vnic_attachment" "these" {
       subnet_id        = each.value.subnet_id != null ? (length(regexall("^ocid1.*$", each.value.subnet_id)) > 0 ? each.value.subnet_id : var.network_dependency["subnets"][each.value.subnet_id].id) : (length(regexall("^ocid1.*$", var.instances_configuration.default_subnet_id)) > 0 ? var.instances_configuration.default_subnet_id : var.network_dependency["subnets"][var.instances_configuration.default_subnet_id].id)
       nsg_ids          = [for nsg in coalesce(each.value.network_security_groups,[]) : (length(regexall("^ocid1.*$", nsg)) > 0 ? nsg : var.network_dependency["network_security_groups"][nsg].id)]
       skip_source_dest_check = each.value.skip_source_dest_check
-      defined_tags     = each.value.defined_tags != null ? each.value.defined_tags : var.instances_configuration.default_defined_tags
-      freeform_tags    = merge(local.cislz_module_tag, each.value.freeform_tags != null ? each.value.freeform_tags : var.instances_configuration.default_freeform_tags)
+      security_attributes    = try(each.value.security.zpr_attributes,null) != null ? merge([for a in each.value.security.zpr_attributes : {"${a.namespace}.${a.attr_name}.value" : a.attr_value, "${a.namespace}.${a.attr_name}.mode" : a.mode}]...) : null
+      defined_tags           = each.value.defined_tags != null ? each.value.defined_tags : var.instances_configuration.default_defined_tags
+      freeform_tags          = merge(local.cislz_module_tag, each.value.freeform_tags != null ? each.value.freeform_tags : var.instances_configuration.default_freeform_tags)
     }
 }
 

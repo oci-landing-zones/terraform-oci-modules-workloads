@@ -232,12 +232,25 @@ The instances themselves are defined within the **instances** attribute, In Terr
     - **network_security_groups** &ndash; (Optional) List of network security groups the VNIC should be placed into.
     - **skip_source_dest_check** &ndash; (Optional) Whether the source/destination check is disabled on the VNIC. If true, the VNIC is able to forward the packet. Default is false.
     - **nic_index** &ndash; (Optional) The physical network interface card (NIC) the VNIC will use. Defaults to 0. Certain bare metal instance shapes have two active physical NICs (0 and 1).
+    - **security** &ndash; (Optional) Security settings for the VNIC, currently only for ZPR (Zero Trust Packet Routing) attributes.
+      - **zpr_attributes** &ndash; (Optional) List of objects representing ZPR attributes.
+        - **namespace** &ndash; (Optional) ZPR namespace. Default is *oracle-zpr*, a default namespace created by Oracle and available in all tenancies.
+        - **attr_name** &ndash; ZPR attribute name. It must exist in the specified namespace.
+        - **attr_value** &ndash; ZPR attribute value.
+        - **mode** &ndash; (Optional) ZPR mode. Default value is *enforce*.
     - **secondary_ips** &ndash; (Optional) Map of secondary private IP addresses for the VNIC.
       - **display_name** &ndash; (Optional) Secondary IP display name.
       - **hostname** &ndash; (Optional) Secondary IP host name.
       - **private_ip** &ndash; (Optional) Secondary IP address. If not provided, an IP address from the subnet is randomly chosen.
       - **defined_tags** &ndash; (Optional) Secondary IP defined_tags. default_defined_tags is used if undefined.
       - **freeform_tags** &ndash; (Optional) Secondary IP freeform_tags. default_freeform_tags is used if undefined.  
+- **security** &ndash; (Optional) Security settings for the instance, currently only for ZPR (Zero Trust Packet Routing) attributes.
+  - **apply_to_primary_vnic_only** &ndash; (Optional) Whether ZPR attributes are applied to the instance primary VNIC only. The default value is false, meaning ZPR attributes are applied to the instance itself (a.k.a. parent resource),thus inherited by all VNICs that are attached to the instance. Set this value to true to stop the inheritance, thus making ZPR attributes applied to the instance primary VNIC only.
+  - **zpr_attributes** &ndash; (Optional) List of objects representing ZPR attributes.
+    - **namespace** &ndash; (Optional) ZPR namespace. Default is *oracle-zpr*, a default namespace created by Oracle and available in all tenancies.
+    - **attr_name** &ndash; ZPR attribute name. It must exist in the specified namespace.
+    - **attr_value** &ndash; ZPR attribute value.
+    - **mode** &ndash; (Optional) ZPR mode. Default value is *enforce*.  
 - **encryption** &ndash; (Optional) Encryption settings. See section [In Transit Encryption](#in-transit-encryption) for important information.
   - **kms_key_id** &ndash; (Optional) The encryption key for boot volume encryption. *default_kms_key_id* is used if undefined. Required if *cis_level* or *default_cis_level* is "2".
   - **encrypt_in_transit_on_instance_create** &ndash; (Optional) Whether to enable in-transit encryption for the data volume's paravirtualized attachment. Default is false. Applicable during instance **creation** time only. Note that some platform images do not allow instances overriding the image configuration for in-transit encryption at instance creation time. In such cases, for enabling in-transit encryption, use *encrypt_in_transit_on_instance_update* attribute. First run ```terraform apply``` with it set to false, then run ```terraform apply``` again with it set to true.

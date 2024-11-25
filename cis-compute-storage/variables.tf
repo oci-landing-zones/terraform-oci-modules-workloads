@@ -85,9 +85,26 @@ variable "instances_configuration" {
             defined_tags  = optional(map(string)) # Secondary IP defined_tags. default_defined_tags is used if this is not defined.
             freeform_tags = optional(map(string)) # Secondary IP freeform_tags. default_freeform_tags is used if this is not defined.
           })))
+          security = optional(object({
+            zpr_attributes = optional(list(object({
+              namespace = optional(string,"oracle-zpr")
+              attr_name = string
+              attr_value = string
+              mode = optional(string,"enforce")
+            }))) 
+          }))
           defined_tags            = optional(map(string)) # VNIC defined_tags. default_defined_tags is used if this is not defined.
           freeform_tags           = optional(map(string)) # VNIC freeform_tags. default_freeform_tags is used if this is not defined.
         })))
+      }))
+      security = optional(object({
+        apply_to_primary_vnic_only = optional(bool, false)
+        zpr_attributes = optional(list(object({
+          namespace = optional(string,"oracle-zpr")
+          attr_name = string
+          attr_value = string
+          mode = optional(string,"enforce")
+        }))) 
       }))
       encryption = optional(object({ # encryption settings
         kms_key_id = optional(string) # the KMS key to assign as the master encryption key. default_kms_key_id is used if this is not defined.
