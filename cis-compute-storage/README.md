@@ -161,7 +161,7 @@ The CIS Benchmark profile levels drive some aspects of Compute and Storage. In t
 ##### CIS profile level "2": 
   - encryption at rest with customer managed keys is enforced.
 
-### <a name="compute">Compute</a>
+### <a name="compute-1">Compute</a>
 
 Compute instances are managed using the **instances_configuration** variable. It contains a set of attributes starting with the prefix **default_** and one attribute named **instances**. The **default_** attribute values are applied to all instances within **instances**, unless overridden at the instance level.
 
@@ -355,7 +355,7 @@ The defined **default_** attributes are the following:
 - **default_defined_tags** &ndash; (Optional) The default defined tags for all storage units. It can be overridden by *defined_tags* attribute in each unit.
 - **default_freeform_tags** &ndash; (Optional) the default freeform tags for all storage units. It can be overridden by *freeform_tags* attribute in each unit.
 
-#### <a name="block-volumes">Block Volumes</a>
+#### <a name="block-volumes-1">Block Volumes</a>
 Block volumes are defined using the optional **block_volumes** attribute. In Terraform terms, it is a map of objects, where each object is referred by an identifying key. The following attributes are supported:
 - **compartment_id** &ndash; (Optional) The volume compartment. The *default_compartment_id* is used if undefined. This attribute is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *compartments_dependency* variable. See [External Dependencies](#ext-dep) for details.
 - **cis_level** &ndash; (Optional) The CIS OCI Benchmark profile level to apply. The *default_cis_level* is used if undefined.
@@ -575,7 +575,7 @@ sdb                  8:16   0   60G  0 disk
 For more information on mounting block volumes without consistent device path see [Traditional fstab Options](https://docs.oracle.com/en-us/iaas/Content/Block/References/fstaboptions.htm#Traditional_fstab_Options).
 
 
-#### <a name="file-storage">File Storage</a>
+#### <a name="file-storage-1">File Storage</a>
 The **file_storage** attribute defines the file systems, mount targets and snapshot policies for OCI File Storage service. The optional attribute **default_subnet_id** applies to all mount targets, unless overridden by **subnet_id** attribute in each mount target. Attribute **subnet_id** is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *network_dependency* variable. See [External Dependencies](#ext-dep) for details.
 
 ##### <a name="file-systems">File Systems</a>
