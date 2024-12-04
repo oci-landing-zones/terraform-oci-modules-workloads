@@ -45,6 +45,13 @@ instances_configuration = {
       encryption = {
         kms_key_id = "<REPLACE-BY-KEY-OCID>"
       }
+      security = {
+        apply_to_primary_vnic_only = true # applies ZPR attributes to the primary VNIC only, i.e., other attached VNICs don not inherit the setting.
+        zpr_attributes = [
+          { attr_name = "sensitivity", attr_value = "restricted" }, # Utilizes "oracle-zpr" default namespace
+          { namespace = "my-zpr-namespace", attr_name = "net", attr_value = "prod" } # Make sure the namespace and attr_name exist.
+        ]
+      }
       networking = {
         hostname  = "instance-1-compute-only-multiple-vnics"
         primary_ip = "<REPLACE-BY-IP-ADDRESS-OF-CHOICE>"
@@ -63,6 +70,11 @@ instances_configuration = {
             network_security_groups = ["<REPLACE-BY-NETWORK-SECURITY-GROUP_NAME>"]
             skip_source_dest_check = true
             hostname = "instance-1-compute-only-multiple-vnics-vnic-2"
+            security = {
+              zpr_attributes = [
+                { attr_name = "sensitivity", attr_value = "open" } # Utilizes "oracle-zpr" default namespace
+              ]
+            }
             secondary_ips = {
               IP-2 = {
                 display_name = "ip-2"
