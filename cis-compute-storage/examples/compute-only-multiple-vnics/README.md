@@ -12,6 +12,7 @@ This example shows how to deploy Compute instances in OCI using the [OCI Landing
 - The instance boot volume is encrypted with a customer managed key referred by *encryption.kms_key_id* attribute.
 - The instance boot volume is set to be backed up per Oracle-managed *bronze* backup policy (enforced by the module by default).
 - The instance primary VNIC is assigned a primary IP address defined by *networking.private_ip*. The IP address must be available in the VNIC subnet.
+- The instance gets two ZPR (Zero Trust Packet Routing) attributes attached to its primary VNIC.
 - The instance has a secondary IP address attached to the primary VNIC, defined by *networking.secondary-ips* attribute. 
    - The IP address is randomly chosen from available addresses in the subnet, as its *primary_ip* attribute is undefined.
 - The instance has a secondary VNIC attached, defined by *networking.secondary-vnics* attribute. 
@@ -20,6 +21,7 @@ This example shows how to deploy Compute instances in OCI using the [OCI Landing
    - The VNIC is assigned a primary IP address defined by its *private_ip* attribute. The IP address must be available in the VNIC subnet.
    - The VNIC will forward packets, as *skip_source_dest_check* is true.
    - The VNIC has a secondary IP address randomly chosen from available addresses in the subnet, as its *primary_ip* attribute is undefined.
+   - The VNIC gets one ZPR (Zero Trust Packet Routing) attribute attached.
 
 See [input.auto.tfvars.template](./input.auto.tfvars.template) for the variables configuration.
 
