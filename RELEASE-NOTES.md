@@ -1,3 +1,9 @@
+# December 04, 2024 Release Notes - 0.1.8
+## Updates in [Compute module](./cis-compute-storage/)
+1. Support for ZPR (Zero Trust Packet Routing) attributes on Compute instances and secondary VNICs. See *zpr_attributes* attribute in [Compute module documentation](./cis-compute-storage/README.md#compute-1) for details.
+2. Disabled precondition check on platform images supported shapes when the platform image OCID is provided as the Compute image source.
+
+
 # October 14, 2024 Release Notes - 0.1.7
 ## Updates in [Compute module](./cis-compute-storage/)
 1. Marketplace images, platform images and custom images split for clarity in module interface. 
@@ -5,10 +11,12 @@
 3. Marketplace images configured with automatic Marketplace agreements.
 4. Module now validates whether provided shape is compatible with provided marketplace or platform image. 
 
+
 # August 28, 2024 Release Notes - 0.1.6
 ## Updates
 1. All modules now require Terraform binary equal or greater than 1.3.0.
 2. *cislz-terraform-module* tag renamed to *ocilz-terraform-module*.
+
 
 # July 25, 2024 Release Notes - 0.1.5
 ## Updates    
