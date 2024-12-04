@@ -161,11 +161,11 @@ resource "oci_core_instance" "these" {
         condition = try(each.value.marketplace_image.name,null) != null ? contains(data.oci_core_app_catalog_listing_resource_version.this[each.key].compatible_shapes,each.value.shape) : true
         error_message = try(each.value.marketplace_image.name,null) != null ? "VALIDATION FAILURE in instance \"${each.key}\": invalid image shape \"${each.value.shape}\" in \"shape\" attribute. Ensure it is spelled correctly. Valid shapes for marketplace image \"${each.value.marketplace_image.name}\" version \"${coalesce(each.value.marketplace_image.version,replace(data.oci_marketplace_listing.this[each.key].default_package_version," ","_"))}\" are: ${join(", ",[for v in data.oci_core_app_catalog_listing_resource_version.this[each.key].compatible_shapes : "\"${v}\""])}." : "__void__"
       }
-      # Check 11: Check compatible shapes for given platform image ocid
-      precondition {
-        condition = try(each.value.platform_image.ocid,null) != null ? contains(local.platform_images_by_id[each.value.platform_image.ocid].shapes,each.value.shape) : true
-        error_message = try(each.value.platform_image.ocid,null) != null ? "VALIDATION FAILURE in instance \"${each.key}\": invalid image shape \"${each.value.shape}\" in \"shape\" attribute. Ensure it is spelled correctly. Valid shapes for platform image \"${try(each.value.platform_image.ocid,"")}\" are: ${join(", ",[for v in local.platform_images_by_id[each.value.platform_image.ocid].shapes : "\"${v}\""])}." : "__void__"
-      }
+      # Check 11: Check compatible shapes for given platform image ocid - DISABLED because it uses oci_core_images data source that limits images to the latest three per platform.
+      # precondition {
+      #   condition = try(each.value.platform_image.ocid,null) != null ? contains(local.platform_images_by_id[each.value.platform_image.ocid].shapes,each.value.shape) : true
+      #   error_message = try(each.value.platform_image.ocid,null) != null ? "VALIDATION FAILURE in instance \"${each.key}\": invalid image shape \"${each.value.shape}\" in \"shape\" attribute. Ensure it is spelled correctly. Valid shapes for platform image \"${try(each.value.platform_image.ocid,"")}\" are: ${join(", ",[for v in local.platform_images_by_id[each.value.platform_image.ocid].shapes : "\"${v}\""])}." : "__void__"
+      # }
       # Check 12: Check compatible shapes for given platform image name
       precondition {
         condition = try(each.value.platform_image.name,null) != null ? contains(local.platform_images_by_name[each.value.platform_image.name].shapes,each.value.shape) : true
