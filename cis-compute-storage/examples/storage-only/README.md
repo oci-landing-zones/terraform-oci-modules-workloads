@@ -18,11 +18,9 @@ For block volume BV-2:
 
 **Note 1:** replicated block volumes are not destroyed upon *terraform destroy*. In order to destroy replicated block volumes, it is first necessary to manually terminate the replication. 
 
-**Note 2:** block volumes encrypted with a customer managed key cannot be replicated to another region.
-
 For file system FS-1:
 - The file system is encrypted with an Oracle-managed key (OCI default) as it does not define *encryption.kms_key_id* attribute and there's no applicable *default_kms_key_id* attribute.
-- The file system is replicated to target file system specified by *replication.file_system_target_id* attribute. See [replica-file-system example](../replica-file-system/) for a replica file system configuration example.
+- The file system is replicated to target file system specified by *replication.file_system_target_id* attribute. See [replica-file-system example](../replica-file-system/) for creating the required replica file system.
 - The file system is backed up per policy defined by *snapshot_policy_id* attribute. The value is a pointer to the "SNAPSHOT-POLICY-1" policy defined within *snapshot_policies* attribute. 
 - The file system is exported per the settings defined by "EXP-1" export within "MT-1" mount target in *mount_targets* attribute. Note *file_system_id* attribute value is a pointer to "FS-1" file system.
 
