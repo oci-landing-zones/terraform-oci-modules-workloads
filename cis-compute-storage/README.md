@@ -215,7 +215,7 @@ The instances themselves are defined within the **instances** attribute, In Terr
   - **hostname** &ndash; (Optional) The primary VNIC hostname.
   - **assign_public_ip** &ndash; (Optional) Whether to assign the primary VNIC a public IP. Default is false.
   - **subnet_id** &ndash; (Optional) The subnet where the primary VNIC is created. *default_subnet_id* is used if undefined. This attribute is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *network_dependency* variable. See [External Dependencies](#ext-dep) for details.
-  - **network_security_groups** &ndash; (Optional) List of network security groups the primary VNIC should be placed into. This attribute is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *network_dependency* variable. See [External Dependencies](#ext-dep) for details.
+  - **network_security_groups** &ndash; (Optional) List of network security groups the primary VNIC should be placed into. This attribute is overloaded. The list can contain literal Network Security Group OCIDs or references (keys) to Network Security Group OCIDs in *network_dependency* variable. See [External Dependencies](#ext-dep) for details.
   - **skip_source_dest_check** &ndash; (Optional) Whether the source/destination check is disabled on the primary VNIC. If true, the VNIC is able to forward the packet. Default is false.
   - **secondary_ips** &ndash; (Optional) Map of secondary private IP addresses for the primary VNIC.
     - **display_name** &ndash; (Optional) Secondary IP display name.
@@ -228,8 +228,8 @@ The instances themselves are defined within the **instances** attribute, In Terr
     - **private_ip** &ndash; (Optional) a private IP address of your choice to assign to the VNIC. If not provided, an IP address from the subnet is randomly chosen.
     - **hostname** &ndash; (Optional) The VNIC hostname.
     - **assign_public_ip**&ndash; (Optional) Whether to assign the VNIC a public IP. Defaults to whether the subnet is public or private.
-    - **subnet_id** &ndash; (Optional) The subnet where the VNIC is created. default_subnet_id is used if undefined.
-    - **network_security_groups** &ndash; (Optional) List of network security groups the VNIC should be placed into.
+    - **subnet_id** &ndash; (Optional) The subnet where the VNIC is created. default_subnet_id is used if undefined. This attribute is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *network_dependency* variable. See [External Dependencies](#ext-dep) for details.
+    - **network_security_groups** &ndash; (Optional) List of network security groups the VNIC should be placed into. This attribute is overloaded. The list can contain literal Network Security Group OCIDs or references (keys) to Network Security Group OCIDs in *network_dependency* variable. See [External Dependencies](#ext-dep) for details.
     - **skip_source_dest_check** &ndash; (Optional) Whether the source/destination check is disabled on the VNIC. If true, the VNIC is able to forward the packet. Default is false.
     - **nic_index** &ndash; (Optional) The physical network interface card (NIC) the VNIC will use. Defaults to 0. Certain bare metal instance shapes have two active physical NICs (0 and 1).
     - **security** &ndash; (Optional) Security settings for the VNIC, currently only for ZPR (Zero Trust Packet Routing) attributes.
@@ -599,6 +599,8 @@ Mount targets are defined using the optional attribute **mount_targets**. A Terr
 - **mount_target_name** &ndash; The mount target and export set name.
 - **availability_domain** &ndash; (Optional) The mount target availability domain.  
 - **subnet_id** &ndash; (Optional) The mount target subnet. It defaults to *default_subnet_id* from *file_storage* if undefined. This attribute is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *network_dependency* variable. See [External Dependencies](#ext-dep) for details.
+ - **network_security_groups** &ndash; (Optional) List of network security groups the mount target should be placed into. This attribute is overloaded. The list can contain literal Network Security Group OCIDs or references (keys) to Network Security Group OCIDs in *network_dependency* variable. See [External Dependencies](#ext-dep) for details.
+ - **hostname_label** &ndash; (Optional) The hostname for the mount target's IP address, used for DNS resolution. The value is the hostname portion of the private IP address's fully qualified domain name (FQDN).
 - **exports** &ndash; (Optional) List of exports, where each element refers to a file system, defined by *file_system_id* attribute. The following attributes are supported:
   - **path** &ndash; Export path.
   - **file_system_id** &ndash; The file system identifying key this mount target applies.
@@ -607,6 +609,8 @@ Mount targets are defined using the optional attribute **mount_targets**. A Terr
     - **access** &ndash; (Optional) Type of access grants. Valid values (case sensitive): "READ_WRITE", "READ_ONLY". Default is "READ_ONLY".
     - **identity** &ndash; (Optional) UID and GID remapped to. Valid values(case sensitive): ALL, ROOT, NONE. Default is "NONE".
     - **use_port** &ndash; (Optional) Whether file system access is only allowed from a privileged source port. Default is true.
+- **defined_tags** &ndash; (Optional) Mount target defined_tags. *storage_configuration*'s *default_defined_tags* is used if undefined.
+- **freeform_tags** &ndash; (Optional) Mount target freeform_tags. *storage_configuration*'s *default_freeform_tags* is used if undefined.    
 
 ##### <a name="snapshot-policies">Snapshot Policies</a>
 Snapshot policies are defined using the optional attribute **snapshot_policies**. A Terraform map of objects, where each object is referred by an identifying key. The following attributes are supported:
