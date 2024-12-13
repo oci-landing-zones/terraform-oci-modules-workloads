@@ -1,3 +1,10 @@
+# December 18, 2024 Release Notes - 0.1.9
+## Updates in [Compute module](./cis-compute-storage/)
+1. Compute: logic updated for platform images lookup by name.
+2. Block Volumes: precondition check for cross region replication and encryption with customer managed key removed.
+3. File Storage: following attributes were added to *mount_targets* attribute: *network_security_groups*, *hostname_label*, *defined_tags*, *freeform_tags*.
+
+
 # December 04, 2024 Release Notes - 0.1.8
 ## Updates in [Compute module](./cis-compute-storage/)
 1. Support for ZPR (Zero Trust Packet Routing) attributes on Compute instances and secondary VNICs. See *zpr_attributes* attribute in [Compute module documentation](./cis-compute-storage/README.md#compute-1) for details.
