@@ -5,11 +5,11 @@
 # Platform images data sources
 #------------------------------
 data "oci_core_images" "these_platform" {
-  count = local.deploy_platform_image ? 1 : 0
+  count = local.deploy_platform_image_by_name ? 1 : 0
     lifecycle {
       precondition {
           condition = var.tenancy_ocid != null
-          error_message = "VALIDATION FAILURE: variable \"tenancy_ocid\" is required when deploying a Compute instance based on a platform image."
+          error_message = "VALIDATION FAILURE: variable \"tenancy_ocid\" is required when deploying a Compute instance based on a platform image name."
         }
     }
     compartment_id = var.tenancy_ocid
@@ -64,7 +64,7 @@ locals {
   # Platform images
   #------------------------------
 
-  deploy_platform_image = var.instances_configuration != null ? length([for v in var.instances_configuration["instances"] : v if v.platform_image != null]) > 0 : false
+  deploy_platform_image_by_name = var.instances_configuration != null ? length([for v in var.instances_configuration["instances"] : v if try(v.platform_image.name,null) != null]) > 0 : false
 
   platform_images = length(data.oci_core_images.these_platform) > 0 ? [
     for i in data.oci_core_images.these_platform[0].images : {
