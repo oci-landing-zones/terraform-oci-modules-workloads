@@ -27,10 +27,6 @@ resource "oci_core_volume" "these" {
         condition = coalesce(each.value.cis_level,var.storage_configuration.default_cis_level,"1") == "2" ? (each.value.encryption != null ? (each.value.encryption.kms_key_id != null || var.storage_configuration.default_kms_key_id != null) : var.storage_configuration.default_kms_key_id != null) : true
         error_message = "VALIDATION FAILURE (CIS Storage 4.1.2) in block volume \"${each.key}\": A customer managed key is required when CIS level is set to 2. Either \"encryption.kms_key_id\" or \"default_kms_key_id\" must be provided."
       }
-      precondition {
-        condition = each.value.encryption != null ? (each.value.encryption.kms_key_id != null || var.storage_configuration.default_kms_key_id != null ? (each.value.replication != null ? split("-AD",split(":",data.oci_identity_availability_domains.bv_ads[each.key].availability_domains[each.value.availability_domain - 1].name)[1])[0] == split("-AD",split(":",data.oci_identity_availability_domains.bv_ads_replicas[each.key].availability_domains[each.value.replication.availability_domain - 1].name)[1])[0] : true) : true) : true
-        error_message = "VALIDATION FAILURE in block volume \"${each.key}\": cross-region replication not possible for volumes encrypted with a customer managed key. Either unset \"encryption.kms_key_id\"/\"default_kms_key_id\" or disable cross-region replication."
-      }
     }
     availability_domain = data.oci_identity_availability_domains.bv_ads[each.key].availability_domains[each.value.availability_domain - 1].name
     compartment_id      = each.value.compartment_id != null ? (length(regexall("^ocid1.*$", each.value.compartment_id)) > 0 ? each.value.compartment_id : var.compartments_dependency[each.value.compartment_id].id) : (length(regexall("^ocid1.*$", var.storage_configuration.default_compartment_id)) > 0 ? var.storage_configuration.default_compartment_id : var.compartments_dependency[var.storage_configuration.default_compartment_id].id)

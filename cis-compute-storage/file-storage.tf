@@ -41,6 +41,10 @@ resource "oci_file_storage_mount_target" "these" {
     availability_domain = data.oci_identity_availability_domains.mt_ads[each.key].availability_domains[each.value.availability_domain - 1].name
     display_name        = each.value.mount_target_name
     subnet_id           = each.value.subnet_id != null ? (length(regexall("^ocid1.*$", each.value.subnet_id)) > 0 ? each.value.subnet_id : var.network_dependency["subnets"][each.value.subnet_id].id) : (length(regexall("^ocid1.*$", var.storage_configuration.file_storage.default_subnet_id)) > 0 ? var.storage_configuration.file_storage.default_subnet_id : var.network_dependency["subnets"][var.storage_configuration.file_storage.default_subnet_id].id)
+    hostname_label      = each.value.hostname_label
+    nsg_ids             = [for nsg in coalesce(each.value.network_security_groups,[]) : (length(regexall("^ocid1.*$", nsg)) > 0 ? nsg : var.network_dependency["network_security_groups"][nsg].id)]
+    defined_tags        = each.value.defined_tags != null ? each.value.defined_tags : var.storage_configuration.default_defined_tags
+    freeform_tags       = merge(local.cislz_module_tag, each.value.freeform_tags != null ? each.value.freeform_tags : var.storage_configuration.default_freeform_tags)
 }
 
 
