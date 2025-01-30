@@ -25,7 +25,7 @@ region               = "<your tenancy region>"     # The region name.
 block_volumes_replication_region = "<REPLACE-BY-REPLICATION-REGION-NAME>"
 
 storage_configuration = {
-  default_compartment_id = "<REPLACE-BY-COMPARTMENT-OCID>" 
+  default_compartment_id = "<REPLACE-BY-COMPARTMENT-ID>" 
   block_volumes = {
     BV-1 = {
       display_name = "<REPLACE-BY-BLOCK-VOLUME-NAME>"
@@ -39,28 +39,28 @@ storage_configuration = {
       display_name = "<REPLACE-BY-BLOCK-VOLUME-NAME>"
       availability_domain = 1   
       encryption = {
-        kms_key_id = "<REPLACE-BY-KEY-OCID>"
+        kms_key_id = "<REPLACE-BY-KEY-ID>"
       }
       backup_policy = "silver"  
     }
   }
 
    file_storage = {
-    default_subnet_id = "<REPLACE-BY-SUBNET-OCID>"
+    default_subnet_id = "<REPLACE-BY-SUBNET-ID>"
     file_systems = {
       FS-1 = {
         file_system_name = "<REPLACE-BY-FILE-SYSTEM-NAME>"
         availability_domain = 1
         replication = {
-          file_system_target_id = "<REPLACE-BY-TARGET-FILE-SYSTEM-OCID>"
+          file_system_target_id = "<REPLACE-BY-TARGET-FILE-SYSTEM-ID>"
         }
         snapshot_policy_id = "SNAPSHOT-POLICY-1"
       }
       FS-2 = {
         cis_level = "2"
         file_system_name = <REPLACE-BY-FILE-SYSTEM-NAME>"
-        availability_domain = 2
-        kms_key_id = "<REPLACE-BY-KEY-OCID>"
+        availability_domain = 1
+        kms_key_id = "<REPLACE-BY-KEY-ID>"
         snapshot_policy_id = "SNAPSHOT-POLICY-1"
       }
     }
@@ -73,7 +73,7 @@ storage_configuration = {
             file_system_id = "FS-1"
             options = [
               {source = "0.0.0.0/0", access = "READ_ONLY", identity = "NONE", use_privileged_source_port = true}, 
-              {source = "<REPLACE-BY-IP_ADDRESS>", access = "READ_WRITE", identity = "ROOT", use_privileged_source_port = true}
+              {source = "<REPLACE-BY-IP-ADDRESS>", access = "READ_WRITE", identity = "ROOT", use_privileged_source_port = true}
             ]
           },
           {
@@ -81,10 +81,13 @@ storage_configuration = {
             file_system_id = "FS-2"
             options = [
               {source = "0.0.0.0/0", access = "READ_ONLY", identity = "NONE", use_privileged_source_port = true}, 
-              {source = "<REPLACE-BY-IP_ADDRESS>", access = "READ_WRITE", identity = "ROOT", use_privileged_source_port = true}
+              {source = "<REPLACE-BY-IP-ADDRESS>", access = "READ_WRITE", identity = "ROOT", use_privileged_source_port = true}
             ]
           }
         ]
+        network_security_groups = ["<REPLACE-BY-NETWORK-SECURITY-GROUP-ID"]
+        hostname_label = "mt-1"
+        freeform_tags = {"sample-tag":"sample-value"}
       }
     }
     snapshot_policies = {
