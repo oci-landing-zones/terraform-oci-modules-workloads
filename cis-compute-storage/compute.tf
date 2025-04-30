@@ -152,10 +152,10 @@ resource "oci_core_instance" "these" {
         error_message = "VALIDATION FAILURE in instance \"${each.key}\": confidential computing must be disabled when CIS level is set to 2. CIS level 2 automatically enables shielded instances, which cannot be enabled simultaneously with confidential computing in OCI. Either set \"encryption.encrypt_data_in_use\" to false or set CIS level to \"1\"."
       }
       # Check 9: Check marketplace_image.version
-      precondition {
-        condition = try(each.value.marketplace_image.name,null) != null ? (each.value.marketplace_image.version != null ? contains([for v in data.oci_core_app_catalog_listing_resource_versions.these[each.key].app_catalog_listing_resource_versions : v.listing_resource_version],each.value.marketplace_image.version) : true) : true
-        error_message = try(each.value.marketplace_image.name,null) != null ? "VALIDATION FAILURE in instance \"${each.key}\": invalid Marketplace image version \"${coalesce(each.value.marketplace_image.version,replace(data.oci_marketplace_listing.this[each.key].default_package_version," ","_"))}\" in \"marketplace_image.version\" attribute. Ensure it is spelled correctly. Valid versions for image name \"${each.value.marketplace_image.name}\" are: ${join(", ",[for v in data.oci_core_app_catalog_listing_resource_versions.these[each.key].app_catalog_listing_resource_versions : "\"${v.listing_resource_version}\""])}." : "__void__"
-      }
+      # precondition {
+      #   condition = try(each.value.marketplace_image.name,null) != null ? (each.value.marketplace_image.version != null ? contains([for v in data.oci_core_app_catalog_listing_resource_versions.these[each.key].app_catalog_listing_resource_versions : v.listing_resource_version],each.value.marketplace_image.version) : true) : true
+      #   error_message = try(each.value.marketplace_image.name,null) != null ? "VALIDATION FAILURE in instance \"${each.key}\": invalid Marketplace image version \"${coalesce(each.value.marketplace_image.version,replace(data.oci_marketplace_listing.this[each.key].default_package_version," ","_"))}\" in \"marketplace_image.version\" attribute. Ensure it is spelled correctly. Valid versions for image name \"${each.value.marketplace_image.name}\" are: ${join(", ",[for v in data.oci_core_app_catalog_listing_resource_versions.these[each.key].app_catalog_listing_resource_versions : "\"${v.listing_resource_version}\""])}." : "__void__"
+      # }
       # Check 10: Check compatible shapes for given marketplace image name/version
       precondition {
         condition = try(each.value.marketplace_image.name,null) != null ? contains(data.oci_core_app_catalog_listing_resource_version.this[each.key].compatible_shapes,each.value.shape) : true

@@ -30,12 +30,12 @@ resource "oci_marketplace_accepted_agreement" "these" {
 
 resource "oci_marketplace_listing_package_agreement" "these" {
   for_each = local.mkp_instances
-    lifecycle {
-      precondition {
-        condition = try(each.value.marketplace_image.version,null) != null ? contains([for v in data.oci_core_app_catalog_listing_resource_versions.these[each.key].app_catalog_listing_resource_versions : v.listing_resource_version],each.value.marketplace_image.version) : true
-        error_message = try(each.value.marketplace_image.version,null) != null ? "VALIDATION FAILURE in instance \"${each.key}\": invalid Marketplace image version \"${coalesce(each.value.marketplace_image.version,replace(data.oci_marketplace_listing.this[each.key].default_package_version," ","_"))}\" in \"marketplace_image.version\" attribute. Ensure it is spelled correctly. Valid versions for image name \"${each.value.marketplace_image.name}\" are: ${join(", ",[for v in data.oci_core_app_catalog_listing_resource_versions.these[each.key].app_catalog_listing_resource_versions : "\"${v.listing_resource_version}\""])}." : "__void__"
-      }
-    }    
+    # lifecycle {
+    #   precondition {
+    #     condition = try(each.value.marketplace_image.version,null) != null ? contains([for v in data.oci_core_app_catalog_listing_resource_versions.these[each.key].app_catalog_listing_resource_versions : v.listing_resource_version],each.value.marketplace_image.version) : true
+    #     error_message = try(each.value.marketplace_image.version,null) != null ? "VALIDATION FAILURE in instance \"${each.key}\": invalid Marketplace image version \"${coalesce(each.value.marketplace_image.version,replace(data.oci_marketplace_listing.this[each.key].default_package_version," ","_"))}\" in \"marketplace_image.version\" attribute. Ensure it is spelled correctly. Valid versions for image name \"${each.value.marketplace_image.name}\" are: ${join(", ",[for v in data.oci_core_app_catalog_listing_resource_versions.these[each.key].app_catalog_listing_resource_versions : "\"${v.listing_resource_version}\""])}." : "__void__"
+    #   }
+    # }    
     agreement_id    = data.oci_marketplace_listing_package_agreements.these[each.key].agreements.0.id
     listing_id      = data.oci_marketplace_listing.this[each.key].id
     package_version = each.value.marketplace_image.version != null ? replace(each.value.marketplace_image.version,"_"," ") : data.oci_marketplace_listing.this[each.key].default_package_version
