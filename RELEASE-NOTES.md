@@ -1,3 +1,8 @@
+# May 02, 2025 Release Notes - 0.2.0
+## Updates in [Compute module](./cis-compute-storage/)
+1. Marketplace listing check disabled for marketplace images.
+
+
 # December 18, 2024 Release Notes - 0.1.9
 ## Updates in [Compute module](./cis-compute-storage/)
 1. Compute: logic updated for platform images lookup by name.
