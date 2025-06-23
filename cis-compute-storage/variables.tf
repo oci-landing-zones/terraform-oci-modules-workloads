@@ -13,7 +13,8 @@ variable "instances_configuration" {
     default_subnet_id           = optional(string),       # the default subnet where all Compute instances are defined. It's overriden by the subnet_id attribute within each Compute instance.
     default_ssh_public_key_path = optional(string),       # the default ssh public key path used to access the Compute instance. It's overriden by the ssh_public_key attribute within each Compute instance.
     default_kms_key_id          = optional(string),       # the default KMS key to assign as the master encryption key. It's overriden by the kms_key_id attribute within each object.
-    default_cis_level           = optional(string)        # the CIS OCI Benchmark profile level. Level "1" is be practical and prudent. Level "2" is intended for environments where security is more critical than manageability and usability. Default is "1".
+    default_cis_level           = optional(string),       # the CIS OCI Benchmark profile level. Level "1" is be practical and prudent. Level "2" is intended for environments where security is more critical than manageability and usability. Default is "1".
+    default_disable_legacy_imds_endpoints = optional(bool, true), # the default boolean value for disabling the compute instance legacy metadata service endpoints. It's overridden by the disable_legacy_imds_endpoints attribute within each object.
     default_defined_tags        = optional(map(string)),  # the default defined tags. It's overriden by the defined_tags attribute within each object.
     default_freeform_tags       = optional(map(string)),  # the default freeform tags. It's overriden by the freeform_tags attribute within each object.
     default_cloud_init_heredoc_script = optional(string), # the default cloud-init script in Terraform heredoc style that is applied to all instances. It has precedence over default_cloud_init_script_file.
@@ -112,6 +113,7 @@ variable "instances_configuration" {
         encrypt_in_transit_on_instance_update = optional(bool,null) # whether to enable in-transit encryption for the instance. Default is set by the underlying image. Applicable at instance update time only.
         encrypt_data_in_use = optional(bool, false) # whether the instance encrypts data in-use (in memory) while being processed. A.k.a confidential computing.
       }))
+      disable_legacy_imds_endpoints = optional(bool) # whether the compute instance legacy metadata service endpoints should be disabled. Legacy service endpoints such as IMDSv1 are disabled by default. Set to `true` to enable legacy service endpoints.
       flex_shape_settings = optional(object({ # flex shape settings
         memory = optional(number,16) # the instance memory for Flex shapes. Default is 16GB.
         ocpus  = optional(number,1)  # the instance ocpus number for Flex shapes. Default is 1.
