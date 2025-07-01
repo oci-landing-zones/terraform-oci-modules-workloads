@@ -6,12 +6,12 @@
 #------------------------------
 data "oci_core_images" "these_platform" {
   count = local.deploy_platform_image_by_name ? 1 : 0
-    lifecycle {
-      precondition {
-          condition = var.tenancy_ocid != null
-          error_message = "VALIDATION FAILURE: variable \"tenancy_ocid\" is required when deploying a Compute instance based on a platform image name."
-        }
-    }
+    # lifecycle {
+    #   precondition {
+    #       condition = var.tenancy_ocid != null
+    #       error_message = "VALIDATION FAILURE: variable \"tenancy_ocid\" is required when deploying a Compute instance based on a platform image name."
+    #     }
+    # }
     compartment_id = var.tenancy_ocid
     filter {
       name   = "state"
