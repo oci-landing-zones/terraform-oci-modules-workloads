@@ -25,7 +25,6 @@ For INSTANCE-2:
 - The instance boot volume is set to be backed up per Oracle-managed *silver* backup policy, as defined by *boot_volume.backup_policy* attribute.
 - The instance has in-transit encryption enabled, as defined by *encryption.encrypt_in_transit_on_instance_create* attribute.
 - The instance is a shielded instance, as defined by *platform_type* and *boot_volume.measured_boot* attributes.
-- The instance Legacy v1 Metadata service endpoint is not disabled.
 - The instance has only default Cloud Agent plugins (management and monitoring) enabled, as *cloud_agent.plugins* attribute is undefined.
 
 For INSTANCE-3:
