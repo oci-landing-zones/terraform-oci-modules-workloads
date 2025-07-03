@@ -28,7 +28,7 @@ Check the [examples](./examples/) folder for actual module usage.
 The following security features are currently supported by the module:
 
 ### <a name="compute-features">Compute</a>
-- CIS profile level drives data at rest encryption, in-transit encryption, secure boot (Shielded instances).
+- - CIS profile level drives data at rest encryption, in-transit encryption, secure boot (Shielded instances) and legacy v1 Metadata service endpoint availability.
 - Boot volumes encryption with customer managed keys from OCI Vault service.
 - In-transit encryption for boot volumes and attached block volumes.
 - Data in-use encryption for platform images ([Confidential computing](https://docs.oracle.com/en-us/iaas/Content/Compute/References/confidential_compute.htm)).
