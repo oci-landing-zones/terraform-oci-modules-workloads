@@ -113,7 +113,7 @@ variable "instances_configuration" {
         encrypt_in_transit_on_instance_update = optional(bool,null) # whether to enable in-transit encryption for the instance. Default is set by the underlying image. Applicable at instance update time only.
         encrypt_data_in_use = optional(bool, false) # whether the instance encrypts data in-use (in memory) while being processed. A.k.a confidential computing.
       }))
-      disable_legacy_imds_endpoints = optional(bool) # whether the compute instance legacy metadata service endpoints should be disabled. Legacy service endpoints such as IMDSv1 are disabled by default. Set to `true` to enable legacy service endpoints.
+      disable_legacy_imds_endpoints = optional(bool) # whether the compute instance legacy metadata service endpoints should be disabled. Legacy service endpoints such as IMDSv1 are disabled by default. Set to `true` to disable legacy service endpoints.
       flex_shape_settings = optional(object({ # flex shape settings
         memory = optional(number,16) # the instance memory for Flex shapes. Default is 16GB.
         ocpus  = optional(number,1)  # the instance ocpus number for Flex shapes. Default is 1.

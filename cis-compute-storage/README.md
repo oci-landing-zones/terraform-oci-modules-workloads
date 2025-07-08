@@ -258,7 +258,7 @@ The instances themselves are defined within the **instances** attribute, In Terr
   - **encrypt_in_transit_on_instance_update** &ndash; (Optional) Whether to enable in-transit encryption for the data volume's paravirtualized attachment. Default is false. Applicable during instance **update** time only.
   - **encrypt_data_in_use** &ndash; (Optional) Whether the instance encrypts data in-use (in memory) while being processed (also known as *Confidential Computing*). Default is false. Only applicable if *platform_type* is set.
 
-- **disable_legacy_imds_endpoints** &ndash; (Optional) Whether the compute instance legacy metadata service endpoints should be disabled. Legacy v1 Metadata service endpoint is disabled by default. Set to `true` to enable legacy service endpoints. *default_disable_legacy_imds_endpoints* is used if undefined.
+- **disable_legacy_imds_endpoints** &ndash; (Optional) Whether the compute instance legacy metadata service endpoints should be disabled. Legacy v1 Metadata service endpoint is disabled by default. Set to `true` to disable legacy service endpoints. *default_disable_legacy_imds_endpoints* is used if undefined.
 
 - **flex_shape_settings** &ndash; (Optional) Flex shape settings.
   - **memory** &ndash; (Optional) The instance memory for Flex shapes. Default is 16 (in GB).
