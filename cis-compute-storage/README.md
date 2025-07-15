@@ -175,6 +175,7 @@ The *default_* attributes are the following:
 - **default_freeform_tags** &ndash; (Optional) Default freeform tags for all instances. It can be overridden by *freeform_tags* attribute in each instance.
 - **default_cloud_init_heredoc_script** &ndash; (Optional) Default cloud-init script in [Terraform heredoc style](https://developer.hashicorp.com/terraform/language/expressions/strings#heredoc-strings) that is applied to all instances. It has precedence over *default_cloud_init_script_file*. Use this when the script cannot be made available in the file system. **Any further changes to the script triggers instance recreation on subsequent plan/apply.**
 - **default_cloud_init_script_file** &ndash; (Optional) Default cloud-init script file that is applied to all instances. Use this when the script is available in the file system. **Any further changes to the script triggers instance recreation on subsequent plan/apply.**
+- **default_disable_legacy_imds_endpoints** &ndash; (Optional) Default boolean value for disabling the compute instance legacy metadata service endpoints. It's overridden by the disable_legacy_imds_endpoints attribute within each object.
 
 The instances themselves are defined within the **instances** attribute, In Terraform terms, it is a map of objects. where each object is referred by an identifying key. The supported attributes are listed below. For better usability, most attributes are grouped in logical blocks. They are properly indented in the list.
 - **compartment_id** &ndash; (Optional) The instance compartment. *default_compartment_id* is used if undefined. This attribute is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *compartments_dependency* variable. See [External Dependencies](#ext-dep) for details.
@@ -256,6 +257,9 @@ The instances themselves are defined within the **instances** attribute, In Terr
   - **encrypt_in_transit_on_instance_create** &ndash; (Optional) Whether to enable in-transit encryption for the data volume's paravirtualized attachment. Default is false. Applicable during instance **creation** time only. Note that some platform images do not allow instances overriding the image configuration for in-transit encryption at instance creation time. In such cases, for enabling in-transit encryption, use *encrypt_in_transit_on_instance_update* attribute. First run ```terraform apply``` with it set to false, then run ```terraform apply``` again with it set to true.
   - **encrypt_in_transit_on_instance_update** &ndash; (Optional) Whether to enable in-transit encryption for the data volume's paravirtualized attachment. Default is false. Applicable during instance **update** time only.
   - **encrypt_data_in_use** &ndash; (Optional) Whether the instance encrypts data in-use (in memory) while being processed (also known as *Confidential Computing*). Default is false. Only applicable if *platform_type* is set.
+
+- **disable_legacy_imds_endpoints** &ndash; (Optional) Whether the compute instance legacy metadata service endpoints should be disabled. Legacy v1 Metadata service endpoint is disabled by default. Set to `true` to disable legacy service endpoints. *default_disable_legacy_imds_endpoints* is used if undefined.
+
 - **flex_shape_settings** &ndash; (Optional) Flex shape settings.
   - **memory** &ndash; (Optional) The instance memory for Flex shapes. Default is 16 (in GB).
   - **ocpus** &ndash; (Optional) The number of OCPUs for Flex shapes. Default is 1.

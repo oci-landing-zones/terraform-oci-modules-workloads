@@ -1,9 +1,8 @@
+data "oci_core_volume_backup_policies" "oracle_backup_policies" {}
+
 locals {
-  oracle_backup_policies = {
-    gold   = "ocid1.volumebackuppolicy.oc1..aaaaaaaagcremuefit7dpcnjpdrtphjk4bwm3emm55t6cghctt2m6iyyjdva"
-    silver = "ocid1.volumebackuppolicy.oc1..aaaaaaaa7hwv7iscewqqcmyqe2zuzfce6setvckhbxduswtxf6ctew7e54ja"
-    bronze = "ocid1.volumebackuppolicy.oc1..aaaaaaaadrzfwjb5tflixtmy5axp2kx65uqakgnupfogabzjhtn5x5dfra6q"
-  }
+  oracle_backup_policies = tomap({ for policy in data.oci_core_volume_backup_policies.oracle_backup_policies.volume_backup_policies : policy.display_name => policy.id })
+
   volumes_with_backup_policies = {for k, v in (var.storage_configuration != null ? (var.storage_configuration["block_volumes"] != null ? var.storage_configuration["block_volumes"] : {}) : {}) : k => v if v.backup_policy != null} 
 
   volumes_to_replicate = {for k, v in (var.storage_configuration != null ? (var.storage_configuration["block_volumes"] != null ? var.storage_configuration["block_volumes"] : {}) : {}) : k => v if v.replication != null} 
