@@ -1,5 +1,11 @@
 # May 02, 2025 Release Notes - 0.2.0
 ## Updates in [Compute module](./cis-compute-storage/)
+1. Oracle back up policies now have dynamic look up, allowing the code to work for all OCI regions. 
+2. *disable_legacy_imds_endpoints* is now an optional input variable. Set to true to disable legacy service endpoints.
+
+
+# May 02, 2025 Release Notes - 0.2.0
+## Updates in [Compute module](./cis-compute-storage/)
 1. Marketplace listing check disabled for marketplace images.
 
 
