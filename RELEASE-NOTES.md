@@ -1,3 +1,7 @@
+# July 29, 2025 Release Notes - 0.2.2
+# Updates
+1. Reformat the code to adhere to Terraform standards. 
+
 # July 15, 2025 Release Notes - 0.2.1
 ## Updates in [Compute module](./cis-compute-storage/)
 1. Oracle back up policies now have dynamic look up, allowing the code to work for all OCI regions. 
