@@ -8,22 +8,22 @@ output "instances" {
 
 output "private_ips" {
   description = "The private IPs"
-  value = var.enable_output ? oci_core_private_ip.these : null
+  value       = var.enable_output ? oci_core_private_ip.these : null
 }
 
 output "secondary_vnics" {
   description = "The secondary VNICs"
-  value = var.enable_output ? data.oci_core_vnic.these : null
+  value       = var.enable_output ? data.oci_core_vnic.these : null
 }
 
 output "secondary_vnic_attachments" {
   description = "The secondary VNIC attachments"
-  value = var.enable_output ? oci_core_vnic_attachment.these : null
+  value       = var.enable_output ? oci_core_vnic_attachment.these : null
 }
 
 output "secondary_private_ips" {
   description = "The secondary private IPs in all instances VNICs"
-  value = var.enable_output ? oci_core_private_ip.these : null
+  value       = var.enable_output ? oci_core_private_ip.these : null
 }
 
 output "block_volumes" {
@@ -37,11 +37,11 @@ output "file_systems" {
 }
 
 output "file_systems_mount_targets" {
-  value       = var.enable_output ? oci_file_storage_mount_target.these : null
+  value = var.enable_output ? oci_file_storage_mount_target.these : null
 }
 
 output "file_systems_snapshot_policies" {
-  value       = var.enable_output ? oci_file_storage_filesystem_snapshot_policy.these : null
+  value = var.enable_output ? oci_file_storage_filesystem_snapshot_policy.these : null
 }
 
 output "cluster_networks" {

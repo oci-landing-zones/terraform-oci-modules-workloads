@@ -10,6 +10,6 @@ variable "private_key_password" { default = "" }
 
 variable "storage_configuration" {
   description = "Storage configuration attributes."
-  type = any
-  default = null
+  type        = any
+  default     = null
 }

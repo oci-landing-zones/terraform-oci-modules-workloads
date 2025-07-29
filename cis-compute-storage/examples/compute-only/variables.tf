@@ -10,6 +10,6 @@ variable "private_key_password" { default = "" }
 
 variable "instances_configuration" {
   description = "Compute instances configuration attributes."
-  type = any
-  default = null
+  type        = any
+  default     = null
 }
