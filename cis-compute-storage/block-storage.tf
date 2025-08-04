@@ -1,11 +1,11 @@
 data "oci_core_volume_backup_policies" "oracle_backup_policies" {}
 
 locals {
-      oracle_backup_policies = tomap({ for policy in data.oci_core_volume_backup_policies.oracle_backup_policies.volume_backup_policies : policy.display_name => policy.id })
+  oracle_backup_policies = tomap({ for policy in data.oci_core_volume_backup_policies.oracle_backup_policies.volume_backup_policies : policy.display_name => policy.id })
 
   volumes_with_backup_policies = { for k, v in(var.storage_configuration != null ? (var.storage_configuration["block_volumes"] != null ? var.storage_configuration["block_volumes"] : {}) : {}) : k => v if v.backup_policy != null }
 
-    volumes_to_replicate = { for k, v in(var.storage_configuration != null ? (var.storage_configuration["block_volumes"] != null ? var.storage_configuration["block_volumes"] : {}) : {}) : k => v if v.replication != null }
+  volumes_to_replicate = { for k, v in(var.storage_configuration != null ? (var.storage_configuration["block_volumes"] != null ? var.storage_configuration["block_volumes"] : {}) : {}) : k => v if v.replication != null }
 }
 
 data "oci_identity_availability_domains" "bv_ads" {
