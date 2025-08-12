@@ -50,12 +50,11 @@ The following security features are currently supported by the module:
 - Data at rest encryption with customer managed keys from OCI Vault service.
 - Cross-region replication for strong cyber resilience posture.
 - Backups with custom snapshot policies.
+- Volume group creation and its backup.
 
 ### <a name="cluster-features">Clusters</a>
 - Deployment of cluster networks and compute clusters.
 
-### <a name="block-features">Volume Groups</a>
-- Deployment of Volume Groups and their backups.
 
 ## <a name="requirements">Requirements</a>
 ### Terraform Version >= 1.3.0
