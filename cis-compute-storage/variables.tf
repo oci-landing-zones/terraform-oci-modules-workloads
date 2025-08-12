@@ -229,6 +229,29 @@ variable "storage_configuration" {
         freeform_tags = optional(map(string)) # snapshot policy freeform_tags. default_freeform_tags is used if this is not defined.
       })))
     }))
+    volume_groups = optional(map(object({
+      compartment_id             = optional(string)    # the compartment where the volume group is created. default_compartment_id is used if this is not defined.
+      availability_domain        = optional(number, 1) # the availability domain where to create the volume group.
+      type                       = string              # Available values: volumeGroupBackupId, volumeGroupId, volumeGroupReplicaId, volumeIds
+      volume_ids                 = optional(list(string))
+      volume_group_backup_id     = optional(string)
+      volume_group_id            = optional(string)
+      volume_group_replica_id    = optional(string)
+      defined_tags               = optional(map(string)) # volume group defined_tags. default_defined_tags is used if this is not defined.
+      freeform_tags              = optional(map(string)) # volume group freeform_tags. default_freeform_tags is used if this is not defined.
+      display_name               = optional(string)
+      kms_key                    = optional(string)
+      cluster_placement_group_id = optional(string)
+      backup_policy_id           = optional(string)
+      replication = optional(object({ # replication settings
+        availability_domain = number  # the availability domain (AD) to replicate the volume.
+        kms_key             = optional(string)
+      }))
+      backup = optional(object({
+        enable_backup = bool
+        type          = optional(string) # Available values: FULL, INCREMENTAL
+      }))
+    })))
   })
   default = null
 }
