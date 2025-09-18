@@ -48,6 +48,7 @@ variable "instances_configuration" {
         type                          = optional(string, "paravirtualized") # boot volume emulation type. Valid values: "paravirtualized" (default for platform images), "scsi", "iscsi", "ide", "vfio".
         firmware                      = optional(string)                    # firmware used to boot the VM. Valid options: "BIOS" (compatible with both 32 bit and 64 bit operating systems that boot using MBR style bootloaders), "UEFI_64" (default for platform images).
         size                          = optional(number, 50)                # boot volume size. Default is 50GB (minimum allowed by OCI).
+        vpus_per_gb                   = optional(number, 10)                # the number of volume performance units (VPUs) that will be applied to this volume per GB. Default is 10, represents Balanced option.
         preserve_on_instance_deletion = optional(bool, true)                # whether to preserve boot volume after deletion. Default is true.
         secure_boot                   = optional(bool, false)               # prevents unauthorized boot loaders and operating systems from booting.
         measured_boot                 = optional(bool, false)               # enhances boot security by taking and storing measurements of boot components, such as bootloaders, drivers, and operating systems. Bare metal instances do not support Measured Boot.
