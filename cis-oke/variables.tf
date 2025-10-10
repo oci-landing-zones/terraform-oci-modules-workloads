@@ -173,7 +173,7 @@ variable "module_name" {
 }
 
 variable "compartments_dependency" {
-  description = "A map of objects containing the externally managed compartments this module may depend on. All map objects must have the same type and must contain at least an 'id' attribute (representing the compartment OCID) of string type." 
+  description = "A map of objects containing the externally managed compartments this module may depend on. All map objects must have the same type and must contain at least an 'id' attribute (representing the compartment OCID) of string type."
   type = map(object({
     id = string # the compartment OCID
   }))
@@ -197,7 +197,7 @@ variable "network_dependency" {
 }
 
 variable "kms_dependency" {
-  description = "A map of objects containing the externally managed encryption keys this module may depend on. All map objects must have the same type and must contain at least an 'id' attribute (representing the key OCID) of string type." 
+  description = "A map of objects containing the externally managed encryption keys this module may depend on. All map objects must have the same type and must contain at least an 'id' attribute (representing the key OCID) of string type."
   type = map(object({
     id = string # the key OCID.
   }))

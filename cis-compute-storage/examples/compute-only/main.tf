@@ -5,9 +5,9 @@
 module "compute" {
   source = "../.."
   providers = {
-    oci = oci
+    oci                                  = oci
     oci.block_volumes_replication_region = oci
   }
   instances_configuration = var.instances_configuration
-  tenancy_ocid = var.tenancy_ocid
+  tenancy_ocid            = var.tenancy_ocid
 }
