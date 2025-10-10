@@ -5,7 +5,7 @@
 module "replica_fs" {
   source = "../.."
   providers = {
-    oci = oci
+    oci                                  = oci
     oci.block_volumes_replication_region = oci
   }
   storage_configuration = var.storage_configuration

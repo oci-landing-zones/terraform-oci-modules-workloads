@@ -5,8 +5,8 @@
 module "storage" {
   source = "../.."
   providers = {
-    oci = oci
+    oci                                  = oci
     oci.block_volumes_replication_region = oci.block_volumes_replication_region
   }
-  storage_configuration   = var.storage_configuration
+  storage_configuration = var.storage_configuration
 }

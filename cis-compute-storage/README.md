@@ -50,9 +50,11 @@ The following security features are currently supported by the module:
 - Data at rest encryption with customer managed keys from OCI Vault service.
 - Cross-region replication for strong cyber resilience posture.
 - Backups with custom snapshot policies.
+- Volume group creation and its backup.
 
 ### <a name="cluster-features">Clusters</a>
 - Deployment of cluster networks and compute clusters.
+
 
 ## <a name="requirements">Requirements</a>
 ### Terraform Version >= 1.3.0
@@ -204,6 +206,7 @@ The instances themselves are defined within the **instances** attribute, In Terr
   - **type** &ndash; (Optional) Boot volume emulation type. Valid values: "paravirtualized", "scsi", "iscsi", "ide", "vfio". Default is "paravirtualized".
   - **firmware** &ndash; (Optional) Firmware used to boot the VM. Valid options: "BIOS" (compatible with both 32 bit and 64 bit operating systems that boot using MBR style bootloaders), "UEFI_64" (default for platform images).
   - **size** &ndash; (Optional) Boot volume size. Default is 50 (in GB, the minimum allowed by OCI).
+  - **vpus_per_gb** &ndash; (Optional) The number of volume performance units (VPUs) that will be applied to this volume per GB. Default is 10, represents Balanced option.
   - **preserve_on_instance_deletion** &ndash; (Optional) Whether to preserve boot volume after deletion. Default is true.
   - **secure_boot** &ndash; (Optional) Prevents unauthorized boot loaders and operating systems from booting. Default is false. Only applicable if *platform_type* is set.
   - **measured_boot** &ndash; (Optional) enhances boot security by taking and storing measurements of boot components, such as bootloaders, drivers, and operating systems. Bare metal instances do not support Measured Boot. Default is false. Only applicable if *platform_type* is set.
@@ -350,7 +353,7 @@ Additionally, in-transit encryption is only available to paravirtualized volumes
 
 ### <a name="storage">Storage</a>
 
-Storage is managed using the **storage_configuration** variable. It contains a set of attributes starting with the prefix **default_** and two attribute named **block_volumes** and **file_storage**. The **default_** attribute values are applied to all storage units within **block_volumes** and **file_storage**, unless overridden at the storage unit level.
+Storage is managed using the **storage_configuration** variable. It contains a set of attributes starting with the prefix **default_** and three attributes named **block_volumes**, **file_storage** and **volume_groups**. The **default_** attribute values are applied to all storage units within **block_volumes**, **file_storage** and **volume_groups** unless overridden at the storage unit level.
 
 The defined **default_** attributes are the following:
 - **default_compartment_id** &ndash; (Optional) The default compartment for all storage units. It can be overridden by *compartment_id* attribute in each unit. This attribute is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *compartments_dependency* variable. See [External Dependencies](#ext-dep) for details.
@@ -578,6 +581,29 @@ sdb                  8:16   0   60G  0 disk
 
 For more information on mounting block volumes without consistent device path see [Traditional fstab Options](https://docs.oracle.com/en-us/iaas/Content/Block/References/fstaboptions.htm#Traditional_fstab_Options).
 
+#### <a name="volume-group">Volume Group</a>
+The **volume_groups** attribute defines the volume groups and their backups.
+In Terraform terms, it is a map of objects, where each object is referred by an identifying key. The following attributes are supported:
+- **compartment_id** &ndash; (Optional) The volume group compartment. *storage_configuration*'s *default_compartment_id* is used if undefined. This attribute is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *compartments_dependency* variable. See [External Dependencies](#ext-dep) for details.
+- **availability_domain** &ndash; (Optional) The volume group availability domain.
+- **type** &ndash; (Optional) The type of volume group. Available values: volumeGroupBackupId, volumeGroupId, volumeGroupReplicaId, volumeIds.
+- **volume_ids** &ndash; (Required when type=volumeIds) OCIDs for the volumes used to create this volume group.
+- **volume_group_backup_id** &ndash; (Required when type=volumeGroupBackupId) The OCID of the volume group backup to restore from.
+- **volume_group_id** &ndash; (Required when type=volumeGroupId) The OCID of the volume group to clone from.
+- **volume_group_replica_id** &ndash; (Required when type=volumeGroupReplicaId) The OCID of the volume group replica.
+- **defined_tags** &ndash; (Optional) Volume group defined tags. *storage_configuration*'s *default_defined_tags* is used if undefined.
+- **freeform_tags** &ndash; (Optional) Volume group freeform tags. *storage_configuration*'s *default_freeform_tags* is used if undefined.
+- **display_name** &ndash; (Optional) Volume group display name. *volume-group* is used if undefined.
+- **kms_key** &ndash; (Optional) The OCID of the Vault service key which is the master encryption key for the volume's cross region backups, which will be used in the destination region to encrypt the backup's encryption keys. For more information about the Vault service and encryption keys, see [Overview of Vault service](https://docs.oracle.com/en-us/iaas/Content/KeyManagement/Concepts/keyoverview.htm) and [Using Keys](https://docs.oracle.com/en-us/iaas/Content/KeyManagement/Tasks/usingkeys.htm).
+- **cluster_placement_group_id** &ndash; (Optional) The clusterPlacementGroup Id of the volume group for volume group placement.
+- **backup_policy_id** &ndash; (Optional) If provided, specifies the ID of the volume backup policy to assign to the newly created volume group. If omitted, no policy will be assigned.
+- **replication** &ndash; (Optional) The list of volume group replicas that this volume group will be enabled to have in the specified destination availability domains.
+  - **availability_domain** &ndash; (Required) The availability domain of the volume group replica.
+  - **kms_key** &ndash; (Optional)  The OCID of the Vault service key which is the master encryption key for the cross region volume group's replicas, which will be used in the destination region to encrypt the volume group's replicas encryption keys. For more information about the Vault service and encryption keys, see [Overview of Vault service](https://docs.oracle.com/en-us/iaas/Content/KeyManagement/Concepts/keyoverview.htm) and [Using Keys](https://docs.oracle.com/en-us/iaas/Content/KeyManagement/Tasks/usingkeys.htm).
+- **backup** &ndash; (Optional) the configuration of volume group backup
+  - **enable_backup** &ndash; (Required) this value must be  true to enable volume group backup.
+  - **type** &ndash; (Optional) The type of backup to create. If omitted, defaults to incremental. Allowed values: FULL, INCREMENTAL.
+
 
 #### <a name="file-storage-1">File Storage</a>
 The **file_storage** attribute defines the file systems, mount targets and snapshot policies for OCI File Storage service. The optional attribute **default_subnet_id** applies to all mount targets, unless overridden by **subnet_id** attribute in each mount target. Attribute **subnet_id** is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *network_dependency* variable. See [External Dependencies](#ext-dep) for details.
@@ -636,7 +662,6 @@ Snapshot policies are defined using the optional attribute **snapshot_policies**
 - **freeform_tags** &ndash; (Optional) Snapshot policy freeform tags. *storage_configuration*'s *default_freeform_tags* is used if undefined.
 
 As mentioned, default snapshot policies are created for file systems that do not have a snapshot policy. The default snapshot policies are defined with a single schedule, set to run weekly at 23:00 UTC on sundays.
-
 
 #### <a name="clusters">Clusters</a>
 

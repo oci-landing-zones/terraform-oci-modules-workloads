@@ -11,7 +11,7 @@ module "bastion" {
   source                 = "github.com/oracle-quickstart/terraform-oci-cis-landing-zone-security.git//bastion?ref=v0.1.4"
   bastions_configuration = var.bastions_configuration
   sessions_configuration = var.sessions_configuration
-  endpoints_dependency   = {for k, v in module.oke.clusters : k => {"ip_address" : split(":",v.endpoints[0].private_endpoint)[0]}}
+  endpoints_dependency   = { for k, v in module.oke.clusters : k => { "ip_address" : split(":", v.endpoints[0].private_endpoint)[0] } }
 }
 
 data "oci_containerengine_cluster_kube_config" "kube_config" {
@@ -22,6 +22,6 @@ data "oci_containerengine_cluster_kube_config" "kube_config" {
 
 resource "local_file" "kubeconfig" {
   for_each = var.clusters_configuration != null ? var.clusters_configuration["clusters"] : {}
-    content  = "${tostring(replace(data.oci_containerengine_cluster_kube_config.kube_config[each.key].content, split(":", module.oke.clusters[each.key].endpoints[0].private_endpoint)[0], "127.0.0.1"))}"
-    filename = "./kubeconfig"
+  content  = tostring(replace(data.oci_containerengine_cluster_kube_config.kube_config[each.key].content, split(":", module.oke.clusters[each.key].endpoints[0].private_endpoint)[0], "127.0.0.1"))
+  filename = "./kubeconfig"
 }

@@ -2,7 +2,7 @@
 # Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
 module "platform_images" {
-  source = "../../"
-  tenancy_ocid = var.tenancy_ocid
+  source            = "../../"
+  tenancy_ocid      = var.tenancy_ocid
   image_name_filter = var.filter_string
 }

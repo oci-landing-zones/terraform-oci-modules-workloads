@@ -10,18 +10,18 @@ variable "private_key_password" {}
 
 variable "clusters_configuration" {
   description = "RDMA clusters configuration attributes."
-  type = any
-  default = null
+  type        = any
+  default     = null
 }
 
 variable "cluster_instances_configuration" {
   description = "RDMA cluster instances configuration attributes"
-  type = any
-  default = null
+  type        = any
+  default     = null
 }
 
 variable "instances_configuration" {
   description = "Compute instances configuration attributes."
-  type = any
-  default = null
+  type        = any
+  default     = null
 }
