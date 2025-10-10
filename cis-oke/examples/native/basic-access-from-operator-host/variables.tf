@@ -23,6 +23,6 @@ variable "sessions_configuration" {
   type = any
 }
 variable "ssh_private_key" {
-  type = string
+  type    = string
   default = "~/.ssh/id_rsa"
 }

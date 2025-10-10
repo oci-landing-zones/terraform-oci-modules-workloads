@@ -10,15 +10,15 @@ module "oke" {
 module "operator_instance" {
   source = "github.com/oracle-quickstart/terraform-oci-secure-workloads//cis-compute-storage?ref=v0.1.3"
   providers = {
-    oci = oci
+    oci                                  = oci
     oci.block_volumes_replication_region = oci
   }
   instances_configuration = var.instances_configuration
 }
 
 module "bastion" {
-  depends_on = [module.oke]
-  source     = "github.com/oracle-quickstart/terraform-oci-cis-landing-zone-security.git//bastion?ref=v0.1.4"
+  depends_on             = [module.oke]
+  source                 = "github.com/oracle-quickstart/terraform-oci-cis-landing-zone-security.git//bastion?ref=v0.1.4"
   bastions_configuration = var.bastions_configuration
   sessions_configuration = var.sessions_configuration
   instances_dependency   = module.operator_instance.instances
@@ -34,7 +34,7 @@ resource "null_resource" "add_kubeconfig" { # This null resource is used to add 
   for_each = var.sessions_configuration["sessions"]
   provisioner "local-exec" {
     command = format("%s %s", replace(replace(replace(replace(module.bastion.sessions[each.key], "\"", "'"), "<privateKey>", var.ssh_private_key), "-o ProxyCommand", "-o StrictHostKeyChecking=no -o ProxyCommand"), "-W", "-o StrictHostKeyChecking=no -W"), "-y -x 'mkdir ~/.kube/'")
-    
+
   }
   provisioner "local-exec" {
     command = format("%s %s", replace(replace(replace(replace(module.bastion.sessions[each.key], "\"", "'"), "<privateKey>", var.ssh_private_key), "-o ProxyCommand", "-o StrictHostKeyChecking=no -o ProxyCommand"), "-W", "-o StrictHostKeyChecking=no -W"), "-y -x 'echo \"${join(",", [for cluster in data.oci_containerengine_cluster_kube_config.kube_config : tostring(cluster.content)])}\" >> ~/.kube/config'")

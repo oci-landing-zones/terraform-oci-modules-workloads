@@ -1,3 +1,10 @@
+# October 10, 2025 Release Notes - 0.2.2
+# Updates
+1. Format the code to adhere to Terraform standards. 
+## Updates in [Compute module](./cis-compute-storage/)
+1. File Storage: Add support for Volume Group and Backup creation
+2. Compute: *vpus_per_gb* variable added as an optional input variable. Default is 10. 
+
 # July 15, 2025 Release Notes - 0.2.1
 ## Updates in [Compute module](./cis-compute-storage/)
 1. Oracle back up policies now have dynamic look up, allowing the code to work for all OCI regions. 

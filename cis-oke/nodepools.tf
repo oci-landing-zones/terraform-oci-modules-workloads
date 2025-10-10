@@ -127,5 +127,5 @@ resource "oci_containerengine_node_pool" "these" {
     source_type             = "image"
     boot_volume_size_in_gbs = each.value.node_config_details.boot_volume != null ? each.value.node_config_details.boot_volume.size : 60
   }
-  ssh_public_key = each.value.node_config_details.ssh_public_key_path != null ? (fileexists(each.value.node_config_details.ssh_public_key_path) ? file(each.value.node_config_details.ssh_public_key_path) : each.value.node_config_details.ssh_public_key_path) : var.workers_configuration.default_ssh_public_key_path != null ? (fileexists(var.workers_configuration.default_ssh_public_key_path) ? file(var.workers_configuration.default_ssh_public_key_path) : var.workers_configuration.default_ssh_public_key_path): null
+  ssh_public_key = each.value.node_config_details.ssh_public_key_path != null ? (fileexists(each.value.node_config_details.ssh_public_key_path) ? file(each.value.node_config_details.ssh_public_key_path) : each.value.node_config_details.ssh_public_key_path) : var.workers_configuration.default_ssh_public_key_path != null ? (fileexists(var.workers_configuration.default_ssh_public_key_path) ? file(var.workers_configuration.default_ssh_public_key_path) : var.workers_configuration.default_ssh_public_key_path) : null
 }

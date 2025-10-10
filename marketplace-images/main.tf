@@ -30,6 +30,6 @@ locals {
 
 data "oci_core_app_catalog_listing_resource_versions" "existing" {
   for_each   = local.helper
-    listing_id = each.value
+  listing_id = each.value
 }
 
