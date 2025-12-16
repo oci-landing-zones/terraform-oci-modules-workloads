@@ -90,6 +90,36 @@ resource "oci_containerengine_cluster" "these" {
       freeform_tags = merge(local.cislz_module_tag, each.value.options != null ? each.value.options.service_lb_config != null ? each.value.options.service_lb_config.freeform_tags != null ? each.value.options.service_lb_config.freeform_tags : var.clusters_configuration.default_freeform_tags : var.clusters_configuration.default_freeform_tags : var.clusters_configuration.default_freeform_tags)
     }
     service_lb_subnet_ids = each.value.networking.services_subnet_id != null ? [for lb_sub in each.value.networking.services_subnet_id : (length(regexall("^ocid1.*$", lb_sub)) > 0 ? lb_sub : var.network_dependency["subnets"][lb_sub].id)] : []
+    dynamic "open_id_connect_discovery" {
+      for_each = try(each.value.is_enhanced, false) ? [1] : []
+      content {
+        is_open_id_connect_discovery_enabled = (
+          try(each.value.options.openid_connect.enable_discovery, false) && lower(try(each.value.cni_type, "")) == "native"
+        )
+      }
+    }
+    dynamic "open_id_connect_token_authentication_config" {
+      for_each = try(each.value.is_enhanced, false) ? [1] : []
+      content {
+        is_open_id_connect_auth_enabled = try(each.value.options.openid_connect.enable_authentication, false)
+        ca_certificate                  = try(each.value.options.openid_connect.ca_certificate, null)
+        signing_algorithms              = try(each.value.options.openid_connect.signing_algorithms, null)
+        client_id                       = try(each.value.options.openid_connect.client_id, null)
+        configuration_file              = try(each.value.options.openid_connect.configuration_file, null)
+        issuer_url                      = try(each.value.options.openid_connect.issuer_url, null)
+        username_claim                  = try(each.value.options.openid_connect.username_claim, null)
+        username_prefix                 = try(each.value.options.openid_connect.username_prefix, null)
+        groups_claim                    = try(each.value.options.openid_connect.groups_claim, null)
+        groups_prefix                   = try(each.value.options.openid_connect.groups_prefix, null)
+        dynamic "required_claims" {
+          for_each = try(each.value.options.openid_connect.required_claims, {})
+          content {
+            key   = required_claims.key
+            value = required_claims.value
+          }
+        }
+      }
+    }
   }
   type = each.value.is_enhanced == true ? "ENHANCED_CLUSTER" : "BASIC_CLUSTER"
 }

@@ -40,6 +40,20 @@ variable "clusters_configuration" {
           defined_tags  = optional(map(string)) # LB defined_tags. default_defined_tags is used if this is not defined.
           freeform_tags = optional(map(string)) # LB freeform_tags. default_freeform_tags is used if this is not defined.
         }))
+        openid_connect = optional(object({
+          enable_discovery      = optional(bool, false) # If OIDC Discovery is enabled to allow third-party services to access non-OCI resources. Only available for enhanced clusters. Default is false.
+          enable_authentication = optional(bool, false)
+          ca_certificate        = optional(string)
+          signing_algorithms    = optional(list(string))
+          client_id             = optional(string)
+          configuration_file    = optional(string)
+          issuer_url            = optional(string)
+          required_claims       = optional(map(string))
+          username_claim        = optional(string)
+          username_prefix       = optional(string)
+          groups_claim          = optional(string)
+          groups_prefix         = optional(string)
+        }))
       }))
 
       networking = object({                             # cluster networking settings.
@@ -102,17 +116,17 @@ variable "workers_configuration" {
           memory = optional(number, 16)                 # the nodes memory for Flex shapes. Default is 16GB.
           ocpus  = optional(number, 1)                  # the nodes ocpus number for Flex shapes. Default is 1.
         }))
-        boot_volume = optional(object({                # the boot volume settings.
-          size                 = optional(number, 60)  # the boot volume size.Default is 60.
-          preserve_boot_volume = optional(bool, false) # whether to preserve the boot volume after the nodes are terminated.
-        }))
         encryption = optional(object({                 # the encryption settings.
           enable_encrypt_in_transit = optional(bool)   # whether to enable the encrypt in transit. Default is false.
           kms_key_id                = optional(string) # the KMS key to assign as the master encryption key. default_kms_key_id is used if this is not defined.
         }))
-        placement = optional(list(object({       # placement settings.
-          availability_domain = optional(number) # the nodes availability domain. Default is 1.
-          fault_domain        = optional(number) # the nodes fault domain. Default is 1.
+        boot_volume_size = optional(number, 60)
+        placement = optional(list(object({                                   # placement settings.
+          enable_preemptible_node            = optional(bool, false)         # wether to enable preemptive node. Default is false.
+          preemptible_node_action_type       = optional(string, "TERMINATE") # The type of action to run when the instance is interrupted for eviction, default is "TERMINATE".
+          preserve_boot_volume_on_preempting = optional(bool, false)
+          availability_domain                = optional(number) # the nodes availability domain. Default is 1.
+          fault_domain                       = optional(number) # the nodes fault domain. Default is 1.
         })))
         node_eviction = optional(object({   # node eviction settings.
           grace_duration = optional(number) # duration after which OKE will give up eviction of the pods on the node. Can be specified in seconds. Default is 60 minutes.
@@ -203,5 +217,3 @@ variable "kms_dependency" {
   }))
   default = null
 }
-
-

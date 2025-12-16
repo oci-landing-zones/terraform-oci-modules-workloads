@@ -1,3 +1,10 @@
+# December 16, 2025 Release Notes - 0.2.3
+## Updates in [OKE module](./cis-oke/)
+1. Add support for OpenID Discovery and Authentication for third-party services to access non-OCI resources. Only available for enhanced clusters. 
+2. Add precondition validation to ensure virtual node pools can only be deployed with VCN-native pod clusters.
+3. Fixed preemptible node bug preventing deployment of non-preemptible nodes. Users can now choose between preemptible or on-demand nodes in their node pool placement. 
+4. Restructured boot volume-related variables in *variables.tf*. Changed *boot_volume* object variable to *boot_volume_size* number variable, and moved *boot_volume.preserve_boot_volume* to *placement.preserve_boot_volume_on_preempting*
+
 # October 10, 2025 Release Notes - 0.2.2
 # Updates
 1. Format the code to adhere to Terraform standards. 
