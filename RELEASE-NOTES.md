@@ -1,3 +1,9 @@
+# December 16, 2025 Release Notes - 0.2.3
+## Updates in [OKE module](./cis-oke/)
+1. Add support for OpenID Discovery and Authentication for third-party services to access non-OCI resources. Only available for enhanced clusters. 
+2. Add precondition validation to ensure virtual node pools can only be deployed with VCN-native pod clusters.
+3. Fixed preemptible node bug to add option to choose preemptible or on-demand nodes in node pools placement. 
+
 # October 10, 2025 Release Notes - 0.2.2
 # Updates
 1. Format the code to adhere to Terraform standards. 

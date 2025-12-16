@@ -24,6 +24,11 @@ resource "oci_containerengine_virtual_node_pool" "these" {
       condition     = each.value.compartment_id != null ? true : var.workers_configuration.default_compartment_id != null ? true : length(regexall("^ocid1.*$", each.value.cluster_id)) > 0 ? false : true
       error_message = "VALIDATION FAILURE in virtual node pool \"${each.key}\": One of the attributes compartment_id or default_compartment_id must be used when specifying an ocid in the cluster_id attribute."
     }
+    ## Check 3: Native Cluster validation when creating virtual node pools.
+    precondition {
+      condition     = length(regexall("^ocid1.*$", each.value.cluster_id)) > 0 ? [for cluster in data.oci_containerengine_clusters.vpool[each.key].clusters : cluster.cluster_pod_network_options[0].cni_type if cluster.id == each.value.cluster_id][0] == "OCI_VCN_IP_NATIVE" : oci_containerengine_cluster.these[each.value.cluster_id].cluster_pod_network_options[0].cni_type == "OCI_VCN_IP_NATIVE"
+      error_message = "VALIDATION FAILURE in virtual node pool \"${each.key}\": Virtual node pools only work on VCN-native pod clusters."
+    }
   }
   cluster_id     = length(regexall("^ocid1.*$", each.value.cluster_id)) > 0 ? each.value.cluster_id : oci_containerengine_cluster.these[each.value.cluster_id].id
   compartment_id = each.value.compartment_id != null ? (length(regexall("^ocid1.*$", each.value.compartment_id)) > 0 ? each.value.compartment_id : var.compartments_dependency[each.value.compartment_id].id) : var.workers_configuration.default_compartment_id != null ? (length(regexall("^ocid1.*$", var.workers_configuration.default_compartment_id)) > 0 ? var.workers_configuration.default_compartment_id : var.compartments_dependency[var.workers_configuration.default_compartment_id].id) : length(regexall("^ocid1.*$", each.value.cluster_id)) > 0 ? null : oci_containerengine_cluster.these[each.value.cluster_id].compartment_id
