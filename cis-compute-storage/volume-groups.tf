@@ -3,6 +3,8 @@
 
 locals {
   volume_groups_to_replicate = { for k, v in(var.storage_configuration != null ? (var.storage_configuration["volume_groups"] != null ? var.storage_configuration["volume_groups"] : {}) : {}) : k => v if v.replication != null }
+
+  volume_groups_with_backup_policies = { for k, v in(var.storage_configuration != null ? (var.storage_configuration["volume_groups"] != null ? var.storage_configuration["volume_groups"] : {}) : {}) : k => v if v.backup.enable_backup == true && v.backup_policy != null }
 }
 
 data "oci_identity_availability_domains" "vg_ads" {
@@ -30,7 +32,6 @@ resource "oci_core_volume_group" "these" {
   }
 
   #Optional
-  backup_policy_id           = each.value.backup_policy_id != null ? each.value.backup_policy_id : null
   cluster_placement_group_id = each.value.cluster_placement_group_id != null ? each.value.cluster_placement_group_id : null
   defined_tags               = each.value.defined_tags != null ? each.value.defined_tags : var.storage_configuration.default_defined_tags
   freeform_tags              = merge(local.cislz_module_tag, each.value.freeform_tags != null ? each.value.freeform_tags : var.storage_configuration.default_freeform_tags)
@@ -47,10 +48,22 @@ resource "oci_core_volume_group" "these" {
 }
 
 resource "oci_core_volume_group_backup" "these" {
-  for_each = { for k, v in var.storage_configuration != null ? var.storage_configuration.volume_groups : {} : k => v
+  for_each = { for k, v in coalesce(var.storage_configuration.volume_groups, {}) : k => v
     if v.backup.enable_backup == true ## enable_backup must be true to create a volume group backup
   }
   volume_group_id = oci_core_volume_group.these[each.key].id
   type            = each.value.backup.type != null ? each.value.backup.type : "INCREMENTAL"
   display_name    = each.value.display_name != null ? "${each.value.display_name}-backup" : "volume-group-backup"
+}
+
+resource "oci_core_volume_backup_policy_assignment" "these_volume_groups" {
+  for_each = local.volume_groups_with_backup_policies
+  lifecycle {
+    precondition {
+      condition     = contains(keys(local.oracle_backup_policies), lower(each.value.backup_policy))
+      error_message = "VALIDATION FAILURE in block volume ${each.key}: Invalid backup policy name \"${each.value.backup_policy}\". Unable to find backup policy."
+    }
+  }
+  asset_id  = oci_core_volume_group.these[each.key].id
+  policy_id = local.oracle_backup_policies[lower(each.value.backup_policy)]
 }

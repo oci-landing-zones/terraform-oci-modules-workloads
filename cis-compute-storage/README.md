@@ -596,7 +596,7 @@ In Terraform terms, it is a map of objects, where each object is referred by an 
 - **display_name** &ndash; (Optional) Volume group display name. *volume-group* is used if undefined.
 - **kms_key** &ndash; (Optional) The OCID of the Vault service key which is the master encryption key for the volume's cross region backups, which will be used in the destination region to encrypt the backup's encryption keys. For more information about the Vault service and encryption keys, see [Overview of Vault service](https://docs.oracle.com/en-us/iaas/Content/KeyManagement/Concepts/keyoverview.htm) and [Using Keys](https://docs.oracle.com/en-us/iaas/Content/KeyManagement/Tasks/usingkeys.htm).
 - **cluster_placement_group_id** &ndash; (Optional) The clusterPlacementGroup Id of the volume group for volume group placement.
-- **backup_policy_id** &ndash; (Optional) If provided, specifies the ID of the volume backup policy to assign to the newly created volume group. If omitted, no policy will be assigned.
+- **backup_policy** &ndash; (Optional) If provided, specifies the display name of the volume backup policy to assign to the newly created volume group. If omitted, no policy will be assigned. Note that a given volume or volume group can only have one backup policy assigned to it. This is used for a volume group that contains a volume without a backup policy.
 - **replication** &ndash; (Optional) The list of volume group replicas that this volume group will be enabled to have in the specified destination availability domains.
   - **availability_domain** &ndash; (Required) The availability domain of the volume group replica.
   - **kms_key** &ndash; (Optional)  The OCID of the Vault service key which is the master encryption key for the cross region volume group's replicas, which will be used in the destination region to encrypt the volume group's replicas encryption keys. For more information about the Vault service and encryption keys, see [Overview of Vault service](https://docs.oracle.com/en-us/iaas/Content/KeyManagement/Concepts/keyoverview.htm) and [Using Keys](https://docs.oracle.com/en-us/iaas/Content/KeyManagement/Tasks/usingkeys.htm).
@@ -797,6 +797,19 @@ Example:
 1. The module currently supports only one Block volume replica (within or across regions).
 2. Terraform does not destroy replicated Block volumes. It is first necessary to disable replication (for example, in the OCI Console) before running ```terraform destroy```.
 3. ```terraform plan``` does not detect the change when switching Block volume encryption from customer-managed key to Oracle-managed key. Use some other means in such cases, like OCI Console or OCI CLI.
+4. A given volume or volume group can only have one backup policy assigned to it. Assigning a backup policy to a volume group that contains a volume with a backup policy will error out with the following message:
+````
+╷
+│ Error: 400-InvalidParameter, Invalid Parameter
+│ Suggestion: Please update the parameter(s) in the Terraform config as per error message Invalid Parameter
+│ Documentation: https://registry.terraform.io/providers/oracle/oci/latest/docs/resources/core_volume_backup_policy_assignment 
+│ API Reference: https://docs.oracle.com/iaas/api/#/en/iaas/20160918/VolumeBackupPolicyAssignment/CreateVolumeBackupPolicyAssignment 
+│ Request Target: POST https://iaas.us-ashburn-1.oraclecloud.com/20160918/volumeBackupPolicyAssignments 
+│ Provider version: 7.29.0, released on 2025-12-16.  
+│ Service: Core Volume Backup Policy Assignment 
+│ Operation Name: CreateVolumeBackupPolicyAssignment 
+│ OPC request ID: fa657f4bdd8f2df4a13237e2d70c553b/2018391C40464BC93AC54569494144DE/E4A78DC456B66379F5F7ADC1ABB3B1D2 
+````
 
 ### Compute
 1. Platform images may not allow instances overriding the image configuration for in-transit encryption at instance launch time. Terraform would typically error out with:
