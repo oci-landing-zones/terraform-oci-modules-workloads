@@ -25,10 +25,10 @@ resource "oci_core_volume_group" "these" {
   source_details {
     #Required
     type                    = each.value.type
-    volume_ids              = each.value.type == "volumeIds" ? each.value.volume_ids != null ? each.value.volume_ids : null : null
-    volume_group_backup_id  = each.value.type == "volumeGroupBackupId" ? each.value.volume_group_backup_id != null ? each.value.volume_group_backup_id : null : null
-    volume_group_id         = each.value.type == "volumeGroupId" ? each.value.volume_group_id != null ? each.value.volume_group_id : null : null
-    volume_group_replica_id = each.value.type == "volumeGroupReplicaId" ? each.value.volume_group_replica_id != null ? each.value.volume_group_replica_id : null : null
+    volume_ids              = each.value.type == "volumeIds" ? each.value.volume_ids != null ? [for item in each.value.volume_ids : (length(regexall("^ocid1.*$", item)) > 0 ? item : oci_core_volume.these[item].id)] : null : null
+    volume_group_backup_id  = each.value.type == "volumeGroupBackupId" ? each.value.volume_group_backup_ids != null ? each.value.volume_group_backup_ids : null : null
+    volume_group_id         = each.value.type == "volumeGroupId" ? each.value.volume_group_ids != null ? each.value.volume_group_ids : null : null
+    volume_group_replica_id = each.value.type == "volumeGroupReplicaId" ? each.value.volume_group_replica_ids != null ? each.value.volume_group_replica_id : null : null
   }
 
   #Optional
