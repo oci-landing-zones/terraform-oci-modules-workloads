@@ -587,7 +587,7 @@ In Terraform terms, it is a map of objects, where each object is referred by an 
 - **compartment_id** &ndash; (Optional) The volume group compartment. *storage_configuration*'s *default_compartment_id* is used if undefined. This attribute is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *compartments_dependency* variable. See [External Dependencies](#ext-dep) for details.
 - **availability_domain** &ndash; (Optional) The volume group availability domain.
 - **type** &ndash; (Optional) The type of volume group. Available values: volumeGroupBackupId, volumeGroupId, volumeGroupReplicaId, volumeIds.
-- **volume_ids** &ndash; (Required when type=volumeIds) OCIDs for the volumes used to create this volume group.
+- **volume_ids** &ndash; (Required when type=volumeIds) OCIDs or key names for the volumes used to create this volume group.
 - **volume_group_backup_id** &ndash; (Required when type=volumeGroupBackupId) The OCID of the volume group backup to restore from.
 - **volume_group_id** &ndash; (Required when type=volumeGroupId) The OCID of the volume group to clone from.
 - **volume_group_replica_id** &ndash; (Required when type=volumeGroupReplicaId) The OCID of the volume group replica.

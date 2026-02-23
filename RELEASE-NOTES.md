@@ -1,3 +1,9 @@
+# February 24, 2026 Release Notes - 0.2.4
+## Updates in [Compute module](./cis-compute-storage/)
+1. Volume Groups are now optional variables.
+2. *backup_policy_id* has been replaced by *backup_policy*. Users can now choose to provide the display name of the Oracle managed backup policy they wish to use.
+3. Users can now pass key names of Block Volumes in addition to OCIDs when creating Volume Groups.
+
 # December 16, 2025 Release Notes - 0.2.3
 ## Updates in [OKE module](./cis-oke/)
 1. Add support for OpenID Discovery and Authentication for third-party services to access non-OCI resources. Only available for enhanced clusters. 
