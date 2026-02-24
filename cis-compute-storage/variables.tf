@@ -243,7 +243,7 @@ variable "storage_configuration" {
       display_name               = optional(string)
       kms_key                    = optional(string)
       cluster_placement_group_id = optional(string)
-      backup_policy_id           = optional(string)
+      backup_policy              = optional(string)
       replication = optional(object({ # replication settings
         availability_domain = number  # the availability domain (AD) to replicate the volume.
         kms_key             = optional(string)
