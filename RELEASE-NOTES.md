@@ -1,4 +1,4 @@
-# March 6, 2026 Release Notes - 0.2.5
+# March 5, 2026 Release Notes - 0.2.5
 ## Updates in [OKE module](./cis-oke/)
 1. Fixed OpenID Connect bug causing drift and long runtimes when updating Terraform configurations unrelated to OpenID Connect variables.
 
