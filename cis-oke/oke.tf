@@ -91,7 +91,7 @@ resource "oci_containerengine_cluster" "these" {
     }
     service_lb_subnet_ids = each.value.networking.services_subnet_id != null ? [for lb_sub in each.value.networking.services_subnet_id : (length(regexall("^ocid1.*$", lb_sub)) > 0 ? lb_sub : var.network_dependency["subnets"][lb_sub].id)] : []
     dynamic "open_id_connect_discovery" {
-      for_each = try(each.value.is_enhanced, false) ? [1] : []
+      for_each = (try(each.value.is_enhanced, false) && try(each.value.options.openid_connect.enable_discovery, false)) ? [1] : []
       content {
         is_open_id_connect_discovery_enabled = (
           try(each.value.options.openid_connect.enable_discovery, false) && lower(try(each.value.cni_type, "")) == "native"
@@ -99,7 +99,7 @@ resource "oci_containerengine_cluster" "these" {
       }
     }
     dynamic "open_id_connect_token_authentication_config" {
-      for_each = try(each.value.is_enhanced, false) ? [1] : []
+      for_each = (try(each.value.is_enhanced, false) && try(each.value.options.openid_connect.enable_authentication, false)) ? [1] : []
       content {
         is_open_id_connect_auth_enabled = try(each.value.options.openid_connect.enable_authentication, false)
         ca_certificate                  = try(each.value.options.openid_connect.ca_certificate, null)
