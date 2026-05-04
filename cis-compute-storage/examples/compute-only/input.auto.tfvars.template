@@ -31,6 +31,12 @@ instances_configuration = {
       cis_level = "2"
       shape = "VM.Standard.E4.Flex"
       name  = "compute-only-instance-1"
+      #licensing_configs = [ # for Windows images.
+      #  {
+      #    type = "WINDOWS"
+      #    license_type = "BRING_YOUR_OWN_LICENSE"
+      #  }
+      #]
       placement = {
         availability_domain = 1
         fault_domain = 1
