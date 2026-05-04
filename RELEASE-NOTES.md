@@ -1,4 +1,4 @@
-# April 23, 2026 Release Notes - 0.2.6
+# May 04, 2026 Release Notes - 0.2.6
 ## Updates in [Compute Module](./cis-compute-storage/)
 1. [Issue 30](https://github.com/oci-landing-zones/terraform-oci-modules-workloads/issues/30): ability to specify licensing options added.
 2. The code now properly handles non-provided (null) *storage_configuration*.
