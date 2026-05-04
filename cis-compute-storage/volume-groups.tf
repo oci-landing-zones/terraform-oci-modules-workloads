@@ -48,7 +48,7 @@ resource "oci_core_volume_group" "these" {
 }
 
 resource "oci_core_volume_group_backup" "these" {
-  for_each = { for k, v in coalesce(var.storage_configuration.volume_groups, {}) : k => v
+  for_each = { for k, v in try(var.storage_configuration.volume_groups, {}) : k => v
     if v.backup.enable_backup == true ## enable_backup must be true to create a volume group backup
   }
   volume_group_id = oci_core_volume_group.these[each.key].id
