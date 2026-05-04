@@ -255,6 +255,13 @@ resource "oci_core_instance" "these" {
       }
     }
   }
+  dynamic "licensing_configs" {
+    for_each = each.value.licensing_configs != null ? each.value.licensing_configs : []
+    content {
+      type         = licensing_configs.value.type
+      license_type = licensing_configs.value.license_type
+    }
+  }
 
   instance_options {
     are_legacy_imds_endpoints_disabled = coalesce(each.value.disable_legacy_imds_endpoints, var.instances_configuration.default_disable_legacy_imds_endpoints, true)

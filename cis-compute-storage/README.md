@@ -186,6 +186,9 @@ The instances themselves are defined within the **instances** attribute, In Terr
 - **name** &ndash; The instance name.
 - **platform_type** &ndash; (Optional) The platform type. Assigning this attribute enables important platform security features in the Compute service. See [Enabling Platform Features](#platform-features) for more information. Valid values are "AMD_MILAN_BM", "AMD_MILAN_BM_GPU", "AMD_ROME_BM", "AMD_ROME_BM_GPU", "AMD_VM", "GENERIC_BM", "INTEL_ICELAKE_BM", "INTEL_SKYLAKE_BM", "INTEL_VM". By default, no platform features are enabled.
 - **cluster_id** &ndash; (Optional) The Compute cluster the instance is added to. It can take either a literal cluster OCID or cluster key defined in the *clusters_configuration* variable.
+- **licensing_configs** &ndash; (Optional) List of licensing configurations associated with target launch values.
+  - **license_type** &ndash; (Optional) The license type for the Operating System license: "OCI_PROVIDED", "BRING_YOUR_OWN_LICENSE".
+  - **type** &ndash; The Operating System type: "WINDOWS".
 - **ssh_public_key_path** &ndash; (Optional) The SSH public key path used to access the instance. *default_ssh_public_key_path* is used if undefined.
 - **defined_tags** &ndash; (Optional) The instance defined tags. *default_defined_tags* is used if undefined.
 - **freeform_tags** &ndash; (Optional) The instance freeform tags. *default_freeform_tags* is used if undefined.

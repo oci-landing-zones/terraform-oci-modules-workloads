@@ -10,3 +10,11 @@ output "clusters" {
 output "node_pools" {
   value = module.oke.node_pools
 }
+
+output "nodes" {
+  value = module.oke.nodes
+}
+
+output "nodepool_nodes" {
+  value = { for k,v in module.oke.node_pools : k => v.nodes }
+}

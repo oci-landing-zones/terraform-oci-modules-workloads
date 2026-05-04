@@ -1,3 +1,19 @@
+# May 04, 2026 Release Notes - 0.2.6
+## Updates in [Compute Module](./cis-compute-storage/)
+1. [Issue 30](https://github.com/oci-landing-zones/terraform-oci-modules-workloads/issues/30): ability to specify licensing options added.
+2. The code now properly handles non-provided (null) *storage_configuration*.
+
+## Updates in [OKE module](./cis-oke/)
+1. [Issue 31](https://github.com/oci-landing-zones/terraform-oci-modules-workloads/issues/31): module now conveniently exposes node information as a map of nodes indexed by the node name per node pool, under newly added *nodes* output. 
+
+Note, however, that node information is also available in the *node_pools* output, and can be retrieved as:
+```
+output "nodes" {
+  value = { for k,v in module.oke.node_pools : k => v.nodes }
+}
+```
+See [outputs.tf](./cis-oke/examples/flannel/basic/outputs.tf) for an example.
+
 # March 5, 2026 Release Notes - 0.2.5
 ## Updates in [OKE module](./cis-oke/)
 1. Fixed OpenID Connect bug causing drift and long runtimes when updating Terraform configurations unrelated to OpenID Connect variables.

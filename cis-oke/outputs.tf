@@ -15,3 +15,7 @@ output "virtual_node_pools" {
   description = "The OKE Virtual Node Pools"
   value       = var.enable_output ? oci_containerengine_virtual_node_pool.these : null
 }
+
+output "nodes" {
+  value = {for k,v in oci_containerengine_node_pool.these : k => { for n in v.nodes : n.name => n }}
+}

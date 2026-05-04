@@ -27,6 +27,10 @@ variable "instances_configuration" {
       name           = string               # the instance display name.
       platform_type  = optional(string)     # the platform type. Assigning this variable enables various platform security features in the Compute service. Valid values: "AMD_MILAN_BM", "AMD_MILAN_BM_GPU", "AMD_ROME_BM", "AMD_ROME_BM_GPU", "AMD_VM", "GENERIC_BM", "INTEL_ICELAKE_BM", "INTEL_SKYLAKE_BM", "INTEL_VM".
       cluster_id     = optional(string)     # the Compute cluster the instance is added to. It can take either a literal cluster OCID or cluster key defined in the clusters_configuration variable.
+      licensing_configs = optional(list(object({
+        type         = string           # the license type category, e.g. "WINDOWS"
+        license_type = optional(string) # the specific license, e.g. "BRING_YOUR_OWN_LICENSE", "OCI_PROVIDED"
+      })))
       marketplace_image = optional(object({ # the marketplace image. You must provider the name, and optionally the version. If version is not provided, the latest available version is used.
         name    = string                    # the marketplace image name.
         version = optional(string)          # the marketplace image version.
