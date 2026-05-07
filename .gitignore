@@ -17,3 +17,4 @@ mounting-block-volumes.txt
 **/creds
 **/clean-setup
 **/object-storage
+.gitlab-ci.yml
