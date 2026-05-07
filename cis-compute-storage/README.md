@@ -192,8 +192,9 @@ The instances themselves are defined within the **instances** attribute, In Terr
 - **ssh_public_key_path** &ndash; (Optional) The SSH public key path used to access the instance. *default_ssh_public_key_path* is used if undefined.
 - **defined_tags** &ndash; (Optional) The instance defined tags. *default_defined_tags* is used if undefined.
 - **freeform_tags** &ndash; (Optional) The instance freeform tags. *default_freeform_tags* is used if undefined.
-- **marketplace_image** &ndash; (Optional) The Marketplace image information. *name* is required, *version* is optional. If *version* is not provided, the latest available version is used. See [Obtaining OCI Marketplace Images Information](#marketplace-images) for how to get OCI Marketplace images. **Use one of *marketplace_image*, *platform_image* or *custom_image*.**
-  - **name** &ndash; The Marketplace image name.
+- **marketplace_image** &ndash; (Optional) The Marketplace image information. The image can be deployed using either an *ocid* or *name* and *version*, with *version* being optional. If *version* is not provided, the latest available version is used. See [Obtaining OCI Marketplace Images Information](#marketplace-images) for how to get info on OCI Marketplace images. **Use one of *marketplace_image*, *platform_image* or *custom_image*. NOTE THAT BY DEPLOYING A MARKETPLACE IMAGE USING TERRAFORM YOU ARE IMPLICITLY AGREEING WITH OCI MARKETPLACE TERMS FOR THE PRICING MODEL THAT APPLY TO THE SELECTED IMAGE.** 
+  - **ocid** &ndash; (Optional) The Marketplace image listing resource ocid. It takes precedence over the name and version pair.
+  - **name** &ndash; (Optional) The Marketplace image name.
   - **version** &ndash; (Optional) The Marketplace image version. If not provided, the latest available version is used. For versions with empty spaces, like "7.4.3 ( X64 )", replace any empty spaces by the _ character, so it becomes "7.4.3\_(\_X64\_)".
 - **platform_image** &ndash; (Optional) The platform image information. Either the *ocid* or *name* must be provided. See [Obtaining OCI Platform Images Information](#platform-images) for how to get OCI Platform images. **Use one of *marketplace_image*, *platform_image* or *custom_image*.**
   - **ocid** &ndash; (Optional) The Platform image ocid. It takes precedence over name.

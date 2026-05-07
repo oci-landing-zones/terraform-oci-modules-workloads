@@ -2,14 +2,18 @@
 
 ## Introduction
 
-This example shows how to deploy Compute instances in OCI using the [OCI Landing Zones Compute module](../../README.md). It deploys four Compute instances with the following characteristics:
+This example shows how to deploy Compute instances in OCI using the [OCI Landing Zones Compute module](../../README.md) using OCI Marketplace images. 
+
+** NOTE THAT BY DEPLOYING A MARKETPLACE IMAGE USING TERRAFORM YOU ARE IMPLICITLY AGREEING WITH OCI MARKETPLACE TERMS FOR THE PRICING MODEL THAT APPLY TO THE SELECTED IMAGE.**
+
+It deploys four Compute instances with the following characteristics:
 - All instances are deployed in the same compartment and same subnet, defined by *default_compartment_id* and *default_subnet_id* attributes.
 - All instances can be accessed over SSH with the private key corresponding to the public key defined by *default_ssh_public_key_path* attribute.
 - All instances are placed in the network security groups defined by *networking.network_security_groups* attribute within each instance.
 
 For INSTANCE-1:
 - The instance is based on "VM.Standard.E4.Flex" shape, as defined by the *shape* attribute.
-- The instance is based on the "Oracle Linux 7 STIG" Marketplace image, as defined by *marketplace_image.name* attribute. Use the [markeplace-images module](../../../marketplace-images/) to find Marketplace images information based on a search filter.
+- The instance is based on the "Oracle Linux 8 STIG" Marketplace image, as defined by *marketplace_image.name* attribute. Use the [markeplace-images module](../../../marketplace-images/) to find Marketplace images information based on a search filter. You can also provide the image OCID instead of name.
 - The instance will **not** have the boot volume preserved on termination, as defined by *boot_volume.preserve_on_instance_deletion* attribute.
 - The instance requires a customer managed key for boot volume encryption, as defined by *cis_level* attribute.
 - The instance boot volume is encrypted with a customer managed key referred by *encryption.kms_key_id* attribute.

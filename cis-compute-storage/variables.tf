@@ -31,8 +31,9 @@ variable "instances_configuration" {
         type         = string           # the license type category, e.g. "WINDOWS"
         license_type = optional(string) # the specific license, e.g. "BRING_YOUR_OWN_LICENSE", "OCI_PROVIDED"
       })))
-      marketplace_image = optional(object({ # the marketplace image. You must provider the name, and optionally the version. If version is not provided, the latest available version is used.
-        name    = string                    # the marketplace image name.
+      marketplace_image = optional(object({ # the marketplace image. You must provider either the marketplace image ocid or the name plus the version. If version is not provided, the latest available version is used.
+        ocid    = optional(string)          # the marketplace image ocid. It takes precedence over name and version. 
+        name    = optional(string)          # the marketplace image name.
         version = optional(string)          # the marketplace image version.
       }))
       platform_image = optional(object({ # the platform image. You must provider the name and assign the tenancy_ocid variable.
