@@ -27,12 +27,12 @@ instances_configuration = {
   default_ssh_public_key_path = "~/.ssh/id_rsa.pub"
   instances = {
     FORTIGATE-INSTANCE = {
-      shape = "VM.Standard.E4.Flex"
+      shape = "VM.Optimized3.Flex"
       flex_shape_settings = {
         memory = 56
         ocpus = 4
       }
-      name  = "fortigate-instance"
+      name  = "panf-instance"
       placement = {
         availability_domain = 1
         fault_domain = 1
@@ -42,16 +42,15 @@ instances_configuration = {
         preserve_on_instance_deletion = false
       }
       networking = {
-        hostname  = "fortigate-instance"
+        hostname  = "panf-instance"
         subnet_id = "<REPLACE-BY-SUBNET-OCID>"
         network_security_groups = ["<REPLACE-BY-NETWORK-SECURITY-GROUP-OCID>"]
       }
       marketplace_image = {
         # ocid = "<REPLACE-BY-OCI-MARKETPLACE-IMAGE-OCID>" # in case you have it. It takes precedence over the name/version pair.
-        name = "FortiGate Next-Gen Firewall (BYOL)"
+        name = "Palo Alto Networks VM-Series Next Generation Firewall"
         # For deploying the latest version, omit the version attribute.
-        # For deploying versions with empty spaces, replace any empty spaces with the _ character, as in the example below.
-        # version = "7.4.3_(_X64_)" 
+        # version = "11.1.6-h7" 
       }     
     }
   }

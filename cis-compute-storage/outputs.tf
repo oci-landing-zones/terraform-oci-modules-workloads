@@ -69,3 +69,11 @@ output "oci_core_app_catalog_listing_resource_versions" {
 output "all_oci_core_app_catalog_listings" {
   value = data.oci_core_app_catalog_listings.all
 }
+
+output "oci_marketplace_accepted_agreement" {
+  value = oci_marketplace_accepted_agreement.these
+}
+
+output "oci_marketplace_listing_package_agreement" {
+  value = oci_marketplace_listing_package_agreement.these
+}

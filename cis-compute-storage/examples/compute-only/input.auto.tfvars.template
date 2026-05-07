@@ -52,8 +52,10 @@ instances_configuration = {
         hostname  = "compute-only-instance-1"
         network_security_groups = ["<REPLACE-BY-NETWORK-SECURITY-GROUP_NAME>"]
       }
-      marketplace_image = {
-        name = "Oracle Linux 7 STIG" # Marketplace image name
+      marketplace_image = { # Use either ocid or name + version (optional)
+        # ocid = "<MARKETPLACE-IMAGE-OCID>" # in case you have the marketplace listing resource id for the image. Otherwise, you can inform the name and (optionally) version.  
+        name = "Oracle Linux 8 STIG" # Marketplace image name. Not needed if ocid is provided.
+        # version = "<IMAGE-VERSION>" # If not provided, the latest image version for the given name is used.
       }
       cloud_agent = {
         disable_monitoring = false

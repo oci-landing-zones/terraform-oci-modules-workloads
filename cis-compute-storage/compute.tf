@@ -110,6 +110,10 @@ locals {
 
 resource "oci_core_instance" "these" {
   for_each = var.instances_configuration != null ? var.instances_configuration["instances"] : {}
+  depends_on = [
+    oci_core_app_catalog_subscription.these,
+    oci_marketplace_accepted_agreement.these
+  ]
   lifecycle {
     ## Check 1: Customer managed key must be provided if CIS profile level is "2".
     precondition {
@@ -413,3 +417,4 @@ resource "oci_core_private_ip" "these" {
   defined_tags   = each.value.defined_tags != null ? each.value.defined_tags : var.instances_configuration.default_defined_tags
   freeform_tags  = merge(local.cislz_module_tag, each.value.freeform_tags != null ? each.value.freeform_tags : var.instances_configuration.default_freeform_tags)
 }
+
