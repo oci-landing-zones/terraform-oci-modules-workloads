@@ -1,8 +1,8 @@
-# OCI Landing Zones Compute Module - Palo Alto Next-Gen Firewall
+# OCI Landing Zones Compute Module - Palo Alto Networks VM-Series Next Generation Firewall
 
 ## Introduction
 
-This example shows how to deploy Palo Alto Next-Gen Firewall using an OCI Marketplace image.
+This example shows how to deploy Palo Alto Networks VM-Series Next Generation Firewall in OCI with the [OCI Landing Zones Compute module](../../README.md) using an OCI Marketplace image.
 
 ** NOTE THAT BY DEPLOYING A MARKETPLACE IMAGE USING TERRAFORM YOU ARE IMPLICITLY AGREEING WITH OCI MARKETPLACE TERMS FOR THE PRICING MODEL THAT APPLY TO THE SELECTED IMAGE.**
 
