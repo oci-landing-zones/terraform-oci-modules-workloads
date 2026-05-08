@@ -55,15 +55,15 @@ output "compute_clusters" {
 }
 
 output "oci_core_app_catalog_listing_resource_version" {
-  value = data.oci_core_app_catalog_listing_resource_version.this
+  value = local.mkp_app_catalog_listing_resource_version
 }
 
 output "oci_core_app_catalog_listings" {
-  value = data.oci_core_app_catalog_listings.these
+  value = local.mkp_app_catalog_listings
 }
 
 output "oci_core_app_catalog_listing_resource_versions" {
-  value = data.oci_core_app_catalog_listing_resource_versions.these
+  value = local.mkp_app_catalog_listing_resource_versions
 }
 
 output "all_oci_core_app_catalog_listings" {

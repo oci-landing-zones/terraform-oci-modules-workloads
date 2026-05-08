@@ -106,9 +106,9 @@ locals {
 
   zpr_provided_attributes = { for k, v in(var.instances_configuration != null ? var.instances_configuration["instances"] : {}) : k => [for a in v.security.zpr_attributes : "${a.namespace}.${a.attr_name}"] if try(v.security.zpr_attributes, null) != null }
 
-  cloud_config = var.instances_configuration != null ? {for k, v in var.instances_configuration["instances"] : k => coalesce(
+  cloud_config = var.instances_configuration != null ? { for k, v in var.instances_configuration["instances"] : k => coalesce(
     try(v.cloud_init.heredoc_script, null), try(file(try(v.cloud_init.script_file, null)), null), var.instances_configuration.default_cloud_init_heredoc_script, try(file(var.instances_configuration.default_cloud_init_script_file), null), "__void__")
-    if v.cloud_init != null || var.instances_configuration.default_cloud_init_heredoc_script != null || var.instances_configuration.default_cloud_init_script_file != null} : {}
+  if v.cloud_init != null || var.instances_configuration.default_cloud_init_heredoc_script != null || var.instances_configuration.default_cloud_init_script_file != null } : {}
 }
 
 resource "oci_core_instance" "these" {
@@ -165,8 +165,8 @@ resource "oci_core_instance" "these" {
     # }
     # Check 10: Check compatible shapes for given marketplace image name/version
     precondition {
-      condition     = try(each.value.marketplace_image.name, null) != null ? contains(data.oci_core_app_catalog_listing_resource_version.this[each.key].compatible_shapes, each.value.shape) : true
-      error_message = try(each.value.marketplace_image.name, null) != null ? "VALIDATION FAILURE in instance \"${each.key}\": invalid image shape \"${each.value.shape}\" in \"shape\" attribute. Ensure it is spelled correctly. Valid shapes for marketplace image \"${each.value.marketplace_image.name}\" version \"${coalesce(each.value.marketplace_image.version, replace(data.oci_marketplace_listing.this[each.key].default_package_version, " ", "_"))}\" are: ${join(", ", [for v in data.oci_core_app_catalog_listing_resource_version.this[each.key].compatible_shapes : "\"${v}\""])}." : "__void__"
+      condition     = try(each.value.marketplace_image.name, null) != null ? contains(local.mkp_compatible_shapes[each.key], each.value.shape) : true
+      error_message = try(each.value.marketplace_image.name, null) != null ? "VALIDATION FAILURE in instance \"${each.key}\": invalid image shape \"${each.value.shape}\" in \"shape\" attribute. Ensure it is spelled correctly. Valid shapes for marketplace image \"${each.value.marketplace_image.name}\" version \"${local.mkp_image_resource_version[each.key]}\" are: ${join(", ", [for v in local.mkp_compatible_shapes[each.key] : "\"${v}\""])}." : "__void__"
     }
     # Check 11: Check compatible shapes for given platform image ocid - DISABLED because it uses oci_core_images data source that limits images to the latest three per platform.
     # precondition {
