@@ -2,7 +2,6 @@
 ## Updates in [Compute Module](./cis-compute-storage/)
 1. [Issue 30](https://github.com/oci-landing-zones/terraform-oci-modules-workloads/issues/30): ability to specify licensing options added.
 2. The code now properly handles non-provided (null) *storage_configuration*.
-3. [Issue 31](https://github.com/oci-landing-zones/terraform-oci-modules-workloads/issues/32): fix providing multiple exports
 ## Updates in [OKE module](./cis-oke/)
 1. [Issue 31](https://github.com/oci-landing-zones/terraform-oci-modules-workloads/issues/31): module now conveniently exposes node information as a map of nodes indexed by the node name per node pool, under newly added *nodes* output. 
 
