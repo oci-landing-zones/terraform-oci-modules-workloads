@@ -4,7 +4,7 @@
 
 This example shows how to deploy Compute instances in OCI using the [OCI Landing Zones Compute module](../../README.md) using OCI Marketplace images. 
 
-** NOTE THAT BY DEPLOYING A MARKETPLACE IMAGE USING TERRAFORM YOU ARE IMPLICITLY AGREEING WITH OCI MARKETPLACE TERMS FOR THE PRICING MODEL THAT APPLY TO THE SELECTED IMAGE.**
+**NOTE THAT BY DEPLOYING A MARKETPLACE IMAGE USING THIS TERRAFORM MODULE YOU ARE IMPLICITLY AGREEING WITH ALL OCI MARKETPLACE TERMS, INCLUDING THE PRICING MODEL TERMS THAT APPLY TO THE SELECTED IMAGE.**
 
 It deploys four Compute instances with the following characteristics:
 - All instances are deployed in the same compartment and same subnet, defined by *default_compartment_id* and *default_subnet_id* attributes.
