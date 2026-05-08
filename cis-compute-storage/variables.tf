@@ -31,7 +31,7 @@ variable "instances_configuration" {
         type         = string           # the license type category, e.g. "WINDOWS"
         license_type = optional(string) # the specific license, e.g. "BRING_YOUR_OWN_LICENSE", "OCI_PROVIDED"
       })))
-      marketplace_image = optional(object({ # the marketplace image. You must provider either the marketplace image ocid or the name plus the version. If version is not provided, the latest available version is used.
+      marketplace_image = optional(object({ # the marketplace image. You must provider either the marketplace image ocid or the name plus the version. If version is not provided, the latest available version is used. NOTE THAT BY DEPLOYING A MARKETPLACE IMAGE USING THIS TERRAFORM MODULE YOU ARE IMPLICITLY AGREEING WITH ALL OCI MARKETPLACE TERMS, INCLUDING THE PRICING MODEL TERMS THAT APPLY TO THE SELECTED IMAGE.
         ocid    = optional(string)          # the marketplace image ocid. It takes precedence over name and version. 
         name    = optional(string)          # the marketplace image name.
         version = optional(string)          # the marketplace image version.

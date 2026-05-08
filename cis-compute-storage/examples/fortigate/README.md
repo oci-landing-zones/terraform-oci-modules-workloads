@@ -4,7 +4,7 @@
 
 This example shows how to deploy the Fortinet Fortigate Next-Gen Firewall in OCI with the [OCI Landing Zones Compute module](../../README.md). using an OCI Marketplace image. 
 
-** NOTE THAT BY DEPLOYING A MARKETPLACE IMAGE USING TERRAFORM YOU ARE IMPLICITLY AGREEING WITH OCI MARKETPLACE TERMS FOR THE PRICING MODEL THAT APPLY TO THE SELECTED IMAGE.**
+** NOTE THAT BY DEPLOYING A MARKETPLACE IMAGE USING THIS TERRAFORM MODULE YOU ARE IMPLICITLY AGREEING WITH ALL OCI MARKETPLACE TERMS, INCLUDING THE PRICING MODEL TERMS THAT APPLY TO THE SELECTED IMAGE.**
 
 See [input.auto.tfvars.template](./input.auto.tfvars.template) for the variables configuration.
 
