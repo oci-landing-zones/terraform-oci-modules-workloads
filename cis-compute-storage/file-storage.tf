@@ -59,27 +59,28 @@ locals {
     for mt_key, mt in(var.storage_configuration != null ? (var.storage_configuration["file_storage"] != null ? (var.storage_configuration["file_storage"]["mount_targets"] != null ? var.storage_configuration["file_storage"]["mount_targets"] : {}) : {}) : {}) : [
       for exp in(mt["exports"] != null ? mt["exports"] : []) : {
         mt_key         = mt_key
-        exp_key        = "${mt_key}.${exp.file_system_id}" #exp_key
+        exp_key        = "${mt_key}.${exp.path}"
         path           = exp.path
         file_system_id = exp.file_system_id
         options        = exp.options
       }
     ]
   ])
+  exports_by_key = { for export in local.exports : export.exp_key => export... }
+  export_values  = { for exp_key, exports in local.exports_by_key : exp_key => exports[0] }
 }
 
 resource "oci_file_storage_export" "these" {
-  for_each = { for export in local.exports : export.exp_key => {
-    mt_key         = export.mt_key
-    path           = export.path
-    file_system_id = export.file_system_id
-    options        = export.options
-  } }
+  for_each = local.export_values
 
   lifecycle {
     precondition {
+      condition     = length(local.exports_by_key[each.key]) == 1
+      error_message = "VALIDATION FAILURE in mount target \"${each.value.mt_key}\": export path \"${each.value.path}\" is defined more than once. OCI export paths must be unique within a mount target."
+    }
+    precondition {
       condition     = var.storage_configuration["file_storage"] != null ? (var.storage_configuration["file_storage"]["file_systems"] != null ? (contains(keys(var.storage_configuration["file_storage"]["file_systems"]), each.value.file_system_id) == true ? true : false) : false) : false
-      error_message = "VALIDATION FAILURE in file system mount target \"${each.key}\": file_system_id \"${each.value.file_system_id}\" not defined within \"file_systems\" attribute."
+      error_message = "VALIDATION FAILURE in mount target \"${each.value.mt_key}\": file_system_id \"${each.value.file_system_id}\" not defined within \"file_systems\" attribute."
     }
   }
   export_set_id  = oci_file_storage_export_set.these[each.value.mt_key].id

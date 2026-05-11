@@ -1,3 +1,10 @@
+# May 11, 2026 Release Notes - 0.2.7
+## Updates in [Compute Module](./cis-compute-storage/)
+1. [Issue 32](https://github.com/oci-landing-zones/terraform-oci-modules-workloads/issues/32) fixed.
+2. Ability to deploy Compute instances using the OCI Marketplace image listing resource ocid, in addition to name/version. Marketplace image information can be obtained by running [markeplace-images example](https://github.com/oci-landing-zones/terraform-oci-modules-workloads/tree/main/marketplace-images/examples/marketplace-images). **NOTE THAT BY DEPLOYING A MARKETPLACE IMAGE USING THIS TERRAFORM MODULE YOU ARE IMPLICITLY AGREEING WITH ALL OCI MARKETPLACE TERMS, INCLUDING THE PRICING MODEL TERMS THAT APPLY TO THE SELECTED IMAGE.**
+3. Replaced Hashicorp's template_file data source by templatefile() function, addressing Hashicorp's template provider deprecation in darwin_arm64 architecture.
+4. [marketplace.tf](./cis-compute-storage/marketplace.tf) updated to avoid unsolicited updates on marketplace resources. Module clients that have dependencies on other resources can pass in newly added *marketplace_images_configuration* map keyed with the same instances keys used in *instance_configuration*. Check the new variable in [variables.tf](./cis-compute-storage/variables.tf).
+
 # May 04, 2026 Release Notes - 0.2.6
 ## Updates in [Compute Module](./cis-compute-storage/)
 1. [Issue 30](https://github.com/oci-landing-zones/terraform-oci-modules-workloads/issues/30): ability to specify licensing options added.

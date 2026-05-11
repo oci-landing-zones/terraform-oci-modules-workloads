@@ -22,17 +22,18 @@ variable "instances_configuration" {
 
     instances = map(object({ # the instances to manage in this configuration.
       cis_level      = optional(string)
-      compartment_id = optional(string)     # the compartment where the instance is created. default_compartment_ocid is used if this is not defined.
-      shape          = string               # the instance shape.
-      name           = string               # the instance display name.
-      platform_type  = optional(string)     # the platform type. Assigning this variable enables various platform security features in the Compute service. Valid values: "AMD_MILAN_BM", "AMD_MILAN_BM_GPU", "AMD_ROME_BM", "AMD_ROME_BM_GPU", "AMD_VM", "GENERIC_BM", "INTEL_ICELAKE_BM", "INTEL_SKYLAKE_BM", "INTEL_VM".
-      cluster_id     = optional(string)     # the Compute cluster the instance is added to. It can take either a literal cluster OCID or cluster key defined in the clusters_configuration variable.
+      compartment_id = optional(string) # the compartment where the instance is created. default_compartment_ocid is used if this is not defined.
+      shape          = string           # the instance shape.
+      name           = string           # the instance display name.
+      platform_type  = optional(string) # the platform type. Assigning this variable enables various platform security features in the Compute service. Valid values: "AMD_MILAN_BM", "AMD_MILAN_BM_GPU", "AMD_ROME_BM", "AMD_ROME_BM_GPU", "AMD_VM", "GENERIC_BM", "INTEL_ICELAKE_BM", "INTEL_SKYLAKE_BM", "INTEL_VM".
+      cluster_id     = optional(string) # the Compute cluster the instance is added to. It can take either a literal cluster OCID or cluster key defined in the clusters_configuration variable.
       licensing_configs = optional(list(object({
         type         = string           # the license type category, e.g. "WINDOWS"
         license_type = optional(string) # the specific license, e.g. "BRING_YOUR_OWN_LICENSE", "OCI_PROVIDED"
       })))
-      marketplace_image = optional(object({ # the marketplace image. You must provider the name, and optionally the version. If version is not provided, the latest available version is used.
-        name    = string                    # the marketplace image name.
+      marketplace_image = optional(object({ # the marketplace image. You must provider either the marketplace image ocid or the name plus the version. If version is not provided, the latest available version is used. NOTE THAT BY DEPLOYING A MARKETPLACE IMAGE USING THIS TERRAFORM MODULE YOU ARE IMPLICITLY AGREEING WITH ALL OCI MARKETPLACE TERMS, INCLUDING THE PRICING MODEL TERMS THAT APPLY TO THE SELECTED IMAGE.
+        ocid    = optional(string)          # the marketplace image ocid. It takes precedence over name and version. 
+        name    = optional(string)          # the marketplace image name.
         version = optional(string)          # the marketplace image version.
       }))
       platform_image = optional(object({ # the platform image. You must provider the name and assign the tenancy_ocid variable.
@@ -140,6 +141,16 @@ variable "instances_configuration" {
       freeform_tags       = optional(map(string)) # instances freeform_tags. default_freeform_tags is used if this is not defined.
     }))
   })
+  default = null
+}
+
+variable "marketplace_images_configuration" {
+  description = "Optional (auxiliary) dependency-light Marketplace image configuration keyed by instance key. Include only image identity fields here; compartment and placement are still taken from instances_configuration. When null, Marketplace image information is derived from instances_configuration."
+  type = map(object({
+    ocid    = optional(string)
+    name    = optional(string)
+    version = optional(string)
+  }))
   default = null
 }
 

@@ -1,8 +1,8 @@
-# OCI Landing Zones Compute Module - Fortinet Fortigate Next-Gen Firewall
+# OCI Landing Zones Compute Module - Palo Alto Networks VM-Series Next Generation Firewall
 
 ## Introduction
 
-This example shows how to deploy the Fortinet Fortigate Next-Gen Firewall in OCI with the [OCI Landing Zones Compute module](../../README.md). using an OCI Marketplace image. 
+This example shows how to deploy Palo Alto Networks VM-Series Next Generation Firewall in OCI with the [OCI Landing Zones Compute module](../../README.md) using an OCI Marketplace image.
 
 ** NOTE THAT BY DEPLOYING A MARKETPLACE IMAGE USING THIS TERRAFORM MODULE YOU ARE IMPLICITLY AGREEING WITH ALL OCI MARKETPLACE TERMS, INCLUDING THE PRICING MODEL TERMS THAT APPLY TO THE SELECTED IMAGE.**
 
