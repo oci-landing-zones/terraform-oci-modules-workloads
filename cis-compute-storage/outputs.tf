@@ -36,6 +36,11 @@ output "file_systems" {
   value       = var.enable_output ? oci_file_storage_file_system.these : null
 }
 
+output "file_system_quota_rules" {
+  description = "The file system quota rules"
+  value       = var.enable_output ? oci_file_storage_file_system_quota_rule.these : null
+}
+
 output "file_systems_mount_targets" {
   value = var.enable_output ? oci_file_storage_mount_target.these : null
 }

@@ -610,7 +610,7 @@ In Terraform terms, it is a map of objects, where each object is referred by an 
 
 
 #### <a name="file-storage-1">File Storage</a>
-The **file_storage** attribute defines the file systems, mount targets and snapshot policies for OCI File Storage service. The optional attribute **default_subnet_id** applies to all mount targets, unless overridden by **subnet_id** attribute in each mount target. Attribute **subnet_id** is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *network_dependency* variable. See [External Dependencies](#ext-dep) for details.
+The **file_storage** attribute defines the file systems, quota rules, mount targets and snapshot policies for OCI File Storage service. The optional attribute **default_subnet_id** applies to all mount targets, unless overridden by **subnet_id** attribute in each mount target. Attribute **subnet_id** is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *network_dependency* variable. See [External Dependencies](#ext-dep) for details.
 
 ##### <a name="file-systems">File Systems</a>
 File systems are defined using the optional attribute **file_systems**. A Terraform map of objects, where each object is referred by an identifying key. The following attributes are supported:
@@ -619,6 +619,7 @@ File systems are defined using the optional attribute **file_systems**. A Terraf
 - **file_system_name** &ndash; The file_system name.
 - **availability_domain** &ndash; (Optional) The file system availability domain. 
 - **kms_key_id** &ndash; (Optional) The encryption key for file system encryption. *storage_configuration*'s *default_kms_key_id* is used if undefined. Required if *cis_level* or *default_cis_level* is "2". This attribute is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *kms_dependency* variable. See [External Dependencies](#ext-dep) for details.
+- **are_quota_rules_enabled** &ndash; (Optional) Whether quota rules are enforced on the file system. Enforcement can take up to one hour after it is first enabled. See the [File Storage known issue](#file-storage-known-issue) before changing this value on an existing file system.
 - **replication** &ndash; (Optional) Replication settings. To set the file system as a replication target, set *is_target* to true. To set the file system as a replication source, provide the replication file system target in *file_system_target_id*. A file system cannot be replication source and target at the same time.
   - **is_target** &ndash; (Optional) Whether the file system is a replication target. If this is true, then *file_system_target_id* must not be set. Default is false.
   - **file_system_target_id** &ndash; (Optional) The file system remote replication target for this file system. It must be an existing unexported file system, in the same or in a different region than this file system. If this is set, then *is_target* must be false. This attribute is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *file_systems_dependency* variable. See [External Dependencies](#ext-dep) for details.
@@ -626,6 +627,17 @@ File systems are defined using the optional attribute **file_systems**. A Terraf
 - **snapshot_policy_id** &ndash; (Optional) The snapshot policy identifying key in the *snapshots_policy* map. Default snapshot policies are associated with file systems without a snapshot policy.
 - **defined_tags** &ndash; (Optional) File system defined_tags. *storage_configuration*'s *default_defined_tags* is used if undefined.
 - **freeform_tags** &ndash; (Optional) File system freeform_tags. *storage_configuration*'s *default_freeform_tags* is used if undefined.
+
+##### <a name="quota-rules">Quota Rules</a>
+Quota rules are defined using the optional **quota_rules** attribute. A Terraform map of objects, where each object is referred by an identifying key. Quota rules can exist while enforcement is disabled, but usage is not tracked and the rules are not enforced until **are_quota_rules_enabled** is true. The following attributes are supported:
+- **name** &ndash; (Optional) The quota rule display name.
+- **file_system_id** &ndash; The file system the rule applies to. It can be a key from **file_systems**, a literal file system OCID, or a key from *file_system_dependency*.
+- **is_hard_quota** &ndash; Whether writes that exceed the quota are blocked. If false, the quota is a soft warning threshold.
+- **limit** &ndash; The quota limit in gigabytes. It must be an integer equal to 0 or at least 10. For a hard quota, a zero limit prevents writes.
+- **principal** &ndash; The quota scope. Valid values are `FILE_SYSTEM_LEVEL`, `DEFAULT_GROUP`, `DEFAULT_USER`, `INDIVIDUAL_GROUP`, and `INDIVIDUAL_USER`.
+- **principal_id** &ndash; (Optional) The non-negative UNIX UID or GID. It is required for `INDIVIDUAL_USER` and `INDIVIDUAL_GROUP` and must be omitted for other principal types.
+
+Only one hard rule and one soft rule can be defined for the same file system, principal type, and principal ID. When both are defined in the same module configuration, the soft limit must be lower than the hard limit. Only one quota rule can be updated at a time in OCI; when changing multiple rules in one operation, run Terraform with `-parallelism=1`.
 
 ##### <a name="mount-targets">Mount Targets</a>
 Mount targets are defined using the optional attribute **mount_targets**. A Terraform map of objects, where each object is referred by an identifying key. The following attributes are supported:
@@ -793,9 +805,20 @@ Example:
 - [Block Volume in OCI Terraform Provider](https://registry.terraform.io/providers/oracle/oci/latest/docs/resources/core_volume)
 - [File Storage Service](https://docs.oracle.com/en-us/iaas/Content/File/home.htm)
 - [File Systems in OCI Terraform Provider](https://registry.terraform.io/providers/oracle/oci/latest/docs/resources/file_storage_file_system)
+- [File System Quota Rules in OCI Terraform Provider](https://registry.terraform.io/providers/oracle/oci/latest/docs/resources/file_storage_file_system_quota_rule)
+- [OCI File System Quotas](https://docs.oracle.com/en-us/iaas/Content/File/Tasks/file-system-quotas.htm)
 
 
 ## <a name="issues">Known Issues</a>
+
+### <a name="file-storage-known-issue">File Storage</a>
+1. OCI Terraform Provider 8.21.0 and earlier can set **are_quota_rules_enabled** when creating a file system, but cannot update it on an existing file system because the provider's update path checks an incorrect attribute name. Quota-rule create, read, update, and delete operations are supported. Until the provider bug is fixed, toggle enforcement for an existing file system with the OCI CLI and allow Terraform to refresh the resulting state:
+```
+oci fs file-system toggle-quota-rules \
+  --file-system-id <file-system-ocid> \
+  --are-quota-rules-enabled <true|false>
+```
+See the [provider source](https://github.com/oracle/terraform-provider-oci/blob/v8.21.0/internal/service/file_storage/file_storage_file_system_resource.go#L419-L420).
 
 ### Block Volumes
 1. The module currently supports only one Block volume replica (within or across regions).

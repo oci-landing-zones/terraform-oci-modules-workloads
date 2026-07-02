@@ -61,7 +61,17 @@ storage_configuration = {
         file_system_name = <REPLACE-BY-FILE-SYSTEM-NAME>"
         availability_domain = 1
         kms_key_id = "<REPLACE-BY-KEY-ID>"
+        are_quota_rules_enabled = true
         snapshot_policy_id = "SNAPSHOT-POLICY-1"
+      }
+    }
+    quota_rules = {
+      FS-2-HARD-LIMIT = {
+        name           = "fs-2-hard-limit"
+        file_system_id = "FS-2"
+        is_hard_quota  = true
+        limit          = 10
+        principal      = "FILE_SYSTEM_LEVEL"
       }
     }
     mount_targets = {

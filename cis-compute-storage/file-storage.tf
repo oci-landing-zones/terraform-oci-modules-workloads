@@ -17,10 +17,76 @@ resource "oci_file_storage_file_system" "these" {
   availability_domain           = data.oci_identity_availability_domains.fs_ads[each.key].availability_domains[each.value.availability_domain - 1].name
   compartment_id                = each.value.compartment_id != null ? (length(regexall("^ocid1.*$", each.value.compartment_id)) > 0 ? each.value.compartment_id : var.compartments_dependency[each.value.compartment_id].id) : (length(regexall("^ocid1.*$", var.storage_configuration.default_compartment_id)) > 0 ? var.storage_configuration.default_compartment_id : var.compartments_dependency[var.storage_configuration.default_compartment_id].id)
   display_name                  = each.value.file_system_name
+  are_quota_rules_enabled       = each.value.are_quota_rules_enabled
   kms_key_id                    = each.value.kms_key_id != null ? (length(regexall("^ocid1.*$", each.value.kms_key_id)) > 0 ? each.value.kms_key_id : var.kms_dependency[each.value.kms_key_id].id) : var.storage_configuration.default_kms_key_id != null ? (length(regexall("^ocid1.*$", var.storage_configuration.default_kms_key_id)) > 0 ? var.storage_configuration.default_kms_key_id : var.kms_dependency[var.storage_configuration.default_kms_key_id].id) : null
   filesystem_snapshot_policy_id = each.value.snapshot_policy_id != null ? oci_file_storage_filesystem_snapshot_policy.these[each.value.snapshot_policy_id].id : (contains(keys(oci_file_storage_filesystem_snapshot_policy.defaults), each.key) ? oci_file_storage_filesystem_snapshot_policy.defaults[each.key].id : null)
   defined_tags                  = each.value.defined_tags != null ? each.value.defined_tags : var.storage_configuration.default_defined_tags
   freeform_tags                 = merge(local.cislz_module_tag, each.value.freeform_tags != null ? each.value.freeform_tags : var.storage_configuration.default_freeform_tags)
+}
+
+locals {
+  file_system_quota_rules = var.storage_configuration != null ? (var.storage_configuration["file_storage"] != null ? var.storage_configuration["file_storage"]["quota_rules"] : {}) : {}
+  file_system_quota_rules_by_identity = {
+    for key, rule in local.file_system_quota_rules :
+    jsonencode([rule.file_system_id, rule.principal, rule.principal_id, rule.is_hard_quota]) => key...
+  }
+}
+
+resource "oci_file_storage_file_system_quota_rule" "these" {
+  for_each = local.file_system_quota_rules
+
+  lifecycle {
+    precondition {
+      condition = (
+        length(regexall("^ocid1[.]filesystem[.].*$", each.value.file_system_id)) > 0 ||
+        contains(keys(oci_file_storage_file_system.these), each.value.file_system_id) ||
+        (var.file_system_dependency != null ? contains(keys(var.file_system_dependency), each.value.file_system_id) : false)
+      )
+      error_message = "VALIDATION FAILURE in file system quota rule \"${each.key}\": file_system_id must be a file system OCID, a key defined in file_storage.file_systems, or a key defined in file_system_dependency."
+    }
+    precondition {
+      condition     = contains(["FILE_SYSTEM_LEVEL", "DEFAULT_GROUP", "DEFAULT_USER", "INDIVIDUAL_GROUP", "INDIVIDUAL_USER"], each.value.principal)
+      error_message = "VALIDATION FAILURE in file system quota rule \"${each.key}\": principal must be one of FILE_SYSTEM_LEVEL, DEFAULT_GROUP, DEFAULT_USER, INDIVIDUAL_GROUP, or INDIVIDUAL_USER."
+    }
+    precondition {
+      condition     = contains(["INDIVIDUAL_GROUP", "INDIVIDUAL_USER"], each.value.principal) ? each.value.principal_id != null : each.value.principal_id == null
+      error_message = "VALIDATION FAILURE in file system quota rule \"${each.key}\": principal_id is required for INDIVIDUAL_GROUP and INDIVIDUAL_USER and must be omitted for all other principal types."
+    }
+    precondition {
+      condition     = each.value.principal_id == null ? true : each.value.principal_id >= 0 && floor(each.value.principal_id) == each.value.principal_id
+      error_message = "VALIDATION FAILURE in file system quota rule \"${each.key}\": principal_id must be a non-negative integer."
+    }
+    precondition {
+      condition     = floor(each.value.limit) == each.value.limit && (each.value.limit == 0 || each.value.limit >= 10)
+      error_message = "VALIDATION FAILURE in file system quota rule \"${each.key}\": limit must be an integer equal to 0 or at least 10 GB."
+    }
+    precondition {
+      condition     = length(local.file_system_quota_rules_by_identity[jsonencode([each.value.file_system_id, each.value.principal, each.value.principal_id, each.value.is_hard_quota])]) == 1
+      error_message = "VALIDATION FAILURE in file system quota rule \"${each.key}\": only one hard rule and one soft rule can be defined for the same file system, principal type, and principal ID."
+    }
+    precondition {
+      condition = each.value.is_hard_quota ? true : alltrue([
+        for rule in values(local.file_system_quota_rules) :
+        rule.file_system_id != each.value.file_system_id ||
+        rule.principal != each.value.principal ||
+        rule.principal_id != each.value.principal_id ||
+        !rule.is_hard_quota ||
+        each.value.limit < rule.limit
+      ])
+      error_message = "VALIDATION FAILURE in file system quota rule \"${each.key}\": a soft quota limit must be lower than the corresponding hard quota limit."
+    }
+  }
+
+  file_system_id = (
+    length(regexall("^ocid1[.]filesystem[.].*$", each.value.file_system_id)) > 0 ? each.value.file_system_id :
+    contains(keys(oci_file_storage_file_system.these), each.value.file_system_id) ? oci_file_storage_file_system.these[each.value.file_system_id].id :
+    var.file_system_dependency[each.value.file_system_id].id
+  )
+  display_name             = each.value.name
+  is_hard_quota            = each.value.is_hard_quota
+  principal_id             = each.value.principal_id
+  principal_type           = each.value.principal
+  quota_limit_in_gigabytes = each.value.limit
 }
 
 data "oci_identity_availability_domains" "mt_ads" {
