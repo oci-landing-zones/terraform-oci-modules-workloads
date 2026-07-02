@@ -633,7 +633,7 @@ Quota rules are defined using the optional **quota_rules** attribute. A Terrafor
 - **name** &ndash; (Optional) The quota rule display name.
 - **file_system_id** &ndash; The file system the rule applies to. It can be a key from **file_systems**, a literal file system OCID, or a key from *file_system_dependency*.
 - **is_hard_quota** &ndash; Whether writes that exceed the quota are blocked. If false, the quota is a soft warning threshold.
-- **limit** &ndash; The quota limit in gigabytes. It must be an integer equal to 0 or at least 10. For a hard quota, a zero limit prevents writes.
+- **limit_gb** &ndash; The quota limit in gigabytes. It must be an integer equal to 0 or at least 10. For a hard quota, a zero limit prevents writes.
 - **principal** &ndash; The quota scope. Valid values are `FILE_SYSTEM_LEVEL`, `DEFAULT_GROUP`, `DEFAULT_USER`, `INDIVIDUAL_GROUP`, and `INDIVIDUAL_USER`.
 - **principal_id** &ndash; (Optional) The non-negative UNIX UID or GID. It is required for `INDIVIDUAL_USER` and `INDIVIDUAL_GROUP` and must be omitted for other principal types.
 

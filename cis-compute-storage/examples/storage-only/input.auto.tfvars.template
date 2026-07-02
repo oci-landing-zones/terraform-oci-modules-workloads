@@ -70,7 +70,7 @@ storage_configuration = {
         name           = "fs-2-hard-limit"
         file_system_id = "FS-2"
         is_hard_quota  = true
-        limit          = 10
+        limit_gb       = 10
         principal      = "FILE_SYSTEM_LEVEL"
       }
     }

@@ -57,8 +57,8 @@ resource "oci_file_storage_file_system_quota_rule" "these" {
       error_message = "VALIDATION FAILURE in file system quota rule \"${each.key}\": principal_id must be a non-negative integer."
     }
     precondition {
-      condition     = floor(each.value.limit) == each.value.limit && (each.value.limit == 0 || each.value.limit >= 10)
-      error_message = "VALIDATION FAILURE in file system quota rule \"${each.key}\": limit must be an integer equal to 0 or at least 10 GB."
+      condition     = floor(each.value.limit_gb) == each.value.limit_gb && (each.value.limit_gb == 0 || each.value.limit_gb >= 10)
+      error_message = "VALIDATION FAILURE in file system quota rule \"${each.key}\": limit_gb must be an integer equal to 0 or at least 10."
     }
     precondition {
       condition     = length(local.file_system_quota_rules_by_identity[jsonencode([each.value.file_system_id, each.value.principal, each.value.principal_id, each.value.is_hard_quota])]) == 1
@@ -71,7 +71,7 @@ resource "oci_file_storage_file_system_quota_rule" "these" {
         rule.principal != each.value.principal ||
         rule.principal_id != each.value.principal_id ||
         !rule.is_hard_quota ||
-        each.value.limit < rule.limit
+        each.value.limit_gb < rule.limit_gb
       ])
       error_message = "VALIDATION FAILURE in file system quota rule \"${each.key}\": a soft quota limit must be lower than the corresponding hard quota limit."
     }
@@ -86,7 +86,7 @@ resource "oci_file_storage_file_system_quota_rule" "these" {
   is_hard_quota            = each.value.is_hard_quota
   principal_id             = each.value.principal_id
   principal_type           = each.value.principal
-  quota_limit_in_gigabytes = each.value.limit
+  quota_limit_in_gigabytes = each.value.limit_gb
 }
 
 data "oci_identity_availability_domains" "mt_ads" {

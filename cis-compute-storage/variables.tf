@@ -210,7 +210,7 @@ variable "storage_configuration" {
         name           = optional(string) # the quota rule display name.
         file_system_id = string           # a local file system key, file system OCID, or key from file_system_dependency.
         is_hard_quota  = bool             # whether writes are blocked when the quota is exceeded.
-        limit          = number           # the quota limit in gigabytes. Must be 0 or at least 10.
+        limit_gb       = number           # the quota limit in gigabytes. Must be 0 or at least 10.
         principal      = string           # FILE_SYSTEM_LEVEL, DEFAULT_GROUP, DEFAULT_USER, INDIVIDUAL_GROUP, or INDIVIDUAL_USER.
         principal_id   = optional(number) # the UNIX UID or GID. Required only for individual user or group quotas.
       })), {})
