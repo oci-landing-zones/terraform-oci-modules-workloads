@@ -209,7 +209,7 @@ The instances themselves are defined within the **instances** attribute, In Terr
   - **fault_domain** &ndash; (Optional) The instance fault domain. Default is 1.
 - **boot_volume** &ndash; (Optional) Boot volume settings.
   - **source_type** &ndash; (Optional) Instance source type. Valid values are "image" and "bootVolume" (case-insensitive). Default is "image".
-  - **ocid** &ndash; (Optional) Direct OCID of an existing boot volume. It is required when *source_type* is "bootVolume" and invalid for image sources. Dependency keys are not accepted. The source boot volume must be in the intended instance availability domain. Marketplace, platform, and custom image selectors must be omitted.
+  - **id** &ndash; (Optional) Direct OCID of an existing boot volume. It is required when *source_type* is "bootVolume" and invalid for image sources. Dependency keys are not accepted. The source boot volume must be in the intended instance availability domain. Marketplace, platform, and custom image selectors must be omitted.
   - **preserve_on_source_change** &ndash; (Optional) Whether OCI preserves the instance's current boot volume when changing its source to the configured existing boot volume. Default is true. This is distinct from *preserve_on_instance_deletion*, which controls preservation of the active boot volume when the instance is deleted.
   - **type** &ndash; (Optional) Boot volume emulation type. Valid values: "paravirtualized", "scsi", "iscsi", "ide", "vfio". Default is "paravirtualized".
   - **firmware** &ndash; (Optional) Firmware used to boot the VM. Valid options: "BIOS" (compatible with both 32 bit and 64 bit operating systems that boot using MBR style bootloaders), "UEFI_64" (default for platform images).

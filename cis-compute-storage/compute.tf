@@ -12,9 +12,9 @@ locals {
     k => v == "bootvolume" ? "bootVolume" : "image"
   }
 
-  boot_volume_source_ocids_are_valid = var.instances_configuration != null ? {
+  boot_volume_source_ids_are_valid = var.instances_configuration != null ? {
     for k, v in var.instances_configuration["instances"] :
-    k => length(regexall("^ocid1\\.bootvolume\\.[^.\\s]+\\.[^.\\s]+\\.[^.\\s]+$", coalesce(try(v.boot_volume.ocid, null), "__void__"))) > 0
+    k => length(regexall("^ocid1\\.bootvolume\\.[^.\\s]+\\.[^.\\s]+\\.[^.\\s]+$", coalesce(try(v.boot_volume.id, null), "__void__"))) > 0
   } : {}
 
   boot_volume_source_instances = var.instances_configuration != null ? {
@@ -82,12 +82,12 @@ data "oci_identity_availability_domains" "ads" {
 
 data "oci_core_boot_volume" "source" {
   for_each       = local.boot_volume_source_instances
-  boot_volume_id = each.value.boot_volume.ocid
+  boot_volume_id = each.value.boot_volume.id
 
   lifecycle {
     precondition {
-      condition     = local.boot_volume_source_ocids_are_valid[each.key]
-      error_message = "VALIDATION FAILURE in instance \"${each.key}\": \"boot_volume.ocid\" must be a valid direct boot volume OCID starting with \"ocid1.bootvolume.\" when \"boot_volume.source_type\" is \"bootVolume\"."
+      condition     = local.boot_volume_source_ids_are_valid[each.key]
+      error_message = "VALIDATION FAILURE in instance \"${each.key}\": \"boot_volume.id\" must be a valid direct boot volume OCID starting with \"ocid1.bootvolume.\" when \"boot_volume.source_type\" is \"bootVolume\"."
     }
   }
 }
@@ -159,18 +159,18 @@ resource "oci_core_instance" "these" {
     }
     # Check 2: A bootVolume source must be a direct boot volume OCID.
     precondition {
-      condition     = local.instance_source_modes[each.key] == "bootvolume" ? local.boot_volume_source_ocids_are_valid[each.key] : true
-      error_message = "VALIDATION FAILURE in instance \"${each.key}\": \"boot_volume.ocid\" must be a valid direct boot volume OCID starting with \"ocid1.bootvolume.\" when \"boot_volume.source_type\" is \"bootVolume\"."
+      condition     = local.instance_source_modes[each.key] == "bootvolume" ? local.boot_volume_source_ids_are_valid[each.key] : true
+      error_message = "VALIDATION FAILURE in instance \"${each.key}\": \"boot_volume.id\" must be a valid direct boot volume OCID starting with \"ocid1.bootvolume.\" when \"boot_volume.source_type\" is \"bootVolume\"."
     }
     # Check 3: A bootVolume source cannot also select an image.
     precondition {
       condition     = local.instance_source_modes[each.key] == "bootvolume" ? each.value.marketplace_image == null && each.value.platform_image == null && each.value.custom_image == null : true
       error_message = "VALIDATION FAILURE in instance \"${each.key}\": \"marketplace_image\", \"platform_image\", and \"custom_image\" must all be omitted when \"boot_volume.source_type\" is \"bootVolume\"."
     }
-    # Check 4: An image source cannot carry a boot volume OCID.
+    # Check 4: An image source cannot carry a boot volume ID.
     precondition {
-      condition     = local.instance_source_modes[each.key] == "image" ? try(each.value.boot_volume.ocid, null) == null : true
-      error_message = "VALIDATION FAILURE in instance \"${each.key}\": \"boot_volume.ocid\" is only valid when \"boot_volume.source_type\" is \"bootVolume\"."
+      condition     = local.instance_source_modes[each.key] == "image" ? try(each.value.boot_volume.id, null) == null : true
+      error_message = "VALIDATION FAILURE in instance \"${each.key}\": \"boot_volume.id\" is only valid when \"boot_volume.source_type\" is \"bootVolume\"."
     }
     # Check 5: The source boot volume and intended instance must use the same availability domain.
     precondition {
@@ -278,7 +278,7 @@ resource "oci_core_instance" "these" {
     boot_volume_size_in_gbs         = local.instance_source_modes[each.key] == "image" ? (each.value.boot_volume != null ? each.value.boot_volume.size : 50) : null
     boot_volume_vpus_per_gb         = local.instance_source_modes[each.key] == "image" ? (each.value.boot_volume != null ? each.value.boot_volume.vpus_per_gb : 10) : null
     source_type                     = local.instance_provider_source_types[each.key]
-    source_id                       = local.instance_source_modes[each.key] == "bootvolume" ? each.value.boot_volume.ocid : (each.value.marketplace_image != null ? (local.mkp_image_details[each.key] != null ? local.mkp_image_details[each.key].mkp_image_ocid : "undefined") : (each.value.platform_image != null ? (each.value.platform_image.ocid != null ? each.value.platform_image.ocid : each.value.platform_image.name != null ? local.platform_images_by_name[each.value.platform_image.name].id : "undefined") : (each.value.custom_image != null ? (each.value.custom_image.ocid != null ? each.value.custom_image.ocid : each.value.custom_image.name != null ? local.custom_images_by_name["${each.key}.${each.value.custom_image.name}"].id : "undefined") : "undefined")))
+    source_id                       = local.instance_source_modes[each.key] == "bootvolume" ? each.value.boot_volume.id : (each.value.marketplace_image != null ? (local.mkp_image_details[each.key] != null ? local.mkp_image_details[each.key].mkp_image_ocid : "undefined") : (each.value.platform_image != null ? (each.value.platform_image.ocid != null ? each.value.platform_image.ocid : each.value.platform_image.name != null ? local.platform_images_by_name[each.value.platform_image.name].id : "undefined") : (each.value.custom_image != null ? (each.value.custom_image.ocid != null ? each.value.custom_image.ocid : each.value.custom_image.name != null ? local.custom_images_by_name["${each.key}.${each.value.custom_image.name}"].id : "undefined") : "undefined")))
     kms_key_id                      = local.instance_source_modes[each.key] == "image" ? (each.value.encryption != null ? (each.value.encryption.kms_key_id != null ? (length(regexall("^ocid1.*$", each.value.encryption.kms_key_id)) > 0 ? each.value.encryption.kms_key_id : var.kms_dependency[each.value.encryption.kms_key_id].id) : (var.instances_configuration.default_kms_key_id != null ? (length(regexall("^ocid1.*$", var.instances_configuration.default_kms_key_id)) > 0 ? var.instances_configuration.default_kms_key_id : var.kms_dependency[var.instances_configuration.default_kms_key_id].id) : null)) : (var.instances_configuration.default_kms_key_id != null ? (length(regexall("^ocid1.*$", var.instances_configuration.default_kms_key_id)) > 0 ? var.instances_configuration.default_kms_key_id : var.kms_dependency[var.instances_configuration.default_kms_key_id].id) : null)) : null
     is_preserve_boot_volume_enabled = local.instance_source_modes[each.key] == "bootvolume" ? each.value.boot_volume.preserve_on_source_change : null
   }

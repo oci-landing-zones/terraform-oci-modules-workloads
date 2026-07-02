@@ -166,7 +166,7 @@ instances_configuration = {
       }
       boot_volume = {
         source_type                   = "bootVolume" # Case-insensitive. Do not set marketplace_image, platform_image, or custom_image.
-        ocid                          = "<REPLACE-BY-BOOT-VOLUME-OCID>" # A direct ocid1.bootvolume... value; dependency keys are not accepted.
+        id                            = "<REPLACE-BY-BOOT-VOLUME-OCID>" # A direct ocid1.bootvolume... value; dependency keys are not accepted.
         preserve_on_source_change     = true # Preserve the replaced boot volume when changing the source.
         preserve_on_instance_deletion = true # Separately preserve the active boot volume when deleting the instance.
         backup_policy                 = "bronze" # The module manages this assignment on the restored volume; bronze is also the default.
