@@ -8,8 +8,8 @@
 
 | Name | Version |
 |------|---------|
-| <a name="provider_oci"></a> [oci](#provider\_oci) | 8.10.0 |
-| <a name="provider_oci.block_volumes_replication_region"></a> [oci.block\_volumes\_replication\_region](#provider\_oci.block\_volumes\_replication\_region) | 8.10.0 |
+| <a name="provider_oci"></a> [oci](#provider\_oci) | 8.13.0 |
+| <a name="provider_oci.block_volumes_replication_region"></a> [oci.block\_volumes\_replication\_region](#provider\_oci.block\_volumes\_replication\_region) | 8.13.0 |
 
 ## Modules
 

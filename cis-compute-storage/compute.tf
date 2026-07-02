@@ -4,7 +4,7 @@
 locals {
   instance_source_modes = var.instances_configuration != null ? {
     for k, v in var.instances_configuration["instances"] :
-    k => lower(coalesce(try(v.boot_volume.source_type, null), "image"))
+    k => lower(try(v.boot_volume.source_type != null ? v.boot_volume.source_type : "image", "image"))
   } : {}
 
   instance_provider_source_types = {
