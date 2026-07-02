@@ -14,7 +14,7 @@ locals {
 
   boot_volume_source_ids_are_valid = var.instances_configuration != null ? {
     for k, v in var.instances_configuration["instances"] :
-    k => length(regexall("^ocid1\\.bootvolume\\.[^.\\s]+\\.[^.\\s]+\\.[^.\\s]+$", coalesce(try(v.boot_volume.id, null), "__void__"))) > 0
+    k => length(regexall("^ocid1\\.bootvolume\\.", coalesce(try(v.boot_volume.id, null), "__void__"))) > 0
   } : {}
 
   boot_volume_source_instances = var.instances_configuration != null ? {
