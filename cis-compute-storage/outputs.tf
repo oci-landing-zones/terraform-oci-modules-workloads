@@ -31,6 +31,11 @@ output "block_volumes" {
   value       = var.enable_output ? oci_core_volume.these : null
 }
 
+output "custom_block_volume_backup_policies" {
+  description = "The custom Block Volume backup policies"
+  value       = var.enable_output ? oci_core_volume_backup_policy.custom : null
+}
+
 output "file_systems" {
   description = "The file systems"
   value       = var.enable_output ? oci_file_storage_file_system.these : null

@@ -163,6 +163,25 @@ variable "storage_configuration" {
     default_defined_tags   = optional(map(string)), # the default defined tags. It's overriden by the defined_tags attribute within each object.
     default_freeform_tags  = optional(map(string)), # the default freeform tags. It's overriden by the frreform_tags attribute within each object.
 
+    custom_backup_policies = optional(map(object({ # user-defined Block Volume backup policies.
+      compartment_id = optional(string)            # the policy compartment. default_compartment_id is used if this is not defined.
+      display_name   = optional(string)            # the policy display name. The map key is used if this is not defined.
+      schedules = list(object({
+        backup_type       = string           # FULL or INCREMENTAL.
+        period            = string           # ONE_HOUR, ONE_DAY, ONE_WEEK, ONE_MONTH, or ONE_YEAR.
+        retention_seconds = number           # how long backups created by this schedule are retained.
+        offset_type       = optional(string) # STRUCTURED or NUMERIC_SECONDS.
+        offset_seconds    = optional(number) # used when offset_type is NUMERIC_SECONDS.
+        hour_of_day       = optional(number) # used when offset_type is STRUCTURED.
+        day_of_week       = optional(string) # used with ONE_WEEK and offset_type STRUCTURED.
+        day_of_month      = optional(number) # used with ONE_MONTH or ONE_YEAR and offset_type STRUCTURED.
+        month             = optional(string) # used with ONE_YEAR and offset_type STRUCTURED.
+        time_zone         = optional(string) # UTC or REGIONAL_DATA_CENTER_TIME.
+      }))
+      defined_tags  = optional(map(string)) # custom backup policy defined tags. default_defined_tags is used if this is not defined.
+      freeform_tags = optional(map(string)) # custom backup policy freeform tags. default_freeform_tags is used if this is not defined.
+    })), {})
+
     block_volumes = optional(map(object({ # the block volumes to manage in this configuration.
       cis_level           = optional(string, "1")
       compartment_id      = optional(string)                  # the compartment where the block volume is created. default_compartment_id is used if this is not defined.
@@ -183,7 +202,7 @@ variable "storage_configuration" {
       replication = optional(object({ # replication settings
         availability_domain = number  # the availability domain (AD) to replicate the volume. The AD is picked from the region specified by 'block_volumes_replication_region' variable if defined. Otherwise picked from the region specified by 'region' variable.
       }))
-      backup_policy = optional(string, "bronze") # the Oracle managed backup policy. Valid values: "gold", "silver", "bronze". Default is "bronze".
+      backup_policy = optional(string, "bronze") # the Oracle managed backup policy name or a custom_backup_policies map key. Default is "bronze".
       defined_tags  = optional(map(string))      # block volume defined_tags. default_defined_tags is used if this is not defined.
       freeform_tags = optional(map(string))      # block volume freeform_tags. default_freeform_tags is used if this is not defined.
     }))),
@@ -392,5 +411,4 @@ variable "file_system_dependency" {
   }))
   default = null
 }
-
 

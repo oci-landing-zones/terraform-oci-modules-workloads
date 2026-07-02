@@ -100,6 +100,19 @@ instances_configuration = {
 
 storage_configuration = {
   default_compartment_id = "<REPLACE-BY-COMPARTMENT-OCID>"
+  custom_backup_policies = {
+    daily-30-days = {
+      display_name = "<REPLACE-BY-CUSTOM-BACKUP-POLICY-NAME>"
+      schedules = [{
+        backup_type       = "INCREMENTAL"
+        period            = "ONE_DAY"
+        retention_seconds = 2592000 # 30 days
+        offset_type       = "STRUCTURED"
+        hour_of_day       = 2
+        time_zone         = "UTC"
+      }]
+    }
+  }
   block_volumes = {
     BV-1 = {
       display_name = "<REPLACE-BY-BLOCK-VOLUME-NAME>"
@@ -111,7 +124,7 @@ storage_configuration = {
       encryption = {
         encrypt_in_transit = false
       }
-      backup_policy = "bronze"
+      backup_policy = "daily-30-days"
       replication = {
         availability_domain = 1
       }
