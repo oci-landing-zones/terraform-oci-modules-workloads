@@ -1,6 +1,28 @@
 # Copyright (c) 2023, Oracle and/or its affiliates. All rights reserved.
 # Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
+locals {
+  instance_source_modes = var.instances_configuration != null ? {
+    for k, v in var.instances_configuration["instances"] :
+    k => lower(coalesce(try(v.boot_volume.source_type, null), "image"))
+  } : {}
+
+  instance_provider_source_types = {
+    for k, v in local.instance_source_modes :
+    k => v == "bootvolume" ? "bootVolume" : "image"
+  }
+
+  boot_volume_source_ocids_are_valid = var.instances_configuration != null ? {
+    for k, v in var.instances_configuration["instances"] :
+    k => length(regexall("^ocid1\\.bootvolume\\.[^.\\s]+\\.[^.\\s]+\\.[^.\\s]+$", coalesce(try(v.boot_volume.ocid, null), "__void__"))) > 0
+  } : {}
+
+  boot_volume_source_instances = var.instances_configuration != null ? {
+    for k, v in var.instances_configuration["instances"] : k => v
+    if local.instance_source_modes[k] == "bootvolume"
+  } : {}
+}
+
 #------------------------------
 # Platform images data sources
 #------------------------------
@@ -28,7 +50,7 @@ data "oci_core_image_shapes" "these_platform" {
 # Custom images data source
 #------------------------------
 data "oci_core_images" "these_custom" {
-  for_each = var.instances_configuration != null ? { for k, v in var.instances_configuration["instances"] : k => v if try(v.custom_image.name, null) != null } : {}
+  for_each = var.instances_configuration != null ? { for k, v in var.instances_configuration["instances"] : k => v if local.instance_source_modes[k] == "image" && try(v.custom_image.name, null) != null } : {}
   lifecycle {
     precondition {
       condition     = each.value.custom_image.compartment_id != null || var.instances_configuration.default_compartment_id != null
@@ -58,13 +80,25 @@ data "oci_identity_availability_domains" "ads" {
   compartment_id = each.value.compartment_id != null ? (length(regexall("^ocid1.*$", each.value.compartment_id)) > 0 ? each.value.compartment_id : var.compartments_dependency[each.value.compartment_id].id) : (length(regexall("^ocid1.*$", var.instances_configuration.default_compartment_id)) > 0 ? var.instances_configuration.default_compartment_id : var.compartments_dependency[var.instances_configuration.default_compartment_id].id)
 }
 
+data "oci_core_boot_volume" "source" {
+  for_each       = local.boot_volume_source_instances
+  boot_volume_id = each.value.boot_volume.ocid
+
+  lifecycle {
+    precondition {
+      condition     = local.boot_volume_source_ocids_are_valid[each.key]
+      error_message = "VALIDATION FAILURE in instance \"${each.key}\": \"boot_volume.ocid\" must be a valid direct boot volume OCID starting with \"ocid1.bootvolume.\" when \"boot_volume.source_type\" is \"bootVolume\"."
+    }
+  }
+}
+
 locals {
 
   #------------------------------
   # Platform images
   #------------------------------
 
-  deploy_platform_image_by_name = var.instances_configuration != null ? length([for v in var.instances_configuration["instances"] : v if try(v.platform_image.name, null) != null]) > 0 : false
+  deploy_platform_image_by_name = var.instances_configuration != null ? length([for k, v in var.instances_configuration["instances"] : v if local.instance_source_modes[k] == "image" && try(v.platform_image.name, null) != null]) > 0 : false
 
   platform_images = length(data.oci_core_images.these_platform) > 0 ? [
     for i in data.oci_core_images.these_platform[0].images : {
@@ -118,14 +152,39 @@ resource "oci_core_instance" "these" {
     oci_marketplace_accepted_agreement.these
   ]
   lifecycle {
+    # Check 1: Source type must be image or bootVolume.
+    precondition {
+      condition     = contains(["image", "bootvolume"], local.instance_source_modes[each.key])
+      error_message = "VALIDATION FAILURE in instance \"${each.key}\": invalid \"boot_volume.source_type\". Valid values are \"image\" and \"bootVolume\" (case-insensitive)."
+    }
+    # Check 2: A bootVolume source must be a direct boot volume OCID.
+    precondition {
+      condition     = local.instance_source_modes[each.key] == "bootvolume" ? local.boot_volume_source_ocids_are_valid[each.key] : true
+      error_message = "VALIDATION FAILURE in instance \"${each.key}\": \"boot_volume.ocid\" must be a valid direct boot volume OCID starting with \"ocid1.bootvolume.\" when \"boot_volume.source_type\" is \"bootVolume\"."
+    }
+    # Check 3: A bootVolume source cannot also select an image.
+    precondition {
+      condition     = local.instance_source_modes[each.key] == "bootvolume" ? each.value.marketplace_image == null && each.value.platform_image == null && each.value.custom_image == null : true
+      error_message = "VALIDATION FAILURE in instance \"${each.key}\": \"marketplace_image\", \"platform_image\", and \"custom_image\" must all be omitted when \"boot_volume.source_type\" is \"bootVolume\"."
+    }
+    # Check 4: An image source cannot carry a boot volume OCID.
+    precondition {
+      condition     = local.instance_source_modes[each.key] == "image" ? try(each.value.boot_volume.ocid, null) == null : true
+      error_message = "VALIDATION FAILURE in instance \"${each.key}\": \"boot_volume.ocid\" is only valid when \"boot_volume.source_type\" is \"bootVolume\"."
+    }
+    # Check 5: The source boot volume and intended instance must use the same availability domain.
+    precondition {
+      condition     = local.instance_source_modes[each.key] == "bootvolume" ? data.oci_core_boot_volume.source[each.key].availability_domain == data.oci_identity_availability_domains.ads[each.key].availability_domains[(each.value.placement != null ? each.value.placement.availability_domain : 1) - 1].name : true
+      error_message = "VALIDATION FAILURE in instance \"${each.key}\": source boot volume availability domain \"${try(data.oci_core_boot_volume.source[each.key].availability_domain, "unknown")}\" does not match the intended instance availability domain \"${data.oci_identity_availability_domains.ads[each.key].availability_domains[(each.value.placement != null ? each.value.placement.availability_domain : 1) - 1].name}\"."
+    }
     ## Check 1: Customer managed key must be provided if CIS profile level is "2".
     precondition {
-      condition     = coalesce(each.value.cis_level, var.instances_configuration.default_cis_level, "1") == "2" ? (each.value.encryption != null ? (each.value.encryption.kms_key_id != null || var.instances_configuration.default_kms_key_id != null) : var.instances_configuration.default_kms_key_id != null) : true # false triggers this.
-      error_message = "VALIDATION FAILURE (CIS Storage 4.1.2) in instance \"${each.key}\": a customer managed key is required when CIS level is set to 2. Either \"encryption.kms_key_id\" or \"default_kms_key_id\" must be provided."
+      condition     = coalesce(each.value.cis_level, var.instances_configuration.default_cis_level, "1") == "2" ? (local.instance_source_modes[each.key] == "bootvolume" ? try(trimspace(data.oci_core_boot_volume.source[each.key].kms_key_id), "") != "" : (each.value.encryption != null ? (each.value.encryption.kms_key_id != null || var.instances_configuration.default_kms_key_id != null) : var.instances_configuration.default_kms_key_id != null)) : true # false triggers this.
+      error_message = local.instance_source_modes[each.key] == "bootvolume" ? "VALIDATION FAILURE (CIS Storage 4.1.2) in instance \"${each.key}\": the restored boot volume must already be encrypted with a customer managed key when CIS level is set to 2." : "VALIDATION FAILURE (CIS Storage 4.1.2) in instance \"${each.key}\": a customer managed key is required when CIS level is set to 2. Either \"encryption.kms_key_id\" or \"default_kms_key_id\" must be provided."
     }
     # Check 2: Either custom image or marketplace image or platform image must be provided.
     precondition {
-      condition     = each.value.marketplace_image != null || each.value.platform_image != null || each.value.custom_image != null
+      condition     = local.instance_source_modes[each.key] == "image" ? each.value.marketplace_image != null || each.value.platform_image != null || each.value.custom_image != null : true
       error_message = "VALIDATION FAILURE in instance \"${each.key}\": either \"marketplace_image\" or \"platform_image\" or \"custom_image\" must be provided. Precedence, from higher to lower, is \"marketplace_image\", \"platform_image\", \"custom_image\"."
     }
     # Check 3: In-transit encryption is only available to paravirtualized boot volumes.
@@ -165,8 +224,8 @@ resource "oci_core_instance" "these" {
     # }
     # Check 10: Check compatible shapes for given marketplace image name/version
     precondition {
-      condition     = try(each.value.marketplace_image.name, null) != null ? contains(local.mkp_compatible_shapes[each.key], each.value.shape) : true
-      error_message = try(each.value.marketplace_image.name, null) != null ? "VALIDATION FAILURE in instance \"${each.key}\": invalid image shape \"${each.value.shape}\" in \"shape\" attribute. Ensure it is spelled correctly. Valid shapes for marketplace image \"${each.value.marketplace_image.name}\" version \"${local.mkp_image_resource_version[each.key]}\" are: ${join(", ", [for v in local.mkp_compatible_shapes[each.key] : "\"${v}\""])}." : "__void__"
+      condition     = local.instance_source_modes[each.key] == "image" && try(each.value.marketplace_image.name, null) != null ? contains(local.mkp_compatible_shapes[each.key], each.value.shape) : true
+      error_message = local.instance_source_modes[each.key] == "image" && try(each.value.marketplace_image.name, null) != null ? "VALIDATION FAILURE in instance \"${each.key}\": invalid image shape \"${each.value.shape}\" in \"shape\" attribute. Ensure it is spelled correctly. Valid shapes for marketplace image \"${each.value.marketplace_image.name}\" version \"${local.mkp_image_resource_version[each.key]}\" are: ${join(", ", [for v in local.mkp_compatible_shapes[each.key] : "\"${v}\""])}." : "__void__"
     }
     # Check 11: Check compatible shapes for given platform image ocid - DISABLED because it uses oci_core_images data source that limits images to the latest three per platform.
     # precondition {
@@ -175,13 +234,13 @@ resource "oci_core_instance" "these" {
     # }
     # Check 12: Check compatible shapes for given platform image name
     precondition {
-      condition     = try(each.value.platform_image.name, null) != null ? contains(local.platform_images_by_name[each.value.platform_image.name].shapes, each.value.shape) : true
-      error_message = try(each.value.platform_image.name, null) != null ? "VALIDATION FAILURE in instance \"${each.key}\": invalid image shape \"${each.value.shape}\" in \"shape\" attribute. Ensure it is spelled correctly. Valid shapes for platform image \"${try(each.value.platform_image.name, "")}\" are: ${join(", ", [for v in local.platform_images_by_name[each.value.platform_image.name].shapes : "\"${v}\""])}." : "__void__"
+      condition     = local.instance_source_modes[each.key] == "image" && try(each.value.platform_image.name, null) != null ? contains(local.platform_images_by_name[each.value.platform_image.name].shapes, each.value.shape) : true
+      error_message = local.instance_source_modes[each.key] == "image" && try(each.value.platform_image.name, null) != null ? "VALIDATION FAILURE in instance \"${each.key}\": invalid image shape \"${each.value.shape}\" in \"shape\" attribute. Ensure it is spelled correctly. Valid shapes for platform image \"${try(each.value.platform_image.name, "")}\" are: ${join(", ", [for v in local.platform_images_by_name[each.value.platform_image.name].shapes : "\"${v}\""])}." : "__void__"
     }
     # Check 13: Check custom image (by name) exists
     precondition {
-      condition     = try(each.value.custom_image.name, null) != null ? contains(keys(local.custom_images_by_name), "${each.key}.${each.value.custom_image.name}") : true
-      error_message = try(each.value.custom_image.name, null) != null ? "VALIDATION FAILURE in instance \"${each.key}\": custom image \"${each.value.custom_image.name}\" not found in compartment \"${coalesce(each.value.custom_image.compartment_id, var.instances_configuration.default_compartment_id)}\"." : "__void__"
+      condition     = local.instance_source_modes[each.key] == "image" && try(each.value.custom_image.name, null) != null ? contains(keys(local.custom_images_by_name), "${each.key}.${each.value.custom_image.name}") : true
+      error_message = local.instance_source_modes[each.key] == "image" && try(each.value.custom_image.name, null) != null ? "VALIDATION FAILURE in instance \"${each.key}\": custom image \"${each.value.custom_image.name}\" not found in compartment \"${coalesce(each.value.custom_image.compartment_id, var.instances_configuration.default_compartment_id)}\"." : "__void__"
     }
     # Check 14: Check compatible settings for flexible platform shapes
     # precondition {
@@ -216,11 +275,12 @@ resource "oci_core_instance" "these" {
     security_attributes    = try(each.value.security.zpr_attributes, null) != null ? try(each.value.security.apply_to_primary_vnic_only, false) == true ? merge([for a in each.value.security.zpr_attributes : { "${a.namespace}.${a.attr_name}.value" : a.attr_value, "${a.namespace}.${a.attr_name}.mode" : a.mode }]...) : null : null
   }
   source_details {
-    boot_volume_size_in_gbs = each.value.boot_volume != null ? each.value.boot_volume.size : 50
-    boot_volume_vpus_per_gb = each.value.boot_volume != null ? each.value.boot_volume.vpus_per_gb : 10
-    source_type             = "image"
-    source_id               = each.value.marketplace_image != null ? (local.mkp_image_details[each.key] != null ? local.mkp_image_details[each.key].mkp_image_ocid : "undefined") : (each.value.platform_image != null ? (each.value.platform_image.ocid != null ? each.value.platform_image.ocid : each.value.platform_image.name != null ? local.platform_images_by_name[each.value.platform_image.name].id : "undefined") : (each.value.custom_image != null ? (each.value.custom_image.ocid != null ? each.value.custom_image.ocid : each.value.custom_image.name != null ? local.custom_images_by_name["${each.key}.${each.value.custom_image.name}"].id : "undefined") : "undefined"))
-    kms_key_id              = each.value.encryption != null ? (each.value.encryption.kms_key_id != null ? (length(regexall("^ocid1.*$", each.value.encryption.kms_key_id)) > 0 ? each.value.encryption.kms_key_id : var.kms_dependency[each.value.encryption.kms_key_id].id) : (var.instances_configuration.default_kms_key_id != null ? (length(regexall("^ocid1.*$", var.instances_configuration.default_kms_key_id)) > 0 ? var.instances_configuration.default_kms_key_id : var.kms_dependency[var.instances_configuration.default_kms_key_id].id) : null)) : (var.instances_configuration.default_kms_key_id != null ? (length(regexall("^ocid1.*$", var.instances_configuration.default_kms_key_id)) > 0 ? var.instances_configuration.default_kms_key_id : var.kms_dependency[var.instances_configuration.default_kms_key_id].id) : null)
+    boot_volume_size_in_gbs         = local.instance_source_modes[each.key] == "image" ? (each.value.boot_volume != null ? each.value.boot_volume.size : 50) : null
+    boot_volume_vpus_per_gb         = local.instance_source_modes[each.key] == "image" ? (each.value.boot_volume != null ? each.value.boot_volume.vpus_per_gb : 10) : null
+    source_type                     = local.instance_provider_source_types[each.key]
+    source_id                       = local.instance_source_modes[each.key] == "bootvolume" ? each.value.boot_volume.ocid : (each.value.marketplace_image != null ? (local.mkp_image_details[each.key] != null ? local.mkp_image_details[each.key].mkp_image_ocid : "undefined") : (each.value.platform_image != null ? (each.value.platform_image.ocid != null ? each.value.platform_image.ocid : each.value.platform_image.name != null ? local.platform_images_by_name[each.value.platform_image.name].id : "undefined") : (each.value.custom_image != null ? (each.value.custom_image.ocid != null ? each.value.custom_image.ocid : each.value.custom_image.name != null ? local.custom_images_by_name["${each.key}.${each.value.custom_image.name}"].id : "undefined") : "undefined")))
+    kms_key_id                      = local.instance_source_modes[each.key] == "image" ? (each.value.encryption != null ? (each.value.encryption.kms_key_id != null ? (length(regexall("^ocid1.*$", each.value.encryption.kms_key_id)) > 0 ? each.value.encryption.kms_key_id : var.kms_dependency[each.value.encryption.kms_key_id].id) : (var.instances_configuration.default_kms_key_id != null ? (length(regexall("^ocid1.*$", var.instances_configuration.default_kms_key_id)) > 0 ? var.instances_configuration.default_kms_key_id : var.kms_dependency[var.instances_configuration.default_kms_key_id].id) : null)) : (var.instances_configuration.default_kms_key_id != null ? (length(regexall("^ocid1.*$", var.instances_configuration.default_kms_key_id)) > 0 ? var.instances_configuration.default_kms_key_id : var.kms_dependency[var.instances_configuration.default_kms_key_id].id) : null)) : null
+    is_preserve_boot_volume_enabled = local.instance_source_modes[each.key] == "bootvolume" ? each.value.boot_volume.preserve_on_source_change : null
   }
   launch_options {
     boot_volume_type                    = each.value.boot_volume != null ? upper(each.value.boot_volume.type) : "PARAVIRTUALIZED"
@@ -404,4 +464,3 @@ resource "oci_core_private_ip" "these" {
   defined_tags   = each.value.defined_tags != null ? each.value.defined_tags : var.instances_configuration.default_defined_tags
   freeform_tags  = merge(local.cislz_module_tag, each.value.freeform_tags != null ? each.value.freeform_tags : var.instances_configuration.default_freeform_tags)
 }
-

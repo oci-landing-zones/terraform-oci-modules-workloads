@@ -3,7 +3,7 @@
 
 locals {
 
-  mkp_instances_from_configuration = var.instances_configuration != null ? (var.instances_configuration["instances"] != null ? { for k, v in var.instances_configuration["instances"] : k => v if v.marketplace_image != null } : {}) : {}
+  mkp_instances_from_configuration = var.instances_configuration != null ? (var.instances_configuration["instances"] != null ? { for k, v in var.instances_configuration["instances"] : k => v if local.instance_source_modes[k] == "image" && v.marketplace_image != null } : {}) : {}
 
   # Keep Marketplace data-source lookups on a dependency-light map whenever the
   # caller provides one. In parent modules the full instance object often also
@@ -26,6 +26,7 @@ locals {
       name    = try(v.name, null)
       version = try(v.version, null)
     }
+    if try(local.instance_source_modes[k], "image") == "image"
   } : {}
 
   mkp_images = merge(local.mkp_images_from_configuration, local.mkp_images_from_light_configuration)

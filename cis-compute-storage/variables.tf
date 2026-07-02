@@ -50,6 +50,9 @@ variable "instances_configuration" {
         fault_domain        = optional(number, 1) # the instance fault domain. Default is 1.
       }))
       boot_volume = optional(object({                                       # boot volume settings
+        source_type                   = optional(string, "image")           # source used to launch or update the instance. Valid values: "image" (default) or "bootVolume" (case-insensitive).
+        ocid                          = optional(string)                    # direct OCID of an existing boot volume. Required only when source_type is "bootVolume".
+        preserve_on_source_change     = optional(bool, true)                # whether to preserve the current boot volume when changing the instance source to bootVolume. Default is true.
         type                          = optional(string, "paravirtualized") # boot volume emulation type. Valid values: "paravirtualized" (default for platform images), "scsi", "iscsi", "ide", "vfio".
         firmware                      = optional(string)                    # firmware used to boot the VM. Valid options: "BIOS" (compatible with both 32 bit and 64 bit operating systems that boot using MBR style bootloaders), "UEFI_64" (default for platform images).
         size                          = optional(number, 50)                # boot volume size. Default is 50GB (minimum allowed by OCI).
@@ -392,5 +395,4 @@ variable "file_system_dependency" {
   }))
   default = null
 }
-
 

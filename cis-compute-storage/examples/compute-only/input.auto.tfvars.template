@@ -157,6 +157,27 @@ instances_configuration = {
         compartment_id = "<REPLACE-BY-CUSTOM-IMAGE-NAME-COMPARTMENT-OCID>"
       }
     }
+    INSTANCE-5 = { # Existing boot volume source. Changing a running instance source is disruptive; schedule downtime.
+      shape = "VM.Standard.E4.Flex"
+      name  = "compute-only-instance-5"
+      placement = {
+        availability_domain = 1 # Must match the existing boot volume availability domain.
+        fault_domain        = 1
+      }
+      boot_volume = {
+        source_type                   = "bootVolume" # Case-insensitive. Do not set marketplace_image, platform_image, or custom_image.
+        ocid                          = "<REPLACE-BY-BOOT-VOLUME-OCID>" # A direct ocid1.bootvolume... value; dependency keys are not accepted.
+        preserve_on_source_change     = true # Preserve the replaced boot volume when changing the source.
+        preserve_on_instance_deletion = true # Separately preserve the active boot volume when deleting the instance.
+        backup_policy                 = "bronze" # The module manages this assignment on the restored volume; bronze is also the default.
+        # size and vpus_per_gb apply only to image sources; the restored volume keeps its existing settings.
+      }
+      networking = {
+        hostname                = "compute-only-instance-5"
+        network_security_groups = ["<REPLACE-BY-NETWORK-SECURITY-GROUP_NAME>"]
+      }
+      # For CIS level 2, the existing boot volume must already use a customer-managed KMS key.
+      # encryption.kms_key_id and default_kms_key_id do not re-encrypt a restored boot volume.
+    }
   }
 }
-
