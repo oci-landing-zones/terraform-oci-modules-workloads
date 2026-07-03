@@ -181,6 +181,7 @@ Node Pools are defined using the optional **node_pools** attribute. In Terraform
   - **ssh_public_key_path**: (Optional) The SSH public key path used to access the workers. *default_ssh_public_key_path* is used if undefined.
   - **defined_tags**: (Optional) The nodes defined_tags. *default_defined_tags* is used if undefined.
   - **freeform_tags**: (Optional) The nodes freeform_tags. *default_freeform_tags* is used if undefined.
+  - **node_metadata**: (Optional) Key/value pairs added to each underlying worker instance when it is launched. To run a cloud-init script, provide its base64-encoded contents under the `user_data` key, for example `node_metadata = { user_data = base64encode(file("cloud-init.yaml")) }`. See [Using Custom Cloud-init Initialization Scripts to Set Up Managed Nodes](https://docs.oracle.com/en-us/iaas/Content/ContEng/Tasks/contengusingcustomcloudinitscripts.htm).
   - **image**: (Optional) The nodes image. It can be specified as an OCID or as an Oracle Linux Version. Example: "8.8". If not specified the latest Oracle Linux image is selected.
   - **node_shape**: The shape of the nodes.
   - **capacity_reservation_id**: (Optional) The OCID of the compute capacity reservation in which to place the nodes.
