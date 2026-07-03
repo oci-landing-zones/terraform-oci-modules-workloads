@@ -194,11 +194,12 @@ variable "storage_configuration" {
     file_storage = optional(object({        # file storage settings.
       default_subnet_id = optional(string), # the default subnet used for all file system mount targets. It's overriden by the subnet_id attribute within each mount_target object.
       file_systems = map(object({           # the file systems.
-        cis_level           = optional(string, "1")
-        compartment_id      = optional(string)          # the file system compartment. default_compartment_id is used if this is not defined.
-        file_system_name    = string                    # the file_system name.
-        availability_domain = optional(number, 1)       # the file system availability domain..   
-        kms_key_id          = optional(string)          # the KMS key to assign as the master encryption key. default_kms_key_id is used if this is not defined.
+        cis_level               = optional(string, "1")
+        compartment_id          = optional(string)      # the file system compartment. default_compartment_id is used if this is not defined.
+        file_system_name        = string                # the file_system name.
+        availability_domain     = optional(number, 1)   # the file system availability domain.
+        kms_key_id              = optional(string)      # the KMS key to assign as the master encryption key. default_kms_key_id is used if this is not defined.
+        are_quota_rules_enabled = optional(bool)        # whether quota rules are enforced on the file system.
         replication = optional(object({                 # replication settings
           is_target             = optional(bool, false) # whether the file system is a replication target. Default is false
           file_system_target_id = optional(string)      # the file system replication target. It must be an existing unexported file system, in the same or in a different region than the source file system.
@@ -208,6 +209,14 @@ variable "storage_configuration" {
         defined_tags       = optional(map(string)) # file system defined_tags. default_defined_tags is used if this is not defined.
         freeform_tags      = optional(map(string)) # file system freeform_tags. default_freeform_tags is used if this is not defined.
       }))
+      quota_rules = optional(map(object({
+        name           = optional(string) # the quota rule display name.
+        file_system_id = string           # a local file system key, file system OCID, or key from file_system_dependency.
+        is_hard_quota  = bool             # whether writes are blocked when the quota is exceeded.
+        limit_gb       = number           # the quota limit in gigabytes. Must be 0 or at least 10.
+        principal      = string           # FILE_SYSTEM_LEVEL, DEFAULT_GROUP, DEFAULT_USER, INDIVIDUAL_GROUP, or INDIVIDUAL_USER.
+        principal_id   = optional(number) # the UNIX UID or GID. Required only for individual user or group quotas.
+      })), {})
       mount_targets = optional(map(object({              # the mount targets.
         compartment_id          = optional(string)       # the mount target compartment. default_compartment_id is used if this is not defined.
         mount_target_name       = string                 # the mount target and export set name.
@@ -389,7 +398,7 @@ variable "instances_dependency" {
 
 
 variable "file_system_dependency" {
-  description = "A map of objects containing the externally managed file storage resources this module may depend on. This is used when setting file system replication using target file systems managed in another Terraform configuration. All map objects must have the same type and must contain at least an 'id' attribute (representing the file system OCID) of string type."
+  description = "A map of objects containing the externally managed file storage resources this module may depend on. This is used by quota rules and when setting file system replication using target file systems managed in another Terraform configuration. All map objects must have the same type and must contain at least an 'id' attribute (representing the file system OCID) of string type."
   type = map(object({
     id = string # the file system OCID.
   }))
