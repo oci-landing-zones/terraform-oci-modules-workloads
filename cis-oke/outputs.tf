@@ -17,5 +17,5 @@ output "virtual_node_pools" {
 }
 
 output "nodes" {
-  value = {for k,v in oci_containerengine_node_pool.these : k => { for n in v.nodes : n.name => n }}
+  value = { for k, v in oci_containerengine_node_pool.these : k => { for n in v.nodes : n.name => n } }
 }

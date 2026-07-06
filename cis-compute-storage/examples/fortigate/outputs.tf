@@ -1,6 +1,6 @@
 output "instances" {
   description = "The Compute instances"
-  value       = {for k, v in module.compute.instances : k => {id: v.id}}
+  value       = { for k, v in module.compute.instances : k => { id : v.id } }
 }
 
 output "oci_core_app_catalog_listing_resource_version" {
