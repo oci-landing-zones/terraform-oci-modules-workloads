@@ -109,6 +109,7 @@ variable "workers_configuration" {
         ssh_public_key_path     = optional(string)      # the SSH public key path used to access the workers. if not specified default_ssh_public_key_path will be used.
         defined_tags            = optional(map(string)) # nodes defined_tags. default_defined_tags is used if this is not defined.
         freeform_tags           = optional(map(string)) # nodes freeform_tags. default_freeform_tags is used if this is not defined.
+        node_metadata           = optional(map(string)) # key/value pairs to add to each underlying worker instance on launch. Cloud-init user_data must be base64-encoded.
         image                   = optional(string)      # the image for the nodes. Can be specified as ocid or as an Oracle Linux Version. Example: "8.8". If not specified the latest Oracle Linux image will be selected.
         node_shape              = string                # the shape of the nodes.
         capacity_reservation_id = optional(string)      # the OCID of the compute capacity reservation in which to place the compute instance.

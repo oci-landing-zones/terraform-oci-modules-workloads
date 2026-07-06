@@ -30,6 +30,7 @@ The following security features are currently supported by the module:
 ### <a name="compute-features">Compute</a>
 - CIS profile level drives data at rest encryption, in-transit encryption, secure boot (Shielded instances) and legacy v1 Metadata service endpoint availability.
 - Boot volumes encryption with customer managed keys from OCI Vault service.
+- Launching or updating instances from an existing boot volume.
 - In-transit encryption for boot volumes and attached block volumes.
 - Data in-use encryption for platform images ([Confidential computing](https://docs.oracle.com/en-us/iaas/Content/Compute/References/confidential_compute.htm)).
 - [Shielded instances](https://docs.oracle.com/en-us/iaas/Content/Compute/References/shielded-instances.htm).
@@ -192,14 +193,14 @@ The instances themselves are defined within the **instances** attribute, In Terr
 - **ssh_public_key_path** &ndash; (Optional) The SSH public key path used to access the instance. *default_ssh_public_key_path* is used if undefined.
 - **defined_tags** &ndash; (Optional) The instance defined tags. *default_defined_tags* is used if undefined.
 - **freeform_tags** &ndash; (Optional) The instance freeform tags. *default_freeform_tags* is used if undefined.
-- **marketplace_image** &ndash; (Optional) The Marketplace image information. The image can be deployed using either an *ocid* or *name* and *version*, with *version* being optional. If *version* is not provided, the latest available version is used. See [Obtaining OCI Marketplace Images Information](#marketplace-images) for how to get info on OCI Marketplace images. **Use one of *marketplace_image*, *platform_image* or *custom_image*. NOTE THAT BY DEPLOYING A MARKETPLACE IMAGE USING TERRAFORM YOU ARE IMPLICITLY AGREEING WITH OCI MARKETPLACE TERMS FOR THE PRICING MODEL THAT APPLY TO THE SELECTED IMAGE.** 
+- **marketplace_image** &ndash; (Optional) The Marketplace image information. The image can be deployed using either an *ocid* or *name* and *version*, with *version* being optional. If *version* is not provided, the latest available version is used. See [Obtaining OCI Marketplace Images Information](#marketplace-images) for how to get info on OCI Marketplace images. At least one of *marketplace_image*, *platform_image* or *custom_image* is required when *boot_volume.source_type* is "image". If more than one is provided, the precedence is Marketplace, platform, then custom image. **NOTE THAT BY DEPLOYING A MARKETPLACE IMAGE USING TERRAFORM YOU ARE IMPLICITLY AGREEING WITH OCI MARKETPLACE TERMS FOR THE PRICING MODEL THAT APPLY TO THE SELECTED IMAGE.**
   - **ocid** &ndash; (Optional) The Marketplace image listing resource ocid. It takes precedence over the name and version pair.
   - **name** &ndash; (Optional) The Marketplace image name.
   - **version** &ndash; (Optional) The Marketplace image version. If not provided, the latest available version is used. For versions with empty spaces, like "7.4.3 ( X64 )", replace any empty spaces by the _ character, so it becomes "7.4.3\_(\_X64\_)".
-- **platform_image** &ndash; (Optional) The platform image information. Either the *ocid* or *name* must be provided. See [Obtaining OCI Platform Images Information](#platform-images) for how to get OCI Platform images. **Use one of *marketplace_image*, *platform_image* or *custom_image*.**
+- **platform_image** &ndash; (Optional) The platform image information. Either the *ocid* or *name* must be provided. See [Obtaining OCI Platform Images Information](#platform-images) for how to get OCI Platform images. It is only valid when *boot_volume.source_type* is "image".
   - **ocid** &ndash; (Optional) The Platform image ocid. It takes precedence over name.
   - **name** &ndash; (Optional) The Platform image name. If *name* is provided, variable *tenancy_ocid* is required for looking up the image.
-- **custom_image** &ndash; (Optional) The custom image information. Either the *ocid* or (*name* and *compartment_id*) must be provided. **Use one of *marketplace_image*, *platform_image* or *custom_image*.**
+- **custom_image** &ndash; (Optional) The custom image information. Either the *ocid* or (*name* and *compartment_id*) must be provided. It is only valid when *boot_volume.source_type* is "image".
   - **ocid** &ndash; (Optional) The custom image ocid. It takes precedence over name.
   - **name** &ndash; (Optional) The custom image name.
   - **compartment_id** &ndash; (Optional) The custom image compartment. It is required if name is used.
@@ -207,15 +208,20 @@ The instances themselves are defined within the **instances** attribute, In Terr
   - **availability_domain** &ndash; (Optional) The instance availability domain. Default is 1.
   - **fault_domain** &ndash; (Optional) The instance fault domain. Default is 1.
 - **boot_volume** &ndash; (Optional) Boot volume settings.
+  - **source_type** &ndash; (Optional) Instance source type. Valid values are "image" and "bootVolume" (case-insensitive). Default is "image".
+  - **id** &ndash; (Optional) Direct OCID of an existing boot volume. It is required when *source_type* is "bootVolume" and invalid for image sources. Dependency keys are not accepted. The source boot volume must be in the intended instance availability domain. Marketplace, platform, and custom image selectors must be omitted.
+  - **preserve_on_source_change** &ndash; (Optional) Whether OCI preserves the instance's current boot volume when changing its source to the configured existing boot volume. Default is true. This is distinct from *preserve_on_instance_deletion*, which controls preservation of the active boot volume when the instance is deleted.
   - **type** &ndash; (Optional) Boot volume emulation type. Valid values: "paravirtualized", "scsi", "iscsi", "ide", "vfio". Default is "paravirtualized".
   - **firmware** &ndash; (Optional) Firmware used to boot the VM. Valid options: "BIOS" (compatible with both 32 bit and 64 bit operating systems that boot using MBR style bootloaders), "UEFI_64" (default for platform images).
-  - **size** &ndash; (Optional) Boot volume size. Default is 50 (in GB, the minimum allowed by OCI).
-  - **vpus_per_gb** &ndash; (Optional) The number of volume performance units (VPUs) that will be applied to this volume per GB. Default is 10, represents Balanced option.
+  - **size** &ndash; (Optional) Boot volume size for image sources. Default is 50 (in GB, the minimum allowed by OCI). Existing boot volume sources retain their current size.
+  - **vpus_per_gb** &ndash; (Optional) The number of volume performance units (VPUs) per GB for image sources. Default is 10, which represents the Balanced option. Existing boot volume sources retain their current performance setting.
   - **preserve_on_instance_deletion** &ndash; (Optional) Whether to preserve boot volume after deletion. Default is true.
   - **secure_boot** &ndash; (Optional) Prevents unauthorized boot loaders and operating systems from booting. Default is false. Only applicable if *platform_type* is set.
   - **measured_boot** &ndash; (Optional) enhances boot security by taking and storing measurements of boot components, such as bootloaders, drivers, and operating systems. Bare metal instances do not support Measured Boot. Default is false. Only applicable if *platform_type* is set.
   - **trusted_platform_module** &ndash; (Optional) Used to securely store boot measurements. Default is false. Only applicable if *platform_type* is set.
   - **backup_policy** &ndash; (Optional) The Oracle managed backup policy for the boot volume. Valid values: "gold", "silver", "bronze". Default is "bronze".
+
+Changing an existing instance to a different boot volume source is disruptive because OCI replaces the attached boot volume. Schedule downtime and keep *preserve_on_source_change* enabled unless the replaced volume can safely be deleted. For a "bootVolume" source, *encryption.kms_key_id* and *default_kms_key_id* do not re-encrypt the restored volume; CIS level 2 therefore requires the source boot volume to already use a customer-managed KMS key. The module manages the backup-policy assignment for the resulting active boot volume under the existing behavior, including the default "bronze" assignment when *backup_policy* is omitted.
 - **volumes_emulation_type** &ndash; (Optional) emulation type for attached storage volumes. Valid values: "paravirtualized" (default), "scsi", "iscsi", "ide", "vfio". 
 - **networking** &ndash; (Optional) Networking settings. 
   - **type** &ndash; (Optional) Emulation type for the physical network interface card (NIC). Valid values: "paravirtualized" (default), "vfio" (SR-IOV networking), "e1000" (compatible with Linux e1000 driver).
@@ -621,7 +627,7 @@ In Terraform terms, it is a map of objects, where each object is referred by an 
 
 
 #### <a name="file-storage-1">File Storage</a>
-The **file_storage** attribute defines the file systems, mount targets and snapshot policies for OCI File Storage service. The optional attribute **default_subnet_id** applies to all mount targets, unless overridden by **subnet_id** attribute in each mount target. Attribute **subnet_id** is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *network_dependency* variable. See [External Dependencies](#ext-dep) for details.
+The **file_storage** attribute defines the file systems, quota rules, mount targets and snapshot policies for OCI File Storage service. The optional attribute **default_subnet_id** applies to all mount targets, unless overridden by **subnet_id** attribute in each mount target. Attribute **subnet_id** is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *network_dependency* variable. See [External Dependencies](#ext-dep) for details.
 
 ##### <a name="file-systems">File Systems</a>
 File systems are defined using the optional attribute **file_systems**. A Terraform map of objects, where each object is referred by an identifying key. The following attributes are supported:
@@ -630,6 +636,7 @@ File systems are defined using the optional attribute **file_systems**. A Terraf
 - **file_system_name** &ndash; The file_system name.
 - **availability_domain** &ndash; (Optional) The file system availability domain. 
 - **kms_key_id** &ndash; (Optional) The encryption key for file system encryption. *storage_configuration*'s *default_kms_key_id* is used if undefined. Required if *cis_level* or *default_cis_level* is "2". This attribute is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *kms_dependency* variable. See [External Dependencies](#ext-dep) for details.
+- **are_quota_rules_enabled** &ndash; (Optional) Whether quota rules are enforced on the file system. Enforcement can take up to one hour after it is first enabled. See the [File Storage known issue](#file-storage-known-issue) before changing this value on an existing file system.
 - **replication** &ndash; (Optional) Replication settings. To set the file system as a replication target, set *is_target* to true. To set the file system as a replication source, provide the replication file system target in *file_system_target_id*. A file system cannot be replication source and target at the same time.
   - **is_target** &ndash; (Optional) Whether the file system is a replication target. If this is true, then *file_system_target_id* must not be set. Default is false.
   - **file_system_target_id** &ndash; (Optional) The file system remote replication target for this file system. It must be an existing unexported file system, in the same or in a different region than this file system. If this is set, then *is_target* must be false. This attribute is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *file_systems_dependency* variable. See [External Dependencies](#ext-dep) for details.
@@ -637,6 +644,17 @@ File systems are defined using the optional attribute **file_systems**. A Terraf
 - **snapshot_policy_id** &ndash; (Optional) The snapshot policy identifying key in the *snapshots_policy* map. Default snapshot policies are associated with file systems without a snapshot policy.
 - **defined_tags** &ndash; (Optional) File system defined_tags. *storage_configuration*'s *default_defined_tags* is used if undefined.
 - **freeform_tags** &ndash; (Optional) File system freeform_tags. *storage_configuration*'s *default_freeform_tags* is used if undefined.
+
+##### <a name="quota-rules">Quota Rules</a>
+Quota rules are defined using the optional **quota_rules** attribute. A Terraform map of objects, where each object is referred by an identifying key. Quota rules can exist while enforcement is disabled, but usage is not tracked and the rules are not enforced until **are_quota_rules_enabled** is true. The following attributes are supported:
+- **name** &ndash; (Optional) The quota rule display name.
+- **file_system_id** &ndash; The file system the rule applies to. It can be a key from **file_systems**, a literal file system OCID, or a key from *file_system_dependency*.
+- **is_hard_quota** &ndash; Whether writes that exceed the quota are blocked. If false, the quota is a soft warning threshold.
+- **limit_gb** &ndash; The quota limit in gigabytes. It must be an integer equal to 0 or at least 10. For a hard quota, a zero limit prevents writes.
+- **principal** &ndash; The quota scope. Valid values are `FILE_SYSTEM_LEVEL`, `DEFAULT_GROUP`, `DEFAULT_USER`, `INDIVIDUAL_GROUP`, and `INDIVIDUAL_USER`.
+- **principal_id** &ndash; (Optional) The non-negative UNIX UID or GID. It is required for `INDIVIDUAL_USER` and `INDIVIDUAL_GROUP` and must be omitted for other principal types.
+
+Only one hard rule and one soft rule can be defined for the same file system, principal type, and principal ID. When both are defined in the same module configuration, the soft limit must be lower than the hard limit. Only one quota rule can be updated at a time in OCI; when changing multiple rules in one operation, run Terraform with `-parallelism=1`.
 
 ##### <a name="mount-targets">Mount Targets</a>
 Mount targets are defined using the optional attribute **mount_targets**. A Terraform map of objects, where each object is referred by an identifying key. The following attributes are supported:
@@ -804,9 +822,20 @@ Example:
 - [Block Volume in OCI Terraform Provider](https://registry.terraform.io/providers/oracle/oci/latest/docs/resources/core_volume)
 - [File Storage Service](https://docs.oracle.com/en-us/iaas/Content/File/home.htm)
 - [File Systems in OCI Terraform Provider](https://registry.terraform.io/providers/oracle/oci/latest/docs/resources/file_storage_file_system)
+- [File System Quota Rules in OCI Terraform Provider](https://registry.terraform.io/providers/oracle/oci/latest/docs/resources/file_storage_file_system_quota_rule)
+- [OCI File System Quotas](https://docs.oracle.com/en-us/iaas/Content/File/Tasks/file-system-quotas.htm)
 
 
 ## <a name="issues">Known Issues</a>
+
+### <a name="file-storage-known-issue">File Storage</a>
+1. OCI Terraform Provider 8.21.0 and earlier can set **are_quota_rules_enabled** when creating a file system, but cannot update it on an existing file system because the provider's update path checks an incorrect attribute name. Quota-rule create, read, update, and delete operations are supported. Until the provider bug is fixed, toggle enforcement for an existing file system with the OCI CLI and allow Terraform to refresh the resulting state:
+```
+oci fs file-system toggle-quota-rules \
+  --file-system-id <file-system-ocid> \
+  --are-quota-rules-enabled <true|false>
+```
+See the [provider source](https://github.com/oracle/terraform-provider-oci/blob/v8.21.0/internal/service/file_storage/file_storage_file_system_resource.go#L419-L420).
 
 ### Block Volumes
 1. The module currently supports only one Block volume replica (within or across regions).
