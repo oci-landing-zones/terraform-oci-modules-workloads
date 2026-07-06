@@ -61,6 +61,7 @@ resource "oci_containerengine_node_pool" "these" {
     }
   }
   kubernetes_version = each.value.kubernetes_version != null ? each.value.kubernetes_version : length(regexall("^ocid1.*$", each.value.cluster_id)) > 0 ? [for cluster in data.oci_containerengine_clusters.existing[each.key].clusters : cluster.kubernetes_version if cluster.id == each.value.cluster_id][0] : oci_containerengine_cluster.these[each.value.cluster_id].kubernetes_version
+  node_metadata      = each.value.node_config_details.node_metadata
   node_config_details {
     dynamic "placement_configs" {
       for_each = each.value.node_config_details.placement != null ? each.value.node_config_details.placement : tolist([(tomap({ 1 = 1 }))])

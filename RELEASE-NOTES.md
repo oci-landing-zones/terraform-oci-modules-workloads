@@ -1,3 +1,15 @@
+# July 06, 2026 Release Notes - 0.2.8
+## Updates in [Compute Module](./cis-compute-storage/)
+1. [Issue 38](https://github.com/oci-landing-zones/terraform-oci-modules-workloads/issues/38): instances can now be launched or updated from an existing or restored boot volume by setting *boot_volume.source_type* to *bootVolume* and providing *boot_volume.id*. Changing the source of an existing instance replaces its attached boot volume; schedule downtime and keep *preserve_on_source_change* enabled unless the replaced volume can safely be deleted.
+2. The Compute and Storage module now requires OCI Terraform Provider 6.29.0 or later.
+
+## Updates in [Storage Module](./cis-compute-storage/)
+1. [Issue 16](https://github.com/oci-landing-zones/terraform-oci-modules-workloads/issues/16): custom Block Volume backup policies can now be created with *custom_backup_policies* and assigned to block volumes by policy key.
+2. [Issue 34](https://github.com/oci-landing-zones/terraform-oci-modules-workloads/issues/34): File Storage quota enforcement and quota rules are now supported. OCI Terraform Provider 8.21.0 and earlier cannot toggle quota enforcement on an existing file system due to a provider bug; use the OCI CLI workaround documented in the [File Storage known issue](./cis-compute-storage/README.md#file-storage-known-issue).
+
+## Updates in [OKE Module](./cis-oke/)
+1. [Issue 37](https://github.com/oci-landing-zones/terraform-oci-modules-workloads/issues/37): managed node pools now accept *node_metadata*, including base64-encoded cloud-init scripts in the *user_data* key.
+
 # May 11, 2026 Release Notes - 0.2.7
 ## Updates in [Compute Module](./cis-compute-storage/)
 1. [Issue 32](https://github.com/oci-landing-zones/terraform-oci-modules-workloads/issues/32) fixed.

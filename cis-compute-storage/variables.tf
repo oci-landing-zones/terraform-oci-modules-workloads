@@ -50,6 +50,9 @@ variable "instances_configuration" {
         fault_domain        = optional(number, 1) # the instance fault domain. Default is 1.
       }))
       boot_volume = optional(object({                                       # boot volume settings
+        source_type                   = optional(string, "image")           # source used to launch or update the instance. Valid values: "image" (default) or "bootVolume" (case-insensitive).
+        id                            = optional(string)                    # direct OCID of an existing boot volume. Required only when source_type is "bootVolume".
+        preserve_on_source_change     = optional(bool, true)                # whether to preserve the current boot volume when changing the instance source to bootVolume. Default is true.
         type                          = optional(string, "paravirtualized") # boot volume emulation type. Valid values: "paravirtualized" (default for platform images), "scsi", "iscsi", "ide", "vfio".
         firmware                      = optional(string)                    # firmware used to boot the VM. Valid options: "BIOS" (compatible with both 32 bit and 64 bit operating systems that boot using MBR style bootloaders), "UEFI_64" (default for platform images).
         size                          = optional(number, 50)                # boot volume size. Default is 50GB (minimum allowed by OCI).
@@ -163,6 +166,25 @@ variable "storage_configuration" {
     default_defined_tags   = optional(map(string)), # the default defined tags. It's overriden by the defined_tags attribute within each object.
     default_freeform_tags  = optional(map(string)), # the default freeform tags. It's overriden by the frreform_tags attribute within each object.
 
+    custom_backup_policies = optional(map(object({ # user-defined Block Volume backup policies.
+      compartment_id = optional(string)            # the policy compartment. default_compartment_id is used if this is not defined.
+      display_name   = optional(string)            # the policy display name. The map key is used if this is not defined.
+      schedules = list(object({
+        backup_type       = string           # FULL or INCREMENTAL.
+        period            = string           # ONE_HOUR, ONE_DAY, ONE_WEEK, ONE_MONTH, or ONE_YEAR.
+        retention_seconds = number           # how long backups created by this schedule are retained.
+        offset_type       = optional(string) # STRUCTURED or NUMERIC_SECONDS.
+        offset_seconds    = optional(number) # used when offset_type is NUMERIC_SECONDS.
+        hour_of_day       = optional(number) # used when offset_type is STRUCTURED.
+        day_of_week       = optional(string) # used with ONE_WEEK and offset_type STRUCTURED.
+        day_of_month      = optional(number) # used with ONE_MONTH or ONE_YEAR and offset_type STRUCTURED.
+        month             = optional(string) # used with ONE_YEAR and offset_type STRUCTURED.
+        time_zone         = optional(string) # UTC or REGIONAL_DATA_CENTER_TIME.
+      }))
+      defined_tags  = optional(map(string)) # custom backup policy defined tags. default_defined_tags is used if this is not defined.
+      freeform_tags = optional(map(string)) # custom backup policy freeform tags. default_freeform_tags is used if this is not defined.
+    })), {})
+
     block_volumes = optional(map(object({ # the block volumes to manage in this configuration.
       cis_level           = optional(string, "1")
       compartment_id      = optional(string)                  # the compartment where the block volume is created. default_compartment_id is used if this is not defined.
@@ -183,7 +205,7 @@ variable "storage_configuration" {
       replication = optional(object({ # replication settings
         availability_domain = number  # the availability domain (AD) to replicate the volume. The AD is picked from the region specified by 'block_volumes_replication_region' variable if defined. Otherwise picked from the region specified by 'region' variable.
       }))
-      backup_policy = optional(string, "bronze") # the Oracle managed backup policy. Valid values: "gold", "silver", "bronze". Default is "bronze".
+      backup_policy = optional(string, "bronze") # the Oracle managed backup policy name or a custom_backup_policies map key. Default is "bronze".
       defined_tags  = optional(map(string))      # block volume defined_tags. default_defined_tags is used if this is not defined.
       freeform_tags = optional(map(string))      # block volume freeform_tags. default_freeform_tags is used if this is not defined.
     }))),
@@ -191,11 +213,12 @@ variable "storage_configuration" {
     file_storage = optional(object({        # file storage settings.
       default_subnet_id = optional(string), # the default subnet used for all file system mount targets. It's overriden by the subnet_id attribute within each mount_target object.
       file_systems = map(object({           # the file systems.
-        cis_level           = optional(string, "1")
-        compartment_id      = optional(string)          # the file system compartment. default_compartment_id is used if this is not defined.
-        file_system_name    = string                    # the file_system name.
-        availability_domain = optional(number, 1)       # the file system availability domain..   
-        kms_key_id          = optional(string)          # the KMS key to assign as the master encryption key. default_kms_key_id is used if this is not defined.
+        cis_level               = optional(string, "1")
+        compartment_id          = optional(string)      # the file system compartment. default_compartment_id is used if this is not defined.
+        file_system_name        = string                # the file_system name.
+        availability_domain     = optional(number, 1)   # the file system availability domain.
+        kms_key_id              = optional(string)      # the KMS key to assign as the master encryption key. default_kms_key_id is used if this is not defined.
+        are_quota_rules_enabled = optional(bool)        # whether quota rules are enforced on the file system.
         replication = optional(object({                 # replication settings
           is_target             = optional(bool, false) # whether the file system is a replication target. Default is false
           file_system_target_id = optional(string)      # the file system replication target. It must be an existing unexported file system, in the same or in a different region than the source file system.
@@ -205,6 +228,14 @@ variable "storage_configuration" {
         defined_tags       = optional(map(string)) # file system defined_tags. default_defined_tags is used if this is not defined.
         freeform_tags      = optional(map(string)) # file system freeform_tags. default_freeform_tags is used if this is not defined.
       }))
+      quota_rules = optional(map(object({
+        name           = optional(string) # the quota rule display name.
+        file_system_id = string           # a local file system key, file system OCID, or key from file_system_dependency.
+        is_hard_quota  = bool             # whether writes are blocked when the quota is exceeded.
+        limit_gb       = number           # the quota limit in gigabytes. Must be 0 or at least 10.
+        principal      = string           # FILE_SYSTEM_LEVEL, DEFAULT_GROUP, DEFAULT_USER, INDIVIDUAL_GROUP, or INDIVIDUAL_USER.
+        principal_id   = optional(number) # the UNIX UID or GID. Required only for individual user or group quotas.
+      })), {})
       mount_targets = optional(map(object({              # the mount targets.
         compartment_id          = optional(string)       # the mount target compartment. default_compartment_id is used if this is not defined.
         mount_target_name       = string                 # the mount target and export set name.
@@ -386,11 +417,9 @@ variable "instances_dependency" {
 
 
 variable "file_system_dependency" {
-  description = "A map of objects containing the externally managed file storage resources this module may depend on. This is used when setting file system replication using target file systems managed in another Terraform configuration. All map objects must have the same type and must contain at least an 'id' attribute (representing the file system OCID) of string type."
+  description = "A map of objects containing the externally managed file storage resources this module may depend on. This is used by quota rules and when setting file system replication using target file systems managed in another Terraform configuration. All map objects must have the same type and must contain at least an 'id' attribute (representing the file system OCID) of string type."
   type = map(object({
     id = string # the file system OCID.
   }))
   default = null
 }
-
-

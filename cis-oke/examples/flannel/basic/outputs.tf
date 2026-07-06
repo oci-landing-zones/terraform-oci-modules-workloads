@@ -16,5 +16,5 @@ output "nodes" {
 }
 
 output "nodepool_nodes" {
-  value = { for k,v in module.oke.node_pools : k => v.nodes }
+  value = { for k, v in module.oke.node_pools : k => v.nodes }
 }
