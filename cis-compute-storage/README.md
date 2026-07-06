@@ -392,7 +392,18 @@ Block volumes are defined using the optional **block_volumes** attribute. In Ter
   - **encrypt_in_transit** &ndash; (Optional) Whether traffic encryption should be enabled for the volume. Only applicable for "paravirtualized" attachment type. Default is false.
 - **replication** &ndash; (Optional) Replication settings
   - **availability_domain** &ndash; The availability domain (AD) to replicate the volume. The AD is picked from the region set by the module client to *block_volumes_replication_region* provider alias. Check [here](./examples/storage-only/) for an example with cross-region replication.
-- **backup_policy** &ndash; (Optional) The Oracle managed backup policy for the volume. Valid values: "gold", "silver", "bronze". Default is "bronze".
+- **backup_policy** &ndash; (Optional) The backup policy to assign. Use an Oracle managed policy name ("gold", "silver", or "bronze", case insensitive) or the exact key of a policy in *custom_backup_policies*. Default is "bronze".
+
+Custom Block Volume backup policies are defined using the optional **custom_backup_policies** attribute. It is a map keyed by a policy identifier that can be used by *block_volumes.*\*.*backup_policy*.
+
+- **compartment_id** &ndash; (Optional) The policy compartment. The *default_compartment_id* is used if undefined. This attribute accepts a literal OCID or a key in *compartments_dependency*.
+- **display_name** &ndash; (Optional) The policy display name. The map key is used when omitted.
+- **schedules** &ndash; One or more backup schedules.
+  - **backup_type** &ndash; The backup type: "FULL" or "INCREMENTAL".
+  - **period** &ndash; The schedule frequency: "ONE_HOUR", "ONE_DAY", "ONE_WEEK", "ONE_MONTH", or "ONE_YEAR".
+  - **retention_seconds** &ndash; How long backups created by the schedule are retained, in seconds.
+  - **offset_type**, **offset_seconds**, **hour_of_day**, **day_of_week**, **day_of_month**, **month**, **time_zone** &ndash; Optional OCI schedule timing fields. Use *offset_type* "STRUCTURED" with the calendar fields, or "NUMERIC_SECONDS" with *offset_seconds*.
+- **defined_tags** and **freeform_tags** &ndash; (Optional) Policy tags. The storage defaults are used when omitted.
 
 ##### <a name="mounting-block-volumes">Mounting Block Volumes</a>
 As stated in the [OCI User Guide](https://docs.oracle.com/en-us/iaas/Content/Block/Tasks/attachingavolume.htm):
