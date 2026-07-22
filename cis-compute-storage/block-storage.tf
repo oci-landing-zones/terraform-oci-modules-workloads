@@ -76,6 +76,13 @@ resource "oci_core_volume" "these" {
       display_name        = "${each.value.display_name}-replica"
     }
   }
+  dynamic "source_details" {
+    for_each = each.value.source != null ? [each.value.source] : []
+    content {
+      type = source_details.value.type
+      id   = source_details.value.id
+    }
+  }
   defined_tags  = each.value.defined_tags != null ? each.value.defined_tags : var.storage_configuration.default_defined_tags
   freeform_tags = merge(local.cislz_module_tag, each.value.freeform_tags != null ? each.value.freeform_tags : var.storage_configuration.default_freeform_tags)
 }
