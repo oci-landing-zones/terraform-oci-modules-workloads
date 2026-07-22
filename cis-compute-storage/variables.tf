@@ -205,6 +205,10 @@ variable "storage_configuration" {
       replication = optional(object({ # replication settings
         availability_domain = number  # the availability domain (AD) to replicate the volume. The AD is picked from the region specified by 'block_volumes_replication_region' variable if defined. Otherwise picked from the region specified by 'region' variable.
       }))
+      source = optional(object({
+        type = string
+        id   = string
+      }))
       backup_policy = optional(string, "bronze") # the Oracle managed backup policy name or a custom_backup_policies map key. Default is "bronze".
       defined_tags  = optional(map(string))      # block volume defined_tags. default_defined_tags is used if this is not defined.
       freeform_tags = optional(map(string))      # block volume freeform_tags. default_freeform_tags is used if this is not defined.
@@ -301,6 +305,14 @@ variable "storage_configuration" {
     })))
   })
   default = null
+
+  validation {
+    condition = alltrue([
+      for volume in values(try(coalesce(var.storage_configuration.block_volumes, {}), {})) :
+      volume.source == null ? true : contains(["blockVolumeReplica", "volume", "volumeBackup"], volume.source.type)
+    ])
+    error_message = "storage_configuration.block_volumes[*].source.type must be one of: blockVolumeReplica, volume, volumeBackup."
+  }
 }
 
 variable "clusters_configuration" {

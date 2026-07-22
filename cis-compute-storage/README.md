@@ -42,6 +42,7 @@ The following security features are currently supported by the module:
 - CIS profile level drives data at rest encryption configuration.
 - Data at rest encryption with customer managed keys from OCI Vault service.
 - In-transit encryption for attached Compute instances.
+- Restoring from a Block Volume backup and cloning from a Block Volume or replica.
 - Cross-region replication for strong cyber resilience posture.
 - Backups with Oracle managed policies.
 - [Shareable block volume attachments](https://docs.oracle.com/en-us/iaas/Content/Block/Tasks/attachingvolumetomultipleinstances.htm).
@@ -392,6 +393,9 @@ Block volumes are defined using the optional **block_volumes** attribute. In Ter
   - **encrypt_in_transit** &ndash; (Optional) Whether traffic encryption should be enabled for the volume. Only applicable for "paravirtualized" attachment type. Default is false.
 - **replication** &ndash; (Optional) Replication settings
   - **availability_domain** &ndash; The availability domain (AD) to replicate the volume. The AD is picked from the region set by the module client to *block_volumes_replication_region* provider alias. Check [here](./examples/storage-only/) for an example with cross-region replication.
+- **source** &ndash; (Optional) The source used to populate the new volume. If omitted, the new volume is empty.
+  - **type** &ndash; The source type. Valid values are "blockVolumeReplica", "volume", and "volumeBackup".
+  - **id** &ndash; The OCID of the Block Volume replica, Block Volume, or Block Volume backup identified by *type*.
 - **backup_policy** &ndash; (Optional) The backup policy to assign. Use an Oracle managed policy name ("gold", "silver", or "bronze", case insensitive) or the exact key of a policy in *custom_backup_policies*. Default is "bronze".
 
 Custom Block Volume backup policies are defined using the optional **custom_backup_policies** attribute. It is a map keyed by a policy identifier that can be used by *block_volumes.*\*.*backup_policy*.
