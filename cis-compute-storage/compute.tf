@@ -21,13 +21,24 @@ locals {
     for k, v in var.instances_configuration["instances"] : k => v
     if local.instance_source_modes[k] == "bootvolume"
   } : {}
+
+  requested_platform_image_names = toset(var.instances_configuration != null ? [
+    for k, v in var.instances_configuration["instances"] : v.platform_image.name
+    if local.instance_source_modes[k] == "image" && try(v.platform_image.name, null) != null
+  ] : [])
 }
 
 #------------------------------
 # Platform images data sources
 #------------------------------
 data "oci_core_images" "these_platform" {
-  count = local.deploy_platform_image_by_name ? 1 : 0
+  for_each = local.requested_platform_image_names
+  lifecycle {
+    postcondition {
+      condition     = length(self.images) > 0
+      error_message = "VALIDATION FAILURE: platform image \"${each.key}\" not found."
+    }
+  }
   # lifecycle {
   #   precondition {
   #       condition = var.tenancy_ocid != null
@@ -36,14 +47,18 @@ data "oci_core_images" "these_platform" {
   # }
   compartment_id = var.tenancy_ocid
   filter {
+    name   = "display_name"
+    values = [each.key]
+  }
+  filter {
     name   = "state"
     values = ["AVAILABLE"]
   }
 }
 
 data "oci_core_image_shapes" "these_platform" {
-  for_each = length(data.oci_core_images.these_platform) > 0 ? { for i in data.oci_core_images.these_platform[0].images : i.id => { "display_name" : i.display_name } } : {}
-  image_id = each.key
+  for_each = local.requested_platform_image_names
+  image_id = data.oci_core_images.these_platform[each.key].images[0].id
 }
 
 #------------------------------
@@ -98,23 +113,19 @@ locals {
   # Platform images
   #------------------------------
 
-  deploy_platform_image_by_name = var.instances_configuration != null ? length([for k, v in var.instances_configuration["instances"] : v if local.instance_source_modes[k] == "image" && try(v.platform_image.name, null) != null]) > 0 : false
-
-  platform_images = length(data.oci_core_images.these_platform) > 0 ? [
-    for i in data.oci_core_images.these_platform[0].images : {
-      display_name             = i.display_name
-      id                       = i.id
-      operating_system         = i.operating_system
-      operating_system_version = i.operating_system_version
-      encryption_in_transit    = i.launch_options[0].is_pv_encryption_in_transit_enabled
-      state : i.state
-      shapes : [for s in data.oci_core_image_shapes.these_platform[i.id].image_shape_compatibilities : s.shape]
-      # min_memory : [for s in data.oci_core_image_shapes.these_platform[i.id].image_shape_compatibilities : try(s.memory_constraints.min_in_gbs,0)]
-      # max_memory : [for s in data.oci_core_image_shapes.these_platform[i.id].image_shape_compatibilities : try(s.memory_constraints.max_in_gbs,0)]
-      # min_ocpu   : [for s in data.oci_core_image_shapes.these_platform[i.id].image_shape_compatibilities : try(s.ocpu_constraints.min,0)]
-      # max_ocpu   : [for s in data.oci_core_image_shapes.these_platform[i.id].image_shape_compatibilities : try(s.ocpu_constraints.max,0)]
-    }
-  ] : []
+  platform_images = [for k, v in data.oci_core_images.these_platform : {
+    display_name             = v.images[0].display_name
+    id                       = v.images[0].id
+    operating_system         = v.images[0].operating_system
+    operating_system_version = v.images[0].operating_system_version
+    encryption_in_transit    = v.images[0].launch_options[0].is_pv_encryption_in_transit_enabled
+    state : v.images[0].state
+    shapes : [for s in data.oci_core_image_shapes.these_platform[k].image_shape_compatibilities : s.shape]
+    # min_memory : [for s in data.oci_core_image_shapes.these_platform[k].image_shape_compatibilities : try(s.memory_constraints.min_in_gbs,0)]
+    # max_memory : [for s in data.oci_core_image_shapes.these_platform[k].image_shape_compatibilities : try(s.memory_constraints.max_in_gbs,0)]
+    # min_ocpu   : [for s in data.oci_core_image_shapes.these_platform[k].image_shape_compatibilities : try(s.ocpu_constraints.min,0)]
+    # max_ocpu   : [for s in data.oci_core_image_shapes.these_platform[k].image_shape_compatibilities : try(s.ocpu_constraints.max,0)]
+  }]
 
   platform_images_by_name = { for i in local.platform_images : i.display_name => { id = i.id, operating_system = i.operating_system, shapes = i.shapes /*, min_memory = i.min_memory, max_memory = i.max_memory, min_ocpu = i.min_ocpu, max_ocpu = i.max_ocpu*/ } }
   platform_images_by_id   = { for i in local.platform_images : i.id => { display_name = i.display_name, operating_system = i.operating_system, shapes = i.shapes /*, min_memory = i.min_memory, max_memory = i.max_memory, min_ocpu = i.min_ocpu, max_ocpu = i.max_ocpu*/ } }
@@ -444,8 +455,8 @@ resource "oci_core_vnic_attachment" "these" {
 }
 
 data "oci_core_vnic" "these" {
-  for_each = oci_core_vnic_attachment.these
-  vnic_id  = each.value.vnic_id
+  for_each = { for v in local.secondary_vnics : v.key => {} }
+  vnic_id  = oci_core_vnic_attachment.these[each.key].vnic_id
 }
 
 resource "oci_core_private_ip" "these" {
