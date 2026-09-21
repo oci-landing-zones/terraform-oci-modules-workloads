@@ -1,21 +1,16 @@
-# Copyright (c) 2023, Oracle and/or its affiliates. All rights reserved.
-# Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
-
 output "clusters" {
-  description = "The Kubernetes Clusters"
-  value       = var.enable_output ? oci_containerengine_cluster.these : null
+  description = "OKE clusters keyed by configuration identity, read back from OCI."
+  value       = var.enable_output ? data.oci_containerengine_cluster.managed : null
 }
-
 output "node_pools" {
-  description = "The OKE Node Pools"
-  value       = var.enable_output ? oci_containerengine_node_pool.these : null
+  description = "Managed OKE pools keyed by Landing Zone identity."
+  value       = var.enable_output ? { for k, p in local.pools : k => module.cluster[p.cluster_ref.key].worker_pools[coalesce(p.name, k)] if p.mode == "node-pool" } : null
 }
-
 output "virtual_node_pools" {
-  description = "The OKE Virtual Node Pools"
-  value       = var.enable_output ? oci_containerengine_virtual_node_pool.these : null
+  description = "Virtual OKE pools keyed by Landing Zone identity."
+  value       = var.enable_output ? { for k, p in local.pools : k => module.cluster[p.cluster_ref.key].worker_pools[coalesce(p.name, k)] if p.mode == "virtual-node-pool" } : null
 }
-
 output "nodes" {
-  value = { for k, v in oci_containerengine_node_pool.these : k => { for n in v.nodes : n.name => n } }
+  description = "Managed nodes by pool identity and node name; retains legacy enable_output behavior."
+  value       = { for k, p in local.pools : k => { for n in module.cluster[p.cluster_ref.key].worker_pools[coalesce(p.name, k)].nodes : n.name => n } if p.mode == "node-pool" }
 }
