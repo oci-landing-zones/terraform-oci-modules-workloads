@@ -136,3 +136,8 @@ customer commands; never experiment on customer state.
 - Reject BM node-pool shapes with effective pv_transit_encryption enabled, including inherited settings. Do not let upstream silently disable unsupported encryption.
 
 - Enhanced clusters only for this release. Reject explicit basic inputs and basic-cluster migrations; require a separately reviewed upgrade before migration. Keep enhanced flannel support.
+
+## Plan-time discovery dependency constraint
+
+- Do not make the upstream root module depend on validation resources or pass compartment_id through a validation resource. Use resolved configuration locals so upstream AD discovery can finish at plan time and its fault-domain for_each keys remain known.
+- Retain blocking validation preconditions. Test ordinary plans, with real provider data-read semantics for discovery, and a negative control reproducing the old module-wide dependency failure. No targeted/staged applies as a workaround.

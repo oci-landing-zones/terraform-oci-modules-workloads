@@ -1,10 +1,16 @@
 """Plan the real wrapper/upstream resource code with deterministic data lookups.
 
-Only OCI data sources are substituted in a disposable copy. Providers and OCI
+OCI data sources are substituted in a disposable copy. AD/FD discovery uses real
+HTTP data reads against a local fixture to preserve dependency behavior. Providers and OCI
 resource schemas are real; no apply or real OCI request is performed. This tests
 Terraform wiring, not live OCI reconciliation or replacement-free migration.
 """
 import copy
+import base64
+import gzip
+import atexit
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+import threading
 import importlib.util
 import json
 import os
@@ -60,6 +66,21 @@ def config():
 def main():
     version = json.loads(command(ROOT, 'version', '-json').stdout)['terraform_version']
     assert version.startswith('1.5.'), version
+    class DiscoveryHandler(BaseHTTPRequestHandler):
+        def do_GET(self):
+            body = json.dumps({'availability_domains':[{'name':'TEST:AD-1'},{'name':'TEST:AD-2'}],
+                               'fault_domains':[{'name':'FAULT-DOMAIN-1'},{'name':'FAULT-DOMAIN-2'},{'name':'FAULT-DOMAIN-3'}]}).encode()
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/json')
+            self.end_headers()
+            self.wfile.write(body)
+        def log_message(self, *args):
+            pass
+    discovery = ThreadingHTTPServer(('127.0.0.1', 0), DiscoveryHandler)
+    threading.Thread(target=discovery.serve_forever, daemon=True).start()
+    atexit.register(discovery.server_close)
+    atexit.register(discovery.shutdown)
+    discovery_url = 'http://127.0.0.1:' + str(discovery.server_port)
     with tempfile.TemporaryDirectory(prefix='cis-oke-offline-') as temp:
         base = Path(temp)
         subject = base / 'subject'
@@ -93,7 +114,7 @@ def main():
 }
 ''')
         replace_data(base / 'upstream', {
-            'data.oci_identity_availability_domains.all':'local.fixture_ads',
+            'data.oci_identity_availability_domains.all':'jsondecode(data.http.fixture_ads.response_body)',
             'data.oci_containerengine_node_pool_option.oke':'local.fixture_catalog',
             'data.oci_containerengine_clusters.existing_cluster':'local.fixture_existing',
             'data.oci_containerengine_cluster_kube_config.private':'local.fixture_kubeconfig',
@@ -103,7 +124,6 @@ def main():
             'data.oci_core_images.bastion':'local.fixture_unused',
         })
         (base / 'upstream/fixture.tf').write_text('''locals {
-  fixture_ads = {availability_domains=[{name="TEST:AD-1"},{name="TEST:AD-2"}]}
   fixture_catalog = [{sources=[
     {image_id="ocid1.image.oc1..old",source_name="Oracle-Linux-9.5-2025.01.01-0-OKE-1.33.1-100"},
     {image_id="ocid1.image.oc1..test",source_name="Oracle-Linux-9.6-2025.02.01-0-OKE-1.33.1-200"},
@@ -117,6 +137,10 @@ def main():
   fixture_unused = []
 }
 ''')
+        # Real provider data reads preserve deferred-read semantics. Do not replace
+        # discovery with locals: doing so conceals unknown for_each keys on fresh plans.
+        (base / 'upstream/discovery_fixture.tf').write_text(
+            'data "http" "fixture_ads" {\n url = ' + json.dumps(discovery_url) + '\n request_headers = { compartment = var.compartment_id }\n}\n')
         workers = base / 'upstream/modules/workers'
         replace_data(workers, {
             'data.oci_identity_fault_domains.all': 'local.fixture_fds',
@@ -129,6 +153,15 @@ def main():
   fixture_images = {for k,p in local.enabled_worker_pools : k => {operating_system="Oracle Linux", operating_system_version="9.6"}}
 }
 ''')
+        (workers / 'discovery_fixture.tf').write_text(
+            'data "http" "fixture_fds" {\n for_each = var.ad_numbers_to_names\n url = ' + json.dumps(discovery_url) + '\n request_headers = { compartment = var.compartment_id, ad = each.value }\n}\n')
+        fixture = workers / 'fixture.tf'
+        fixture.write_text(fixture.read_text().replace(
+            'fixture_fds = {for k,v in var.ad_numbers_to_names : k => {fault_domains = [{name="FAULT-DOMAIN-1"}, {name="FAULT-DOMAIN-2"}, {name="FAULT-DOMAIN-3"}]}}',
+            'fixture_fds = {for k,v in data.http.fixture_fds : k => jsondecode(v.response_body)}'))
+        addons = base / 'upstream/modules/cluster-addons'
+        replace_data(addons, {'data.oci_containerengine_addon_options.k8s_addon_options':'local.fixture_addons'})
+        (addons / 'fixture.tf').write_text('locals { fixture_addons = {addon_options=[]} }\n')
         network = base / 'upstream/modules/network'
         replace_data(network, {'data.oci_core_services.all_oci_services':'local.fixture_services','data.oci_waas_edge_subnets.waf_cidr_blocks':'local.fixture_waf'})
         (network / 'fixture.tf').write_text('locals {\n fixture_services = {services=[{cidr_block="all-test-services"}]}\n fixture_waf = []\n}\n')
@@ -142,7 +175,7 @@ def main():
   region = "us-ashburn-1"
   private_key_path = ''' + json.dumps(str(base / 'dummy.pem')) + '\n}\n')
         # No OCI data source may survive the fixture transformation.
-        for directory in [subject, base / 'upstream', workers, network]:
+        for directory in [subject, base / 'upstream', workers, network, addons, base / 'upstream/modules/cluster']:
             for file in directory.glob('*.tf'):
                 assert not re.search(r'^data "oci_', file.read_text(), re.M), file
         command(subject, 'init', '-backend=false', '-input=false', '-no-color', f'-plugin-dir={ROOT / ".terraform/providers"}')
@@ -159,6 +192,18 @@ def main():
             else:
                 assert result.returncode == 0, result.stdout + result.stderr
                 document = json.loads(command(subject, 'show', '-json', str(base / 'plan')).stdout)
+                # Data read during planning appears only in planned_values, not changes.
+                def planned_data(module):
+                    for item in module.get('resources', []):
+                        if item['mode'] == 'data':
+                            yield item
+                    for child in module.get('child_modules', []):
+                        yield from planned_data(child)
+                addresses = {item['address'] for item in document.get('resource_changes', [])}
+                for item in planned_data(document['planned_values']['root_module']):
+                    if item['address'] not in addresses:
+                        document.setdefault('resource_changes', []).append(dict(item, change={'actions':['read'], 'after':item['values'], 'after_unknown':{}}))
+
                 if name == 'custom cloud-init':
                     assert len([r for r in document.get('resource_changes', []) if r['type'] == 'cloudinit_config']) == 1
                 actual = [r['type'] for r in document.get('resource_changes', []) if r['mode'] == 'managed' and r['type'].startswith('oci_')]
@@ -212,9 +257,12 @@ def main():
                         assert after['node_eviction_node_pool_settings'][0]['is_force_delete_after_grace_duration'] is False
                         if name in ['custom cloud-init', 'global custom cloud-init']:
                             metadata = after.get('node_metadata') or {}
-                            assert metadata.get('user_data') is None, metadata
-                            pending = resource['change']['after_unknown'].get('node_metadata')
-                            assert pending is True or isinstance(pending, dict) and pending.get('user_data') is True, pending
+                            if metadata.get('user_data') is not None:
+                                rendered = gzip.decompress(base64.b64decode(metadata['user_data'])).decode()
+                                assert 'custom.yaml' in rendered, rendered
+                            else:
+                                pending = resource['change']['after_unknown'].get('node_metadata')
+                                assert pending is True or isinstance(pending, dict) and pending.get('user_data') is True, pending
                         if name == 'GVA profiles':
                             vnics = after['secondary_vnics']
                             assert len(vnics) == 1, vnics
@@ -285,6 +333,15 @@ def main():
         invalid=copy.deepcopy(full)
         invalid['workers_configuration']['worker_pools']['V']['gva_secondary_vnics']=gva['workers_configuration']['worker_pools']['P']['gva_secondary_vnics']
         plan('virtual GVA blocked',invalid,'supported only for managed node-pool mode')
+        # Negative control: the same real-data fixture must catch the original bug.
+        wrapper = subject / 'oke.tf'
+        fixed_wrapper = wrapper.read_text()
+        try:
+            wrapper.write_text(fixed_wrapper.replace('module "cluster" {',
+                'module "cluster" {\n depends_on = [terraform_data.worker_validation]'))
+            plan('old module dependency breaks AD discovery', full, 'Invalid for_each argument')
+        finally:
+            wrapper.write_text(fixed_wrapper)
         for label, pool_input, image in [
             ('latest x86', {}, 'test'),
             ('ARM', {'shape':'VM.Standard.A1.Flex'}, 'arm'),
@@ -334,7 +391,7 @@ def main():
             ('unsupported LB list', lambda c: c['clusters_configuration']['clusters']['C']['networking'].update({'service_lb_subnet_ids':[]}), 'requires exactly one service_lb_subnet_ids'),
             ('basic cluster rejected', lambda c: c['clusters_configuration']['clusters']['C'].update({'cluster_type':'basic'}), 'Only enhanced clusters are supported'),
             ('unsupported cluster version', lambda c: c['clusters_configuration']['clusters']['C'].update({'kubernetes_version':'v1.99.0'}), 'kubernetes_version is not supported by OCI'),
-            ('invalid CNI', lambda c: c['clusters_configuration']['clusters']['C'].update({'cni_type':'unknown'}), 'cni_type native/flannel'),
+            ('invalid CNI', lambda c: c['clusters_configuration']['clusters']['C'].update({'cni_type':'unknown'}), 'cni_type must be native/flannel'),
             ('virtual requires native', lambda c: c['clusters_configuration']['clusters']['C'].update({'cni_type':'flannel'}), 'virtual node pools require native CNI'),
             ('unsupported worker version', lambda c: c['workers_configuration']['worker_pools']['P'].update({'kubernetes_version':'v1.30.1',  'image_id':'ocid1.image.oc1..test'}), 'worker Kubernetes version must be supported'),
             ('duplicate placements', lambda c: c['workers_configuration']['worker_pools']['P'].update({'placement_ads':[1,1]}), 'must not contain duplicate AD numbers'),

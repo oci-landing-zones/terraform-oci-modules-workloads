@@ -284,6 +284,9 @@ permissions. No deployment credentials are stored in this repository.
 - Offline plan scenarios use actual upstream resource code and actual OCI provider schemas,
   substituting only OCI data-source responses in a disposable test copy. They
   verify OKE-only resource ownership and positive/negative validation paths.
+  AD/FD discovery uses real HTTP data sources against a loopback fixture, preserving
+  deferred-read and unknown-key behavior. A negative control restores the former
+  module-wide dependency and must reproduce the invalid-for_each error.
 - Migration-tool and plan-checker tests verify mapping, ambiguity/orphan detection,
   preserved deployed selections and ignored/destructive update rejection.
 
@@ -295,8 +298,13 @@ TERRAFORM_BIN=/path/to/terraform-1.5.7 python3 tests/test_offline.py
 python3 -m unittest discover -s tests -p test_migration.py
 ```
 
-No live OCI plan/apply, existing-customer state mutation or live migration rehearsal
-has been performed. Live provider reconciliation, full historical-release coverage,
+A read-only, empty-state OCI-backed plan succeeded on 2026-09-21 with Terraform
+1.5.7 and OCI provider 8.29.0: enhanced/native CIS1, one E5 Flex managed pool,
+existing compartment/network dependencies. It planned six additions (cluster,
+node pool, three validation resources and upstream random state ID), with no
+changes/deletions, and passed the plan checker. No targeting or staged apply was
+used. No infrastructure apply, existing-customer state mutation or live migration
+rehearsal has been performed. Live provider reconciliation, full historical-release coverage,
 output-consumer compatibility and the upstream limitations above must be resolved
 or explicitly scoped before publishing the major release. See [MIGRATION.md](MIGRATION.md).
 

@@ -76,6 +76,9 @@ locals {
   cluster_pool_keys         = { for c in keys(local.clusters) : c => [for k, p in local.pools : k if p.cluster_ref.key == c] }
 }
 
+# Keep discovery inputs independent of validation-resource creation. A module-wide
+# depends_on defers upstream AD discovery and makes fault-domain for_each keys unknown.
+# Validation resources retain blocking preconditions in ordinary plan/apply runs.
 module "cluster" {
   providers                    = { oci = oci, oci.home = oci }
   create_cluster               = true
@@ -115,10 +118,9 @@ module "cluster" {
   # Effective custom parts are selected per pool by configuration (local replaces global).
   worker_cloud_init                 = []
   worker_is_public                  = false
-  depends_on                        = [terraform_data.worker_validation]
   for_each                          = local.clusters
   source                            = "git::https://github.com/oracle-terraform-modules/terraform-oci-oke.git?ref=v5.5.1"
-  compartment_id                    = terraform_data.cluster_validation[each.key].input.compartment_id
+  compartment_id                    = local.cluster_settings[each.key].compartment_id
   state_id                          = each.key
   cluster_name                      = each.value.name
   cluster_type                      = "enhanced"
