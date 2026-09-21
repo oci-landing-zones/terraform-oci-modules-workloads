@@ -148,3 +148,5 @@ customer commands; never experiment on customer state.
 - Remove cluster-level default_* and override_defaults fields; cluster/PV/LB tags and endpoint NSGs are explicit. Worker defaults and collection semantics remain unchanged. Expose cluster (singular), retaining keyed pool/node outputs.
 - Scope this change to CIS OKE and caller examples; do not modify the orchestrator. Show for_each composition with outputs nested by caller identity.
 - Legacy conversion requires a single cluster, materializes its defaults and validates pool ownership. Reject multi-cluster conversion unless a separately reviewed fan-out migration is supplied.
+
+- Enforce IMDSv2-only for all managed nodes through node_metadata.areLegacyImdsEndpointsDisabled = "true". No opt-out; reject conflicting input metadata. Preserve custom metadata/cloud-init. Existing nodes require replacement/cycling, not just a pool update.

@@ -223,3 +223,11 @@ if __name__ == '__main__':
     legacy,state=migration_tests.MigrationTests().fixture()
     converted,_,_=migration_tests.migrate.convert(legacy,state,'module.oke[0]')
     check('legacy migration emits valid single-cluster inputs',converted)
+
+    for value in ['false', '', None]:
+        imds=fixture()
+        imds['workers_configuration']['worker_pools']['P']['node_metadata']={'areLegacyImdsEndpointsDisabled':value}
+        check('managed IMDSv1 override rejected '+str(value),imds,'Managed pools require IMDSv2-only')
+    imds=fixture()
+    imds['workers_configuration']['worker_pools']['P']['node_metadata']={'areLegacyImdsEndpointsDisabled':'true','custom':'preserved'}
+    check('explicit IMDSv2 and custom metadata accepted',imds)

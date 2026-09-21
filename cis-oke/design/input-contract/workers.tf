@@ -62,6 +62,13 @@ output "normalized_worker_pools" {
 
   precondition {
     condition = alltrue([for pool in values(local.normalized_worker_pools) :
+      pool.mode != "node-pool" || lookup(coalesce(pool.node_metadata, {}), "areLegacyImdsEndpointsDisabled", "true") == "true"
+    ])
+    error_message = "Managed pools require IMDSv2-only metadata access. Omit node_metadata.areLegacyImdsEndpointsDisabled or set it to the string true; IMDSv1 cannot be enabled."
+  }
+
+  precondition {
+    condition = alltrue([for pool in values(local.normalized_worker_pools) :
       !(startswith(upper(coalesce(pool.shape, "unknown")), "BM.") && coalesce(pool.pv_transit_encryption, false))
     ])
     error_message = "In-transit encryption (pv_transit_encryption) is not supported on bare-metal BM shapes. Disable it or select a supported VM shape. Affected pools: ${join(", ", [for key, pool in local.normalized_worker_pools : key if startswith(upper(coalesce(pool.shape, "unknown")), "BM.") && coalesce(pool.pv_transit_encryption, false)])}."

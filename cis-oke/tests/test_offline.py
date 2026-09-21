@@ -252,6 +252,10 @@ def main():
                             assert after['ssh_public_key'] == 'ssh-rsa example'
                             assert after['node_config_details'][0]['is_pv_encryption_in_transit_enabled'] is True
                         assert after['compartment_id'] == 'ocid1.compartment.oc1..test'
+                        if after.get('node_metadata') is not None:
+                            assert after['node_metadata']['areLegacyImdsEndpointsDisabled'] == 'true'
+                            if name == 'managed IMDSv2 metadata preserved':
+                                assert after['node_metadata']['custom'] == 'preserved'
                         if after['node_shape'].endswith('.Flex'):
                             assert after['node_shape_config'][0]['memory_in_gbs'] == 16
                         assert after['node_eviction_node_pool_settings'][0]['is_force_delete_after_grace_duration'] is False
@@ -288,6 +292,11 @@ def main():
         managed=copy.deepcopy(full)
         managed['workers_configuration']['worker_pools']={'P':{}}
         resources=['oci_containerengine_cluster','oci_containerengine_node_pool']
+        imds=copy.deepcopy(managed)
+        imds['workers_configuration']['worker_pools']['P']['node_metadata']={'custom':'preserved','areLegacyImdsEndpointsDisabled':'true'}
+        plan('managed IMDSv2 metadata preserved',imds,resources=resources)
+        imds['workers_configuration']['worker_pools']['P']['node_metadata']['areLegacyImdsEndpointsDisabled']='false'
+        plan('managed IMDSv1 rejected',imds,'Managed pools require IMDSv2-only')
         enabled=copy.deepcopy(managed)
         enabled['workers_configuration'].pop('default_disable_default_cloud_init')
         plan('boot defaults enabled implicitly',enabled,resources=resources)

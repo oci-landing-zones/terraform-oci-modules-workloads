@@ -140,8 +140,13 @@ locals {
       freeform_tags            = local.pool_settings[key].freeform_tags
       node_labels              = coalesce(pool.node_labels, {})
       # Preserve upstream rendering whenever default scripts or custom parts are enabled.
-      node_metadata = merge(pool.disable_default_cloud_init && length(pool.cloud_init) == 0 ? { user_data = "" } : {}, coalesce(pool.node_metadata, {}))
-      cloud_init    = pool.disable_default_cloud_init && length(pool.cloud_init) == 0 ? [{ content = "#cloud-config\n{}\n", content_type = "text/cloud-config" }] : [for part in pool.cloud_init : { for k, v in part : k => v if v != null }]
+      # OKE managed pools use this metadata key, not the standalone-compute IMDS switch.
+      node_metadata = merge(
+        pool.disable_default_cloud_init && length(pool.cloud_init) == 0 ? { user_data = "" } : {},
+        coalesce(pool.node_metadata, {}),
+        pool.mode == "node-pool" ? { areLegacyImdsEndpointsDisabled = "true" } : {}
+      )
+      cloud_init = pool.disable_default_cloud_init && length(pool.cloud_init) == 0 ? [{ content = "#cloud-config\n{}\n", content_type = "text/cloud-config" }] : [for part in pool.cloud_init : { for k, v in part : k => v if v != null }]
       gva_secondary_vnics = { for name, vnic in pool.gva_secondary_vnics : name => merge(
         { for k, v in vnic : k => v if v != null },
         { subnet_id = local.subnets[vnic.subnet_id], nsg_ids = distinct([for ref in vnic.nsg_ids : local.nsgs[ref]]) }

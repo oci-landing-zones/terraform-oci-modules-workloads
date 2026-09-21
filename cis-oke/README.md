@@ -114,6 +114,13 @@ Clusters default to `cluster_type = "enhanced"` and `cni_type = "native"`
 (VCN-native CNI). Native CNI requires `pods_cidr` to be omitted (or null); pod
 addresses come from the pod subnet. Only enhanced clusters are supported; explicit `basic` is rejected. Flannel remains supported on enhanced clusters.
 
+Managed pools always set `node_metadata.areLegacyImdsEndpointsDisabled = "true"`,
+requiring IMDSv2-only access on new managed nodes. It cannot be disabled by input;
+conflicting metadata is rejected. Existing nodes require replacement/cycling for
+this pool setting to take effect; updating the pool alone does not retrofit them.
+Use images and bootstrap scripts compatible with IMDSv2. See
+[Oracle's managed-node IMDS guidance](https://docs.oracle.com/en-us/iaas/Content/ContEng/Tasks/contengconfiguringimds.htm).
+
 Cluster API endpoints are always private. There is no public-endpoint input.
 Deprecated Dashboard, Tiller and pod-security-policy switches are no longer exposed.
 

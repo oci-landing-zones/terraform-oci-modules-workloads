@@ -155,3 +155,9 @@ select one cluster, materialize its inherited defaults, remove cluster
 `override_defaults`, and remove workers `cluster_ref`. No compatibility alias is
 provided. This major version has not been deployed, so those intermediate API
 shapes and their state addresses are not maintained.
+
+Managed pools now enforce IMDSv2-only for newly created nodes. Remove an explicit
+`areLegacyImdsEndpointsDisabled = "false"` metadata setting before migrating and
+verify custom images/scripts support IMDSv2. Plan controlled node replacement or
+cycling to cover existing nodes; a node-pool metadata update alone does not
+change the metadata endpoint setting on existing instances.
