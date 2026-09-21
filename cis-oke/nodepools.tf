@@ -1,10 +1,10 @@
 locals {
   pool_targets = { for k, p in local.pools : k => {
-    cluster_type   = local.clusters[p.cluster_ref.key].cluster_type
-    cni_type       = lower(local.clusters[p.cluster_ref.key].cni_type)
-    version        = coalesce(local.clusters[p.cluster_ref.key].kubernetes_version, reverse(data.oci_containerengine_cluster_option.cluster_options[p.cluster_ref.key].kubernetes_versions)[0])
-    compartment_id = local.cluster_settings[p.cluster_ref.key].compartment_id
-    cis_level      = local.cluster_settings[p.cluster_ref.key].cis_level
+    cluster_type   = local.clusters[local.cluster_key].cluster_type
+    cni_type       = lower(local.clusters[local.cluster_key].cni_type)
+    version        = coalesce(local.clusters[local.cluster_key].kubernetes_version, reverse(data.oci_containerengine_cluster_option.cluster_options[local.cluster_key].kubernetes_versions)[0])
+    compartment_id = local.cluster_settings[local.cluster_key].compartment_id
+    cis_level      = local.cluster_settings[local.cluster_key].cis_level
   } }
   pool_settings = { for k, p in local.pools : k => {
     compartment_id     = local.pool_targets[k].compartment_id
@@ -33,9 +33,9 @@ data "oci_containerengine_cluster_option" "worker_versions" {
 resource "terraform_data" "worker_validation" {
   for_each = local.pools
   input = {
-    resource_address        = "module.cluster[${jsonencode(each.value.cluster_ref.key)}].module.workers[0].${each.value.mode == "node-pool" ? "oci_containerengine_node_pool.tfscaled_workers" : "oci_containerengine_virtual_node_pool.workers"}[${jsonencode(coalesce(each.value.name, each.key))}]"
+    resource_address        = "module.cluster[${jsonencode(local.cluster_key)}].module.workers[0].${each.value.mode == "node-pool" ? "oci_containerengine_node_pool.tfscaled_workers" : "oci_containerengine_virtual_node_pool.workers"}[${jsonencode(coalesce(each.value.name, each.key))}]"
     defined_tags            = local.pool_settings[each.key].defined_tags
-    freeform_tags           = merge({ state_id = each.value.cluster_ref.key, role = "worker", pool = coalesce(each.value.name, each.key), cluster_autoscaler = "disabled" }, local.pool_settings[each.key].freeform_tags)
+    freeform_tags           = merge({ state_id = local.cluster_key, role = "worker", pool = coalesce(each.value.name, each.key), cluster_autoscaler = "disabled" }, local.pool_settings[each.key].freeform_tags)
     placement_ads_numbers   = local.pool_settings[each.key].placement_ads
     placement_fds           = local.pool_settings[each.key].placement_fds
     subnet_id               = local.pool_settings[each.key].subnet_id
@@ -117,7 +117,7 @@ resource "terraform_data" "worker_validation" {
 
 locals {
   upstream_pools = { for key, pool in local.pools : key => merge(
-    { for field, value in pool : field => value if value != null && !contains(["override_defaults", "cluster_ref", "placement_ads", "placement_fds", "taints", "image_type", "image_id", "defined_tags", "freeform_tags", "node_defined_tags", "node_freeform_tags", "node_labels", "node_metadata", "volume_kms_key_id", "subnet_id", "pod_subnet_id", "nsg_ids", "pod_nsg_ids"], field) },
+    { for field, value in pool : field => value if value != null && !contains(["override_defaults", "placement_ads", "placement_fds", "taints", "image_type", "image_id", "defined_tags", "freeform_tags", "node_defined_tags", "node_freeform_tags", "node_labels", "node_metadata", "volume_kms_key_id", "subnet_id", "pod_subnet_id", "nsg_ids", "pod_nsg_ids"], field) },
     {
       create                   = true
       autoscale                = false

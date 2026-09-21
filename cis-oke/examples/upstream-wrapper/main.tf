@@ -18,24 +18,18 @@ provider "oci" { region = var.region }
 module "oke" {
   providers = { oci = oci }
   source    = "../.."
-  clusters_configuration = {
-    default_compartment_id = var.compartment_id
-    clusters = {
-      primary = {
-        name               = "landing-zone-oke"
-        cluster_type       = "enhanced"
-        cni_type           = "native"
-        kubernetes_version = var.kubernetes_version
-        networking = {
-          vcn_id                 = var.vcn_id
-          api_endpoint_subnet_id = var.api_subnet_id
-          service_lb_subnet_ids  = [var.lb_subnet_id]
-        }
-      }
+  cluster_configuration = {
+    compartment_id     = var.compartment_id
+    name               = "landing-zone-oke"
+    cni_type           = "native"
+    kubernetes_version = var.kubernetes_version
+    networking = {
+      vcn_id                 = var.vcn_id
+      api_endpoint_subnet_id = var.api_subnet_id
+      service_lb_subnet_ids  = [var.lb_subnet_id]
     }
   }
   workers_configuration = {
-    cluster_ref           = { key = "primary" }
     default_node_labels   = { team = "platform" }
     default_shape         = "VM.Standard.E4.Flex"
     default_size          = 3
@@ -54,5 +48,5 @@ module "oke" {
     }
   }
 }
-output "clusters" { value = module.oke.clusters }
+output "cluster" { value = module.oke.cluster }
 output "node_pools" { value = module.oke.node_pools }

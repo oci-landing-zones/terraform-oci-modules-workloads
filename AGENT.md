@@ -141,3 +141,10 @@ customer commands; never experiment on customer state.
 
 - Do not make the upstream root module depend on validation resources or pass compartment_id through a validation resource. Use resolved configuration locals so upstream AD discovery can finish at plan time and its fault-domain for_each keys remain known.
 - Retain blocking validation preconditions. Test ordinary plans, with real provider data-read semantics for discovery, and a negative control reproducing the old module-wide dependency failure. No targeted/staged applies as a workaround.
+
+## Single-cluster strategy (supersedes earlier cluster-envelope decisions)
+
+- Each invocation takes one flat cluster_configuration and optional workers_configuration. All pools belong to that cluster, inheriting compartment and CIS. No public cluster key, clusters map, or cluster_ref; do not retain compatibility with unpublished refactor versions.
+- Remove cluster-level default_* and override_defaults fields; cluster/PV/LB tags and endpoint NSGs are explicit. Worker defaults and collection semantics remain unchanged. Expose cluster (singular), retaining keyed pool/node outputs.
+- Scope this change to CIS OKE and caller examples; do not modify the orchestrator. Show for_each composition with outputs nested by caller identity.
+- Legacy conversion requires a single cluster, materializes its defaults and validates pool ownership. Reject multi-cluster conversion unless a separately reviewed fan-out migration is supplied.

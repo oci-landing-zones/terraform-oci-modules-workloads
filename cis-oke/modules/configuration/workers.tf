@@ -30,8 +30,7 @@ locals {
       { for field, value in local.worker_defaults : field => value if value != null },
       { for field, value in pool : field => value if value != null },
       {
-        cluster_ref = var.workers_configuration.cluster_ref
-        image_type  = pool.image_id == null ? "oke" : "custom"
+        image_type = pool.image_id == null ? "oke" : "custom"
       }
     )
   }
@@ -82,7 +81,7 @@ output "normalized_worker_pools" {
   }
   precondition {
     condition = alltrue([for pool in values(local.normalized_worker_pools) :
-      length(pool.gva_secondary_vnics) == 0 || try(lower(var.clusters_configuration.clusters[pool.cluster_ref.key].cni_type) == "native", false)
+      length(pool.gva_secondary_vnics) == 0 || try(lower(var.cluster_configuration.cni_type) == "native", false)
     ])
     error_message = "GVA secondary VNIC profiles require native CNI."
   }
@@ -118,9 +117,9 @@ output "normalized_worker_pools" {
   }
   precondition {
     condition = alltrue([for pool in values(local.normalized_worker_pools) :
-      try(contains(keys(var.clusters_configuration.clusters), pool.cluster_ref.key), false)
+      var.cluster_configuration != null
     ])
-    error_message = "workers_configuration.cluster_ref.key must reference a cluster in clusters_configuration; external clusters are not supported."
+    error_message = "Worker pools require cluster_configuration in the same invocation; external clusters are not supported."
   }
   precondition {
     condition = alltrue([for pool in values(local.normalized_worker_pools) :

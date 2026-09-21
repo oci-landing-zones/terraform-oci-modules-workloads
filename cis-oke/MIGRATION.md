@@ -23,25 +23,22 @@ New clusters default to enhanced/VCN-native. Only enhanced clusters are supporte
 legacy inputs or deployed state. Upgrade them and update the legacy configuration
 before migration. Explicit legacy CNI settings, including flannel, are preserved.
 
-The old cluster `default_defined_tags`/`default_freeform_tags` are copied to the
-new cluster, PV and service-LB default pairs. Collections now merge by default.
-The converter emits `override_defaults` for explicit legacy cluster/PV/service-LB
-tag maps and signing-key lists, preserving their previous replacement behavior.
-When migrating manually, name these paths explicitly to prevent previously
-suppressed global entries from being added. Clearing requires an explicit empty
-value together with its `override_defaults` entry. Dashboard/Tiller settings must be
-disabled before migration; their fields and the legacy admission-controller
-switch are removed from converted inputs. Public API endpoints are unsupported:
-the converter rejects both configured and deployed public endpoints. Plan any
-transition to a private endpoint separately. Endpoint NSG defaults are additive;
-a cluster-specific empty list removes the baseline only with
-`override_defaults = ["networking.api_endpoint_nsg_ids"]`.
+The converted input uses a flat `cluster_configuration`, not a clusters map.
+There is no cluster identity key or worker `cluster_ref`. The converter requires
+exactly one legacy cluster; multi-cluster callers must first be split into
+separate module invocations with explicitly reviewed source/destination moves.
+It will not discard another cluster or fabricate migration state.
 
-Worker defaults now live directly in `workers_configuration` as `default_*`
-fields, alongside `worker_pools`. There is no nested defaults object. The converter
-materializes supported legacy values per pool and supplies one global
-`cluster_ref = { key = "..." }`. It rejects external clusters, pools spanning
-multiple clusters, and deployed pool compartments that differ from the cluster.
+Legacy compartment, encryption and tag defaults are materialized into the single
+cluster object, including PV/service-LB tag maps. Explicit legacy tag maps still
+replace defaults, including empty maps. The resulting cluster has no default
+fields or `override_defaults`. Dashboard/Tiller must already be disabled, and
+public API endpoints are rejected. Native CNI still forbids a pods CIDR.
+
+Worker defaults remain top-level `default_*` fields alongside `worker_pools`.
+The converter materializes supported legacy values per pool and checks every
+pool belongs to the one configured cluster. It rejects external clusters and
+pool compartments that differ from the cluster.
 Worker CIS level is inherited from the cluster; migration refuses to downgrade a
 level-2 pool to a level-1 cluster policy. Review any increase in required KMS
 coverage before applying. SSH key content and deployed image IDs are preserved;
@@ -123,9 +120,9 @@ Within the CIS OKE module:
 
 | Previous | New |
 | --- | --- |
-| `oci_containerengine_cluster.these["C"]` | `module.cluster["C"].module.cluster[0].oci_containerengine_cluster.k8s_cluster` |
-| `oci_containerengine_node_pool.these["P"]` | `module.cluster["C"].module.workers[0].oci_containerengine_node_pool.tfscaled_workers["pool-name"]` |
-| `oci_containerengine_virtual_node_pool.these["V"]` | `module.cluster["C"].module.workers[0].oci_containerengine_virtual_node_pool.workers["pool-name"]` |
+| `oci_containerengine_cluster.these["C"]` | `module.cluster["cluster"].module.cluster[0].oci_containerengine_cluster.k8s_cluster` |
+| `oci_containerengine_node_pool.these["P"]` | `module.cluster["cluster"].module.workers[0].oci_containerengine_node_pool.tfscaled_workers["pool-name"]` |
+| `oci_containerengine_virtual_node_pool.these["V"]` | `module.cluster["cluster"].module.workers[0].oci_containerengine_virtual_node_pool.workers["pool-name"]` |
 
 Here `C` is the referenced cluster key. Pool display names are upstream instance keys. Future name changes also need
 explicit moves, and name updates may still be ignored upstream. Keep the outer
@@ -144,3 +141,17 @@ unapplied new plan/move file. After applying, restore old code and use reviewed
 reverse address mappings only after inspecting any real infrastructure changes.
 Blindly restoring a stale state backup after an apply is not a safe rollback.
 Do not move resources between backends as part of this migration.
+
+## Caller outputs and pre-release configurations
+
+The cluster output is now `cluster` (a single object), replacing `clusters` (a map).
+Pool/node outputs remain keyed maps. For caller `for_each` composition, keep outputs
+nested under caller keys as shown in `examples/multiple-clusters`; repeated pool
+keys across clusters will then remain distinct. The orchestrator has not been
+updated in this branch.
+
+Earlier unpublished refactor inputs must be rewritten to `cluster_configuration`:
+select one cluster, materialize its inherited defaults, remove cluster
+`override_defaults`, and remove workers `cluster_ref`. No compatibility alias is
+provided. This major version has not been deployed, so those intermediate API
+shapes and their state addresses are not maintained.

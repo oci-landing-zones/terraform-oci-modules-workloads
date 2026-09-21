@@ -6,7 +6,7 @@ terraform {
 # This prototype performs no provisioning and does not resolve dependency maps.
 output "contract" {
   value = {
-    clusters_configuration  = var.clusters_configuration
+    cluster_configuration   = var.cluster_configuration
     workers_configuration   = var.workers_configuration
     compartments_dependency = var.compartments_dependency
     network_dependency      = var.network_dependency

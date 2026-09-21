@@ -1,6 +1,6 @@
 module "configuration" {
   source                  = "./modules/configuration"
-  clusters_configuration  = var.clusters_configuration
+  cluster_configuration   = var.cluster_configuration
   workers_configuration   = var.workers_configuration
   compartments_dependency = var.compartments_dependency
   network_dependency      = var.network_dependency
@@ -10,7 +10,8 @@ module "configuration" {
 }
 
 locals {
-  clusters                 = var.clusters_configuration == null ? {} : module.configuration.contract.clusters_configuration.clusters
+  cluster_key              = "cluster"
+  clusters                 = var.cluster_configuration == null ? {} : { "cluster" = module.configuration.contract.cluster_configuration }
   pools                    = module.configuration.normalized_worker_pools
   compartment_dependencies = var.compartments_dependency == null ? {} : var.compartments_dependency
   kms_dependencies         = var.kms_dependency == null ? {} : var.kms_dependency
@@ -19,8 +20,8 @@ locals {
   nsg_dependencies         = try(var.network_dependency.network_security_groups, null) == null ? {} : var.network_dependency.network_security_groups
 
   cluster_refs = { for k, c in local.clusters : k => {
-    compartment  = try(coalesce(c.compartment_id, var.clusters_configuration.default_compartment_id), null)
-    kms          = try(coalesce(try(c.encryption.kube_secret_kms_key_id, null), var.clusters_configuration.default_kube_secret_kms_key_id), null)
+    compartment  = c.compartment_id
+    kms          = try(c.encryption.kube_secret_kms_key_id, null)
     signing_keys = module.configuration.cluster_collections[k].lists["image_signing.kms_key_ids"]
   } }
   compartment_refs = toset(compact(concat(

@@ -37,15 +37,15 @@ class MigrationTests(unittest.TestCase):
     def test_pin_deployed_defaults_and_nested_addresses(self):
         c,s=self.fixture(); converted,moves,report=migrate.convert(c,s,'module.oke[0]')
         pool=converted['workers_configuration']['worker_pools']['P']
-        self.assertEqual(converted['clusters_configuration']['clusters']['C']['cni_type'], 'flannel')
-        self.assertEqual(converted['workers_configuration']['cluster_ref'], {'key':'C'})
+        self.assertEqual(converted['cluster_configuration']['cni_type'], 'flannel')
+        self.assertNotIn('cluster_ref', converted['workers_configuration'])
         for removed in ['cluster_ref','cis_level','compartment_id','image_type','ssh_public_key_path']:
             self.assertNotIn(removed, pool)
         self.assertTrue(pool['disable_default_cloud_init'])
         self.assertEqual(pool['size'],3)
         self.assertEqual(pool['image_id'],'image-id')
         self.assertEqual(pool['kubernetes_version'],'v1.33.1')
-        self.assertEqual(moves[1]['to'],'module.oke[0].module.cluster["C"].module.workers[0].oci_containerengine_node_pool.tfscaled_workers["pool-name"]')
+        self.assertEqual(moves[1]['to'],'module.oke[0].module.cluster["cluster"].module.workers[0].oci_containerengine_node_pool.tfscaled_workers["pool-name"]')
         self.assertTrue(report)
         self.assertIn('node_pools',c['workers_configuration']) # No caller mutation.
 
@@ -75,12 +75,13 @@ class MigrationTests(unittest.TestCase):
         c['clusters_configuration'].update({'default_defined_tags':{'scope.tag':'shared'},'default_freeform_tags':{'owner':'shared'}})
         c['clusters_configuration']['clusters']['C']['options'] = {'add_ons':{'dashboard_enabled':False,'tiller_enabled':False},'admission_controller':{'pod_policy_enabled':True}}
         result,_,_=migrate.convert(c,s,'module.oke[0]')
-        clusters=result['clusters_configuration']
-        for target in ['cluster','pv','service_lb']:
-            self.assertEqual(clusters[f'default_{target}_defined_tags'], {'scope.tag':'shared'})
-            self.assertEqual(clusters[f'default_{target}_freeform_tags'], {'owner':'shared'})
-        self.assertNotIn('default_defined_tags', clusters)
-        self.assertEqual(clusters['clusters']['C']['options'], {})
+        cluster=result['cluster_configuration']
+        for location in [cluster, cluster['options']['persistent_volume_config'],cluster['options']['service_lb_config']]:
+            self.assertEqual(location['defined_tags'], {'scope.tag':'shared'})
+            self.assertEqual(location['freeform_tags'], {'owner':'shared'})
+        self.assertNotIn('clusters_configuration', result)
+        self.assertNotIn('add_ons', cluster['options'])
+        self.assertNotIn('admission_controller', cluster['options'])
 
     def test_basic_cluster_migration_rejected(self):
         c,s=self.fixture()
@@ -124,13 +125,20 @@ class MigrationTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError,'compartment differs'):
             migrate.convert(c,s,'module.oke[0]')
 
-    def test_legacy_tag_replacement_is_explicit(self):
+    def test_legacy_tag_replacement_is_materialized(self):
         c,s=self.fixture()
-        c['clusters_configuration']['default_freeform_tags']={'global':'keep-only-when-inherited'}
-        cluster=c['clusters_configuration']['clusters']['C']
-        cluster.update({'freeform_tags':{},'options':{'persistent_volume_config':{'defined_tags':{'Tag.owner':'local'}}}})
+        c['clusters_configuration']['default_defined_tags']={'Test.default':'global'}
+        c['clusters_configuration']['clusters']['C']['defined_tags']={}
         result,_,_=migrate.convert(c,s,'module.oke[0]')
-        self.assertEqual(result['clusters_configuration']['clusters']['C']['override_defaults'], ['freeform_tags','options.persistent_volume_config.defined_tags'])
+        self.assertEqual(result['cluster_configuration']['defined_tags'], {})
+        self.assertEqual(result['cluster_configuration']['options']['persistent_volume_config']['defined_tags'], {'Test.default':'global'})
+        self.assertNotIn('override_defaults', result['cluster_configuration'])
+
+    def test_multiple_legacy_clusters_rejected(self):
+        c,s=self.fixture()
+        c['clusters_configuration']['clusters']['D']=copy.deepcopy(c['clusters_configuration']['clusters']['C'])
+        with self.assertRaisesRegex(ValueError, 'exactly one legacy cluster'):
+            migrate.convert(c,s,'module.oke[0]')
 
     def test_unknown_field_rejected(self):
         c,s=self.fixture();c['workers_configuration']['node_pools']['P']['node_config_details']['typo']=True
@@ -142,7 +150,7 @@ class MigrationTests(unittest.TestCase):
 
     def test_occupied_destination_rejected(self):
         c,s=self.fixture();r=s['values']['root_module']['child_modules'][0]['resources']
-        r.append({'address':'module.oke[0].module.cluster["C"].module.cluster[0].oci_containerengine_cluster.k8s_cluster','type':'oci_containerengine_cluster','mode':'managed','values':{}})
+        r.append({'address':'module.oke[0].module.cluster["cluster"].module.cluster[0].oci_containerengine_cluster.k8s_cluster','type':'oci_containerengine_cluster','mode':'managed','values':{}})
         with self.assertRaisesRegex(ValueError,'occupied'):migrate.convert(c,s,'module.oke[0]')
 
     def test_no_state_guessing(self):
@@ -190,7 +198,7 @@ class MigrationTests(unittest.TestCase):
         self.assertTrue(any('capacity reservation' in e for e in errors))
 
     def test_plan_detects_filtered_numeric_ads(self):
-        address='module.cluster["C"].module.workers[0].oci_containerengine_node_pool.tfscaled_workers["P"]'
+        address='module.cluster["cluster"].module.workers[0].oci_containerengine_node_pool.tfscaled_workers["P"]'
         plan={'resource_changes':[
             {'address':'terraform_data.worker_validation["P"]','mode':'managed','type':'terraform_data','change':{'actions':['no-op'],'after':{'input':{'resource_address':address,'placement_ads_numbers':[1,3],'subnet_id':'subnet'}}}},
             {'address':address,'mode':'managed','type':'oci_containerengine_node_pool','change':{'actions':['no-op'],'after':{'node_config_details':[{'placement_configs':[{'availability_domain':'TEST:AD-1','subnet_id':'subnet'}]}]}}},
@@ -198,7 +206,7 @@ class MigrationTests(unittest.TestCase):
         self.assertTrue(any('desired AD placement' in e for e in checker.check(plan)))
 
     def test_plan_rejects_ignored_gva_tags(self):
-        address='module.cluster["C"].module.workers[0].oci_containerengine_node_pool.tfscaled_workers["P"]'
+        address='module.cluster["cluster"].module.workers[0].oci_containerengine_node_pool.tfscaled_workers["P"]'
         plan={'resource_changes':[
             {'address':'terraform_data.worker_validation["P"]','mode':'managed','type':'terraform_data','change':{'actions':['no-op'],'after':{'input':{'resource_address':address,'placement_ads_numbers':[1],'subnet_id':'subnet','gva_secondary_vnics':[{'display_name':'data','defined_tags':{'Test.owner':'new'}}]}}}},
             {'address':address,'mode':'managed','type':'oci_containerengine_node_pool','change':{'actions':['no-op'],'after':{'node_config_details':[{'placement_configs':[{'availability_domain':'TEST:AD-1','subnet_id':'subnet'}]}],'secondary_vnics':[{'create_vnic_details':[{'defined_tags':{'Test.owner':'new'}}]}]}}},

@@ -35,10 +35,9 @@ def assert_preserved(source, target, path='contract', exact_empty=False):
 
 def fixture():
     return {
-        'clusters_configuration': {'default_compartment_id':'COMP', 'clusters':{'C':{
-            'name':'test', 'networking':{'vcn_id':'VCN','api_endpoint_subnet_id':'API','service_lb_subnet_ids':['LB']},
-        }}},
-        'workers_configuration': {'cluster_ref':{'key':'C'}, 'default_shape':'VM.Standard.E4.Flex',
+        'cluster_configuration': {'compartment_id':'COMP', 'name':'test',
+            'networking':{'vcn_id':'VCN','api_endpoint_subnet_id':'API','service_lb_subnet_ids':['LB']}},
+        'workers_configuration': {'default_shape':'VM.Standard.E4.Flex',
             'default_subnet_id':'WORKERS', 'default_size':3,
             'worker_pools':{'P':{},'V':{'mode':'virtual-node-pool','shape':'Pod.Standard.E4.Flex','pod_subnet_id':'PODS'}}},
     }
@@ -60,8 +59,9 @@ def check(name, config, error=None, expected=None, collections=None):
             assert not data.get('resource_changes'), 'Contract must never provision resources'
             value = data['planned_values']['outputs']['contract']['value']
             assert_preserved(config, value)
-            for key, cluster in (config.get('clusters_configuration') or {}).get('clusters', {}).items():
-                actual = value['clusters_configuration']['clusters'][key]
+            cluster = config.get('cluster_configuration')
+            if cluster:
+                actual = value['cluster_configuration']
                 assert actual['cluster_type'] == (cluster.get('cluster_type') or 'enhanced')
                 assert actual['cni_type'] == (cluster.get('cni_type') or 'native')
             if expected is not None:
@@ -78,8 +78,8 @@ if __name__ == '__main__':
     assert run('init', '-backend=false', '-input=false', '-no-color').returncode == 0
     check('empty', {}, expected={})
     full=fixture()
-    check('managed and virtual defaults', full, expected={'P':{'mode':'node-pool','os':'Oracle Linux','os_version':'9','max_pods_per_node':31,'image_type':'oke','cluster_ref':{'key':'C'}}})
-    check('cluster only', {'clusters_configuration':full['clusters_configuration']})
+    check('managed and virtual defaults', full, expected={'P':{'mode':'node-pool','os':'Oracle Linux','os_version':'9','max_pods_per_node':31,'image_type':'oke'}})
+    check('cluster only', {'cluster_configuration':full['cluster_configuration']})
     override=copy.deepcopy(full)
     override['workers_configuration'].update({'default_memory':32, 'default_node_labels':{'team':'platform','tier':'general'}, 'default_ssh_public_key':'shared'})
     override['workers_configuration']['worker_pools']['P'].update({'size':0,'memory':64,'node_labels':{'tier':'batch'}, 'ssh_public_key':'specific','force_node_delete':False,'image_id':'custom-image','max_pods_per_node':42,'placement_ads':[2],'node_metadata':{'user_data':'abc'}})
@@ -96,9 +96,7 @@ if __name__ == '__main__':
     invalid=copy.deepcopy(virtual)
     invalid['workers_configuration']['worker_pools']['P']['taints']=virtual['workers_configuration']['worker_pools']['V']['taints']
     check('managed taints rejected',invalid,'Taints are supported only')
-    invalid=copy.deepcopy(full);invalid['workers_configuration']['cluster_ref']={'key':'ocid1.cluster.oc1..external'}
-    check('external cluster rejected',invalid,'external clusters are not supported')
-    invalid=copy.deepcopy(full);invalid.pop('clusters_configuration')
+    invalid=copy.deepcopy(full);invalid.pop('cluster_configuration')
     check('worker-only cluster reference rejected',invalid,'external clusters are not supported')
     invalid=copy.deepcopy(full);invalid['workers_configuration'].pop('default_shape')
     check('missing shape rejected',invalid,'requires shape and subnet_id')
@@ -106,19 +104,19 @@ if __name__ == '__main__':
     check('virtual pod subnet required',invalid,'Virtual pools require')
     for cni in ['native','NATIVE',None]:
         invalid=copy.deepcopy(full)
-        c=invalid['clusters_configuration']['clusters']['C']
+        c=invalid['cluster_configuration']
         if cni is not None:c['cni_type']=cni
         c['options']={'kubernetes_network_config':{'pods_cidr':'10.244.0.0/16'}}
         check('native CIDR rejected '+str(cni),invalid,'Native CNI clusters must omit')
-    flannel=copy.deepcopy(full);flannel['clusters_configuration']['clusters']['C'].update({'cluster_type':'basic','cni_type':'flannel','options':{'kubernetes_network_config':{'pods_cidr':'10.244.0.0/16'}}})
+    flannel=copy.deepcopy(full);flannel['cluster_configuration'].update({'cluster_type':'basic','cni_type':'flannel','options':{'kubernetes_network_config':{'pods_cidr':'10.244.0.0/16'}}})
     check('basic cluster rejected',flannel,'Only enhanced clusters are supported')
-    flannel['clusters_configuration']['clusters']['C']['cluster_type']='enhanced'
+    flannel['cluster_configuration']['cluster_type']='enhanced'
     check('enhanced flannel preserved',flannel)
     for compartment in [None,'   ']:
-        invalid=copy.deepcopy(full);invalid['clusters_configuration']['default_compartment_id']=compartment
-        check('missing or blank cluster compartment '+str(compartment),invalid,'Each cluster requires compartment_id')
+        invalid=copy.deepcopy(full);invalid['cluster_configuration']['compartment_id']=compartment
+        check('missing or blank cluster compartment '+str(compartment),invalid,'The cluster requires a nonblank compartment_id')
     for field,value,error in [('cluster_type','bad','Only enhanced clusters are supported'),('cis_level','3','Cluster CIS levels')]:
-        invalid=copy.deepcopy(full);invalid['clusters_configuration']['clusters']['C'][field]=value
+        invalid=copy.deepcopy(full);invalid['cluster_configuration'][field]=value
         check('invalid cluster '+field,invalid,error)
     # Assert removed public knobs cannot accidentally return in a later schema edit.
     schema=(ROOT/'variables.tf').read_text().split('variable "workers_configuration"')[1].split('variable "enable_output"')[0]
@@ -135,26 +133,20 @@ if __name__ == '__main__':
     for field in ['unknown','shape','placement_ads','node_metadata','freeform_tags']:
         bad=fixture();bad['workers_configuration']['worker_pools']['P']['override_defaults']=[field]
         check('invalid worker override '+field,bad,'Worker override_defaults supports')
-    # Cover all cluster map and list paths, including empty replacement values.
-    cm=fixture();cc=cm['clusters_configuration'];c=cc['clusters']['C']
-    c['options']={'persistent_volume_config':{},'service_lb_config':{}}
-    expected_maps={}
-    for target, container, prefix in [('cluster',c,''),('pv',c['options']['persistent_volume_config'],'options.persistent_volume_config.'),('service_lb',c['options']['service_lb_config'],'options.service_lb_config.')]:
-        for kind in ['defined','freeform']:
-            field=kind+'_tags';cc['default_'+target+'_'+field]={'baseline':'keep','collision':'default'}
-            container[field]={'collision':'local','extra':'value'}
-            expected_maps[prefix+field]={'baseline':'keep','collision':'local','extra':'value'}
-    cc['default_api_endpoint_nsg_ids']=['A','B'];c['networking']['api_endpoint_nsg_ids']=['B','C']
-    cc['default_image_signing_key_ids']=['K1'];c['image_signing']={'kms_key_ids':['K1','K2']}
-    check('all cluster collections merge',cm,collections={'C':{'maps':expected_maps,'lists':{'networking.api_endpoint_nsg_ids':['A','B','C'],'image_signing.kms_key_ids':['K1','K2']}}})
-    c['override_defaults']=list(expected_maps)+['networking.api_endpoint_nsg_ids','image_signing.kms_key_ids']
-    for container in [c,c['options']['persistent_volume_config'],c['options']['service_lb_config']]:
-        container['defined_tags']={};container['freeform_tags']={}
-    c['networking']['api_endpoint_nsg_ids']=[];c['image_signing']['kms_key_ids']=[]
-    check('all cluster collections cleared explicitly',cm,collections={'C':{'maps':{k:{} for k in expected_maps},'lists':{'networking.api_endpoint_nsg_ids':[],'image_signing.kms_key_ids':[]}}})
-    for field in ['unknown','networking.service_lb_subnet_ids','defined_tags','options.persistent_volume_config.freeform_tags','networking.api_endpoint_nsg_ids','image_signing.kms_key_ids']:
-        bad=fixture();bad['clusters_configuration']['clusters']['C']['override_defaults']=[field]
-        check('invalid cluster override '+field,bad,'Cluster override_defaults must name')
+    explicit=fixture()
+    c=explicit['cluster_configuration']
+    c.update({'defined_tags':{'Test.owner':'cluster'}, 'freeform_tags':{},
+      'options':{'persistent_volume_config':{'defined_tags':{'Test.owner':'pv'}},'service_lb_config':{'freeform_tags':{'owner':'lb'}}},
+      'image_signing':{'kms_key_ids':['K','K']}})
+    c['networking']['api_endpoint_nsg_ids']=['A','A','B']
+    check('single cluster collections explicit and deduplicated',explicit,collections={'cluster':{
+      'maps':{'defined_tags':{'Test.owner':'cluster'},'freeform_tags':{},'options.persistent_volume_config.defined_tags':{'Test.owner':'pv'},'options.persistent_volume_config.freeform_tags':{},'options.service_lb_config.defined_tags':{},'options.service_lb_config.freeform_tags':{'owner':'lb'}},
+      'lists':{'networking.api_endpoint_nsg_ids':['A','B'],'image_signing.kms_key_ids':['K']}}})
+    schema=(ROOT/'variables.tf').read_text()
+    assert 'variable "clusters_configuration"' not in schema
+    assert 'cluster_ref' not in schema
+    assert 'default_compartment_id' not in schema
+    check('single cluster without identity or worker reference',fixture())
 
     wm=fixture();fields=['defined_tags','freeform_tags','node_defined_tags','node_freeform_tags','node_labels']
     for field in fields:
@@ -222,3 +214,12 @@ if __name__ == '__main__':
     check('inherited BM shape with encryption blocked',bm,'Affected pools: P')
     bm['workers_configuration']['worker_pools']['P']['shape']='VM.Standard.E5.Flex'
     check('VM encryption accepted',bm,expected={'P':{'pv_transit_encryption':True}})
+
+    # Converter output must be accepted by the actual public Terraform schema.
+    import importlib.util
+    test_path=ROOT.parents[1]/'tests/test_migration.py'
+    spec=importlib.util.spec_from_file_location('migration_tests',test_path)
+    migration_tests=importlib.util.module_from_spec(spec);spec.loader.exec_module(migration_tests)
+    legacy,state=migration_tests.MigrationTests().fixture()
+    converted,_,_=migration_tests.migrate.convert(legacy,state,'module.oke[0]')
+    check('legacy migration emits valid single-cluster inputs',converted)

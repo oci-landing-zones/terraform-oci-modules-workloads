@@ -46,12 +46,12 @@ def replace_data(directory, replacements):
 
 def config():
     return {
-        'clusters_configuration': {'default_compartment_id': 'COMP', 'clusters': {'C': {
+        'cluster_configuration': {'compartment_id': 'COMP',
             'name': 'test-cluster', 'cluster_type': 'enhanced', 'cni_type': 'native', 'kubernetes_version': 'v1.33.1',
             'networking': {'vcn_id': 'VCN', 'api_endpoint_subnet_id': 'API', 'service_lb_subnet_ids': ['LB']},
-        }}},
+        },
         'workers_configuration': {
-            'cluster_ref': {'key': 'C'}, 'default_shape': 'VM.Standard.E4.Flex', 'default_size': 2,
+            'default_shape': 'VM.Standard.E4.Flex', 'default_size': 2,
             'default_disable_default_cloud_init': True, 'default_subnet_id': 'WORKERS', 'default_pod_subnet_id': 'PODS', 'default_pod_nsg_ids': ['POD-NSG'],
         'worker_pools': {'P': {}, 'V': {'mode': 'virtual-node-pool', 'shape': 'Pod.Standard.E4.Flex'}}},
         'compartments_dependency': {'COMP': {'id': 'ocid1.compartment.oc1..test'}},
@@ -228,7 +228,7 @@ def main():
                         after = resource['change']['after']
                         endpoint = after['endpoint_config'][0]
                         assert endpoint['is_public_ip_enabled'] is False
-                        if name == 'merged endpoint NSGs and distinct tag defaults':
+                        if name == 'explicit cluster NSGs and distinct tags':
                             assert set(endpoint['nsg_ids']) == {'ocid1.networksecuritygroup.oc1..test', 'ocid1.networksecuritygroup.oc1..extra'}
                             options = after['options'][0]
                             for target, values in [('cluster', after), ('pv', options['persistent_volume_config'][0]), ('service_lb', options['service_lb_config'][0])]:
@@ -317,7 +317,7 @@ def main():
         gva['workers_configuration']['worker_pools']['P']['gva_secondary_vnics']={'data':{'subnet_id':'PODS','nsg_ids':['POD-NSG','ocid1.networksecuritygroup.oc1..test'],'application_resources':['example.com/data'],'ip_count':32}}
         plan('GVA profiles',gva,resources=resources)
         invalid=copy.deepcopy(gva)
-        invalid['clusters_configuration']['clusters']['C']['cni_type']='flannel'
+        invalid['cluster_configuration']['cni_type']='flannel'
         plan('GVA requires native',invalid,'GVA secondary VNIC profiles require native CNI')
         invalid=copy.deepcopy(gva)
         invalid['workers_configuration']['worker_pools']['P']['gva_secondary_vnics']['data']['ip_count']=3
@@ -364,35 +364,32 @@ def main():
         zero['workers_configuration']['worker_pools']={'P':{'size':0}}
         plan('zero-total pool outputs blocked',zero,'upstream hides pool outputs')
         merged = copy.deepcopy(full)
-        merged['clusters_configuration']['default_api_endpoint_nsg_ids'] = ['POD-NSG']
-        merged['clusters_configuration']['clusters']['C']['networking']['api_endpoint_nsg_ids'] = ['POD-NSG', 'ocid1.networksecuritygroup.oc1..extra']
-        cluster_input = merged['clusters_configuration']['clusters']['C']
-        cluster_input['options'] = {'persistent_volume_config': {}, 'service_lb_config': {}}
-        for target, values in [('cluster', cluster_input), ('pv', cluster_input['options']['persistent_volume_config']), ('service_lb', cluster_input['options']['service_lb_config'])]:
-            for kind in ['defined', 'freeform']:
-                key = (lambda name: 'Test.' + name) if kind == 'defined' else (lambda name: name)
-                merged['clusters_configuration'][f'default_{target}_{kind}_tags'] = {key('inherited'):target, key('collision'):'default'}
-                values[kind + '_tags'] = {key('collision'):'override', key('added'):target}
-        plan('merged endpoint NSGs and distinct tag defaults', merged, resources=['oci_containerengine_cluster', 'oci_containerengine_node_pool', 'oci_containerengine_virtual_node_pool'])
-        replaced = copy.deepcopy(full)
-        replaced['clusters_configuration'].update({'default_api_endpoint_nsg_ids':['UNRESOLVED-IGNORED'], 'default_image_signing_key_ids':['UNRESOLVED-KEY'], 'default_cluster_freeform_tags':{'inherited':'no'}})
-        replaced['clusters_configuration']['clusters']['C'].update({'override_defaults':['networking.api_endpoint_nsg_ids','image_signing.kms_key_ids','freeform_tags'], 'freeform_tags':{'local':'yes'}, 'image_signing':{'kms_key_ids':[]}})
-        replaced['clusters_configuration']['clusters']['C']['networking']['api_endpoint_nsg_ids']=['POD-NSG','ocid1.networksecuritygroup.oc1..test']
+        cluster_input = merged['cluster_configuration']
+        cluster_input['networking']['api_endpoint_nsg_ids']=['POD-NSG','ocid1.networksecuritygroup.oc1..extra']
+        cluster_input['options']={'persistent_volume_config':{},'service_lb_config':{}}
+        for target, values in [('cluster',cluster_input),('pv',cluster_input['options']['persistent_volume_config']),('service_lb',cluster_input['options']['service_lb_config'])]:
+            for kind in ['defined','freeform']:
+                key=(lambda name: 'Test.'+name) if kind=='defined' else (lambda name:name)
+                values[kind+'_tags']={key('inherited'):target,key('collision'):'override',key('added'):target}
+        plan('explicit cluster NSGs and distinct tags',merged,resources=['oci_containerengine_cluster','oci_containerengine_node_pool','oci_containerengine_virtual_node_pool'])
+        replaced=copy.deepcopy(full)
+        replaced['cluster_configuration'].update({'freeform_tags':{'local':'yes'},'image_signing':{'kms_key_ids':[]}})
+        replaced['cluster_configuration']['networking']['api_endpoint_nsg_ids']=['POD-NSG','ocid1.networksecuritygroup.oc1..test']
         replaced['workers_configuration']['default_nsg_ids']=['UNRESOLVED-IGNORED']
         for pool in replaced['workers_configuration']['worker_pools'].values():
             pool.update({'override_defaults':['nsg_ids'],'nsg_ids':['POD-NSG','ocid1.networksecuritygroup.oc1..test']})
-        plan('replacement excludes inherited dependencies', replaced, resources=['oci_containerengine_cluster','oci_containerengine_node_pool','oci_containerengine_virtual_node_pool'])
+        plan('replacement excludes inherited dependencies',replaced,resources=['oci_containerengine_cluster','oci_containerengine_node_pool','oci_containerengine_virtual_node_pool'])
         cluster = copy.deepcopy(full); cluster.pop('workers_configuration')
         plan('cluster only', cluster, resources=['oci_containerengine_cluster'])
         for name, mutate, error in [
-            ('CIS cluster key', lambda c: c['clusters_configuration'].update({'default_cis_level':'2'}), 'CIS level 2 requires a customer-managed secret-encryption key'),
-            ('CIS worker key', lambda c: c['clusters_configuration']['clusters']['C'].update({'cis_level':'2', 'encryption':{'kube_secret_kms_key_id':'ocid1.key.oc1..secret'}}), 'CIS level 2 requires a customer-managed worker volume key'),
+            ('CIS cluster key', lambda c: c['cluster_configuration'].update({'cis_level':'2'}), 'CIS level 2 requires a customer-managed secret-encryption key'),
+            ('CIS worker key', lambda c: c['cluster_configuration'].update({'cis_level':'2', 'encryption':{'kube_secret_kms_key_id':'ocid1.key.oc1..secret'}}), 'CIS level 2 requires a customer-managed worker volume key'),
             ('unsupported distinct tags', lambda c: c['workers_configuration']['worker_pools']['P'].update({'node_freeform_tags':{'different':'true'}}), 'cannot apply different pool and node tags'),
-            ('unsupported LB list', lambda c: c['clusters_configuration']['clusters']['C']['networking'].update({'service_lb_subnet_ids':[]}), 'requires exactly one service_lb_subnet_ids'),
-            ('basic cluster rejected', lambda c: c['clusters_configuration']['clusters']['C'].update({'cluster_type':'basic'}), 'Only enhanced clusters are supported'),
-            ('unsupported cluster version', lambda c: c['clusters_configuration']['clusters']['C'].update({'kubernetes_version':'v1.99.0'}), 'kubernetes_version is not supported by OCI'),
-            ('invalid CNI', lambda c: c['clusters_configuration']['clusters']['C'].update({'cni_type':'unknown'}), 'cni_type must be native/flannel'),
-            ('virtual requires native', lambda c: c['clusters_configuration']['clusters']['C'].update({'cni_type':'flannel'}), 'virtual node pools require native CNI'),
+            ('unsupported LB list', lambda c: c['cluster_configuration']['networking'].update({'service_lb_subnet_ids':[]}), 'requires exactly one service_lb_subnet_ids'),
+            ('basic cluster rejected', lambda c: c['cluster_configuration'].update({'cluster_type':'basic'}), 'Only enhanced clusters are supported'),
+            ('unsupported cluster version', lambda c: c['cluster_configuration'].update({'kubernetes_version':'v1.99.0'}), 'kubernetes_version is not supported by OCI'),
+            ('invalid CNI', lambda c: c['cluster_configuration'].update({'cni_type':'unknown'}), 'cni_type must be native/flannel'),
+            ('virtual requires native', lambda c: c['cluster_configuration'].update({'cni_type':'flannel'}), 'virtual node pools require native CNI'),
             ('unsupported worker version', lambda c: c['workers_configuration']['worker_pools']['P'].update({'kubernetes_version':'v1.30.1',  'image_id':'ocid1.image.oc1..test'}), 'worker Kubernetes version must be supported'),
             ('duplicate placements', lambda c: c['workers_configuration']['worker_pools']['P'].update({'placement_ads':[1,1]}), 'must not contain duplicate AD numbers'),
             ('managed taints', lambda c: c['workers_configuration']['worker_pools']['P'].update({'taints':[{'key':'dedicated','value':'batch','effect':'NoSchedule'}]}), 'Taints are supported only for virtual-node-pool'),
@@ -401,12 +398,47 @@ def main():
         ]:
             invalid = copy.deepcopy(full); mutate(invalid); plan(name, invalid, error)
         newer = copy.deepcopy(full)
-        newer['clusters_configuration']['clusters']['C']['kubernetes_version'] = 'v1.31.1'
+        newer['cluster_configuration']['kubernetes_version'] = 'v1.31.1'
         newer['workers_configuration']['worker_pools']['P'].update({'kubernetes_version':'v1.32.1',  'image_id':'ocid1.image.oc1..test'})
         plan('worker newer than control plane', newer, 'workers must be no newer than their control plane')
-        duplicate = copy.deepcopy(full)
-        duplicate['clusters_configuration']['clusters']['D'] = copy.deepcopy(duplicate['clusters_configuration']['clusters']['C'])
-        plan('one cluster per resolved VCN', duplicate, 'only one configured cluster per resolved VCN')
+        workers_only=copy.deepcopy(full);workers_only.pop('cluster_configuration')
+        plan('workers require the local cluster',workers_only,'Worker pools require cluster_configuration')
+
+        if not os.environ.get('ONLY_CASE') or 'multiple-cluster caller' in os.environ['ONLY_CASE'].split('|'):
+            caller = base / 'caller'
+            caller.mkdir()
+            example = (ROOT / 'examples/multiple-clusters/main.tf').read_text()
+            example = example.replace('"../.."', '"../subject"')
+            example = re.sub(r'provider "oci" \{.*?\}', '', example, flags=re.S)
+            (caller / 'main.tf').write_text(example)
+            (subject / 'provider_fixture.tf').rename(caller / 'provider_fixture.tf')
+            deployments = {'platform':config(), 'applications':config()}
+            for key, deployment in deployments.items():
+                deployment['cluster_configuration']['name'] = key
+                deployment['network_dependency']['vcns']['VCN']['id'] = 'ocid1.vcn.oc1..' + key
+            (caller / 'input.tfvars.json').write_text(json.dumps({'region':'us-ashburn-1','deployments':deployments}))
+            command(caller, 'init', '-backend=false', '-input=false', '-no-color', f'-plugin-dir={ROOT / ".terraform/providers"}')
+            command(caller, 'plan', '-input=false', '-refresh=false', '-no-color', '-var-file=input.tfvars.json', '-out=caller.plan')
+            document=json.loads(command(caller, 'show', '-json', 'caller.plan').stdout)
+            resources=[item for item in document['resource_changes'] if item['mode']=='managed' and item['type'].startswith('oci_')]
+            assert len(resources)==6, resources
+            for key in deployments:
+                prefix='module.oke['+json.dumps(key)+']'
+                assert not checker.check(document,prefix), checker.check(document,prefix)
+                own=[item for item in resources if item['address'].startswith(prefix+'.')]
+                assert sorted(item['type'] for item in own)==['oci_containerengine_cluster','oci_containerengine_node_pool','oci_containerengine_virtual_node_pool']
+                cluster=next(item for item in own if item['type']=='oci_containerengine_cluster')
+                assert cluster['change']['after']['name']==key
+            assert 'deployments' in document['output_changes']
+            outputs=document['output_changes']['deployments']['after']
+            for key in deployments:
+                assert outputs[key]['cluster']['name']==key, outputs
+                unknown=document['output_changes']['deployments']['after_unknown'][key]
+                # OCI resource objects are apply-time values; their map keys remain known.
+                assert set(outputs[key]['node_pools']) | set(unknown.get('node_pools', {})) == {'P'}, outputs
+                assert set(outputs[key]['virtual_node_pools']) | set(unknown.get('virtual_node_pools', {})) == {'V'}, outputs
+            print('PASS multiple-cluster caller',flush=True)
+
 
 
 if __name__ == '__main__':

@@ -1,105 +1,80 @@
 # Copyright (c) 2026 Oracle and/or its affiliates.
 # Licensed under the Universal Permissive License v1.0.
 
-variable "clusters_configuration" {
-  description = "Cluster configuration attributes."
+variable "cluster_configuration" {
+  description = "One enhanced cluster. All worker pools in this invocation belong to it."
   type = object({
-    default_compartment_id           = optional(string),
-    default_image_signing_key_ids    = optional(list(string))
-    default_kube_secret_kms_key_id   = optional(string)
-    default_cis_level                = optional(string, "1")
-    default_cluster_defined_tags     = optional(map(string))
-    default_cluster_freeform_tags    = optional(map(string))
-    default_pv_defined_tags          = optional(map(string))
-    default_pv_freeform_tags         = optional(map(string))
-    default_service_lb_defined_tags  = optional(map(string))
-    default_service_lb_freeform_tags = optional(map(string))
-    default_api_endpoint_nsg_ids     = optional(list(string), [])
+    cis_level          = optional(string, "1")
+    compartment_id     = string
+    kubernetes_version = optional(string)
+    name               = string
+    cluster_type       = optional(string, "enhanced")
+    cni_type           = optional(string, "native")
+    defined_tags       = optional(map(string))
+    freeform_tags      = optional(map(string))
+    options = optional(object({
+      kubernetes_network_config = optional(object({
+        pods_cidr     = optional(string)
+        services_cidr = optional(string)
+      }))
+      persistent_volume_config = optional(object({
+        defined_tags  = optional(map(string))
+        freeform_tags = optional(map(string))
+      }))
+      service_lb_config = optional(object({
+        defined_tags  = optional(map(string))
+        freeform_tags = optional(map(string))
+      }))
+      openid_connect = optional(object({
+        enable_discovery      = optional(bool, false)
+        enable_authentication = optional(bool, false)
+        ca_certificate        = optional(string)
+        signing_algorithms    = optional(list(string))
+        client_id             = optional(string)
+        configuration_file    = optional(string)
+        issuer_url            = optional(string)
+        required_claims       = optional(map(string))
+        username_claim        = optional(string)
+        username_prefix       = optional(string)
+        groups_claim          = optional(string)
+        groups_prefix         = optional(string)
+      }))
+    }))
 
-    clusters = map(object({
-      # Supported collection paths to replace instead of merge; explicit {} / [] clears.
-      override_defaults = optional(set(string), [])
-      cis_level         = optional(string)
-      # Inherits default_compartment_id; at least one must supply a nonblank value.
-      compartment_id     = optional(string)
-      kubernetes_version = optional(string)
-      name               = string
-      cluster_type       = optional(string, "enhanced")
-      cni_type           = optional(string, "native")
-      defined_tags       = optional(map(string))
-      freeform_tags      = optional(map(string))
-      options = optional(object({
-        kubernetes_network_config = optional(object({
-          pods_cidr     = optional(string)
-          services_cidr = optional(string)
-        }))
-        persistent_volume_config = optional(object({
-          defined_tags  = optional(map(string))
-          freeform_tags = optional(map(string))
-        }))
-        service_lb_config = optional(object({
-          defined_tags  = optional(map(string))
-          freeform_tags = optional(map(string))
-        }))
-        openid_connect = optional(object({
-          enable_discovery      = optional(bool, false)
-          enable_authentication = optional(bool, false)
-          ca_certificate        = optional(string)
-          signing_algorithms    = optional(list(string))
-          client_id             = optional(string)
-          configuration_file    = optional(string)
-          issuer_url            = optional(string)
-          required_claims       = optional(map(string))
-          username_claim        = optional(string)
-          username_prefix       = optional(string)
-          groups_claim          = optional(string)
-          groups_prefix         = optional(string)
-        }))
-      }))
-
-      networking = object({
-        vcn_id                 = string
-        api_endpoint_nsg_ids   = optional(list(string))
-        api_endpoint_subnet_id = string
-        service_lb_subnet_ids  = optional(list(string))
-      })
-      encryption = optional(object({
-        kube_secret_kms_key_id = optional(string)
-      }))
-      image_signing = optional(object({
-        image_policy_enabled = optional(bool)
-        kms_key_ids          = optional(list(string))
-      }))
+    networking = object({
+      vcn_id                 = string
+      api_endpoint_nsg_ids   = optional(list(string))
+      api_endpoint_subnet_id = string
+      service_lb_subnet_ids  = optional(list(string))
+    })
+    encryption = optional(object({
+      kube_secret_kms_key_id = optional(string)
+    }))
+    image_signing = optional(object({
+      image_policy_enabled = optional(bool)
+      kms_key_ids          = optional(list(string))
     }))
   })
   default = null
 
   validation {
-    condition = var.clusters_configuration == null ? true : alltrue([
-      for c in values(var.clusters_configuration.clusters) :
-      lower(c.cni_type) != "native" || try(c.options.kubernetes_network_config.pods_cidr, null) == null
-    ])
+    condition = var.cluster_configuration == null ? true : (
+      lower(var.cluster_configuration.cni_type) != "native" || try(var.cluster_configuration.options.kubernetes_network_config.pods_cidr, null) == null
+    )
     error_message = "Native CNI clusters must omit options.kubernetes_network_config.pods_cidr; pod addresses come from the pod subnet."
   }
   validation {
-    condition = var.clusters_configuration == null ? true : alltrue([
-      for c in values(var.clusters_configuration.clusters) :
-      try(length(trimspace(coalesce(c.compartment_id, var.clusters_configuration.default_compartment_id))) > 0, false)
-    ])
-    error_message = "Each cluster requires compartment_id or an inherited default_compartment_id; the effective value must not be blank."
+    condition     = var.cluster_configuration == null ? true : try(length(trimspace(var.cluster_configuration.compartment_id)) > 0, false)
+    error_message = "The cluster requires a nonblank compartment_id."
   }
   validation {
-    condition = var.clusters_configuration == null ? true : alltrue([
-      for c in values(var.clusters_configuration.clusters) :
-      c.cluster_type == "enhanced" && contains(["native", "flannel"], lower(c.cni_type))
-    ])
+    condition = var.cluster_configuration == null ? true : (
+      var.cluster_configuration.cluster_type == "enhanced" && contains(["native", "flannel"], lower(var.cluster_configuration.cni_type))
+    )
     error_message = "Only enhanced clusters are supported (cluster_type must be enhanced); cni_type must be native/flannel."
   }
   validation {
-    condition = var.clusters_configuration == null ? true : alltrue(concat(
-      [contains(["1", "2"], var.clusters_configuration.default_cis_level)],
-      [for c in values(var.clusters_configuration.clusters) : c.cis_level == null ? true : contains(["1", "2"], c.cis_level)]
-    ))
+    condition     = var.cluster_configuration == null ? true : contains(["1", "2"], var.cluster_configuration.cis_level)
     error_message = "Cluster CIS levels must be 1 or 2."
   }
 }
@@ -110,9 +85,6 @@ variable "workers_configuration" {
 
     default_mode                       = optional(string)
     default_disable_default_cloud_init = optional(bool, false)
-    cluster_ref = object({
-      key = string
-    })
     # Custom MIME parts inherited by managed pools unless pool cloud_init is supplied.
     # Same part fields and semantics as worker_pools.cloud_init (documented below).
     default_cloud_init = optional(list(object({

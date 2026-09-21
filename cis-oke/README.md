@@ -14,16 +14,34 @@ operator and extension creation. Those resources must already be managed elsewhe
 
 ## Configuration
 
-`clusters_configuration` defines keyed clusters, while `workers_configuration`
-defines top-level `default_*` fields and a keyed `worker_pools` map. Cluster-only and combined deployments are supported. All workers in one
-configuration reference one cluster declared in `clusters_configuration`. External
-cluster references and worker-only deployments are blocked in this release. Each cluster
-must supply a nonblank `compartment_id` directly or inherit `default_compartment_id`;
-input validation rejects clusters with neither.
+`cluster_configuration` is a flat object for exactly one enhanced cluster:
+`name`, `compartment_id`, optional `cis_level` (default 1), `networking`, tags and
+other cluster options. There is no cluster map, identity key or cluster reference.
+`workers_configuration` contains shared `default_*` values and a `worker_pools`
+map. Every pool implicitly belongs to this cluster and inherits its compartment
+and CIS level. Cluster-only calls may omit workers; workers without a cluster and
+external-cluster calls are rejected. Null cluster input permits a disabled/no-op
+invocation, but cannot be combined with nonempty worker pools.
+
+```hcl
+cluster_configuration = {
+  name = "platform"
+  compartment_id = "COMPARTMENT-KEY"
+  networking = {
+    vcn_id = "VCN-KEY"
+    api_endpoint_subnet_id = "API-SUBNET-KEY"
+    service_lb_subnet_ids = ["LB-SUBNET-KEY"]
+  }
+}
+```
+
+Use the [single-cluster example](examples/upstream-wrapper) or the
+[multi-cluster for_each caller example](examples/multiple-clusters). Caller map
+keys determine module-instance identities; they are not CIS OKE input fields.
+The orchestrator integration is a separate change and is not included here.
 
 ```hcl
 workers_configuration = {
-  cluster_ref = { key = "primary" }
   default_shape = "VM.Standard.E4.Flex"
   default_size = 3
   default_ocpus = 2
@@ -39,9 +57,8 @@ workers_configuration = {
 
 Pools use upstream-style names and `mode = "node-pool"` (default) or
 `"virtual-node-pool"`. Only these managed and virtual modes are supported in this
-release; other upstream worker modes are rejected. Set the global `workers_configuration.cluster_ref.key` to that cluster’s key.
-Pools cannot override it, their compartment, or their CIS level: those values are
-derived from the referenced cluster. Logical
+release; other upstream worker modes are rejected. Pools cannot override cluster,
+compartment or CIS level. Logical
 compartment/network/KMS references resolve through the existing dependency maps;
 OCIDs can be supplied directly. Region selection remains the caller's OCI provider
 configuration, not a per-pool setting.
@@ -51,7 +68,7 @@ fields inherit; false and zero remain explicit values. Supported maps merge by
 key (local values win), and supported set-like lists combine and deduplicate.
 Empty maps/lists retain inherited entries unless explicitly overridden.
 
-Each cluster or pool can name collections in `override_defaults`. Named fields
+Each pool can name collections in `override_defaults`. Named fields
 use only their local value: `{}` clears a map and `[]` clears a list. Every named
 field must be supported and explicitly non-null; misspellings, scalar fields and
 missing local values are rejected. This does not remove module/upstream tracking
@@ -59,7 +76,6 @@ tags or labels, and all CIS/upstream constraints still apply.
 
 | Object | Supported `override_defaults` entries |
 | --- | --- |
-| Cluster | `defined_tags`, `freeform_tags`, `options.persistent_volume_config.defined_tags`, `options.persistent_volume_config.freeform_tags`, `options.service_lb_config.defined_tags`, `options.service_lb_config.freeform_tags`, `networking.api_endpoint_nsg_ids`, `image_signing.kms_key_ids` |
 | Worker pool | `defined_tags`, `freeform_tags`, `node_defined_tags`, `node_freeform_tags`, `node_labels`, `nsg_ids`, `pod_nsg_ids` |
 
 For example, a pool can add labels but completely replace inherited NSGs:
@@ -101,18 +117,15 @@ addresses come from the pod subnet. Only enhanced clusters are supported; explic
 Cluster API endpoints are always private. There is no public-endpoint input.
 Deprecated Dashboard, Tiller and pod-security-policy switches are no longer exposed.
 
-Cluster tag defaults are independent: `default_cluster_defined_tags` and
-`default_cluster_freeform_tags`, `default_pv_defined_tags` and
-`default_pv_freeform_tags`, and `default_service_lb_defined_tags` and
-`default_service_lb_freeform_tags`. Tags merge by key: each target inherits its own defaults, and target-specific
-values win on duplicate keys. Omitted or empty target maps retain defaults unless named in `override_defaults`.
-Freeform tags also retain the module tracking tag unless explicitly overridden.
+Cluster tags are explicit `defined_tags`/`freeform_tags`. PV and service-LB tags
+are explicit maps under `options.persistent_volume_config` and
+`options.service_lb_config`. There are no cluster-level `default_*` fields or
+`override_defaults`; compose shared values in the caller if needed. Module and
+upstream tracking metadata is still added separately.
 
-`default_api_endpoint_nsg_ids` supplies the common endpoint NSG baseline. Each
-cluster's `networking.api_endpoint_nsg_ids` adds entries; both lists are resolved
-and deduplicated by OCID. To replace or clear the baseline, include
-`networking.api_endpoint_nsg_ids` in the cluster’s `override_defaults` and provide
-an explicit local list.
+`networking.api_endpoint_nsg_ids` is the complete endpoint NSG list. It resolves
+dependency keys/OCIDs and deduplicates resolved OCIDs; `[]` requests no endpoint
+NSGs. Cluster image-signing keys are also explicit and deduplicated.
 
 ## Provisioning and validation
 
@@ -124,7 +137,7 @@ remain supported. Pool names must be unique within a cluster because upstream
 uses them as resource keys. Renaming a pool requires address-move and plan review.
 
 The wrapper retains the applicable original validation policies: cluster and managed
-worker CIS level-2 keys, supported cluster version, one cluster per resolved VCN,
+worker CIS level-2 keys, supported cluster version,
 CNI values, supported worker version/skew,
 inherited cluster compartment/CIS policy, and enhanced/native
 requirements for virtual pools. Configuration checks occur before provisioning;
@@ -254,8 +267,8 @@ The plan checker detects ignored GVA defined-tag changes as well as pool tags.
 
 ## Outputs and dependencies
 
-`clusters`, `node_pools`, `virtual_node_pools`, and `nodes` remain keyed by Landing
-Zone identity. Cluster attributes are read back using the OCI cluster data source
+`cluster` returns the single cluster object. `node_pools`, `virtual_node_pools`
+and `nodes` remain keyed by pool identity. The old `clusters` map output is removed. Cluster attributes are read back using the OCI cluster data source
 because upstream exports only selected attributes. Pool objects come from upstream
 and include OCI attributes plus upstream configuration fields. This is not a claim
 of byte-identical serialized resource objects; downstream consumers must be checked
@@ -300,7 +313,8 @@ python3 -m unittest discover -s tests -p test_migration.py
 
 A read-only, empty-state OCI-backed plan succeeded on 2026-09-21 with Terraform
 1.5.7 and OCI provider 8.29.0: enhanced/native CIS1, one E5 Flex managed pool,
-existing compartment/network dependencies. It planned six additions (cluster,
+existing compartment/network dependencies. This was repeated successfully with the
+flat single-cluster API. It planned six additions (cluster,
 node pool, three validation resources and upstream random state ID), with no
 changes/deletions, and passed the plan checker. No targeting or staged apply was
 used. No infrastructure apply, existing-customer state mutation or live migration

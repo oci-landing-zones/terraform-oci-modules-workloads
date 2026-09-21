@@ -69,6 +69,8 @@ def convert(config, state, module_address=''):
 
     clusters = result.get('clusters_configuration')
     if clusters:
+        if len(clusters.get('clusters', {})) != 1:
+            raise ValueError('Single-cluster migration requires exactly one legacy cluster; split multi-cluster callers and review all state moves together.')
         check_fields(clusters, 'default_compartment_id default_img_kms_key_id default_kube_secret_kms_key_id default_cis_level default_defined_tags default_freeform_tags clusters', 'clusters_configuration')
         for kind in ['defined', 'freeform']:
             value = clusters.pop(f'default_{kind}_tags', None)
@@ -123,7 +125,7 @@ def convert(config, state, module_address=''):
                         c['override_defaults'].append(f'options.{target}.{field}')
             if (c.get('image_signing') or {}).get('kms_key_ids') is not None:
                 c['override_defaults'].append('image_signing.kms_key_ids')
-            move(old, f'{prefix}module.cluster[{json.dumps(key, ensure_ascii=False)}].module.cluster[0].oci_containerengine_cluster.k8s_cluster')
+            move(old, f'{prefix}module.cluster["cluster"].module.cluster[0].oci_containerengine_cluster.k8s_cluster')
     legacy = config.get('workers_configuration')
     if legacy:
         check_fields(legacy, 'default_cis_level default_compartment_id default_defined_tags default_freeform_tags default_ssh_public_key_path default_kms_key_id default_initial_node_labels node_pools virtual_node_pools', 'workers_configuration')
@@ -171,7 +173,7 @@ def convert(config, state, module_address=''):
                               'volume_kms_key_id':d.get('kms_key_id'), 'pv_transit_encryption':d.get('is_pv_encryption_in_transit_enabled'),
                               'node_defined_tags':d.get('defined_tags') or {}, 'node_freeform_tags':d.get('freeform_tags') or {},
                               'disable_default_cloud_init':True, 'node_metadata':n.get('node_metadata'), 'ssh_public_key':deployed.get('ssh_public_key'),
-                              'max_pods_per_node':net.get('max_pods_per_node'),
+                              'max_pods_per_node':net.get('max_pods_per_node') if net.get('max_pods_per_node') is not None else 31,
                               'eviction_grace_duration':(n.get('node_eviction') or {}).get('grace_duration',3600),
                               'force_node_delete':(n.get('node_eviction') or {}).get('force_delete',False),
                               'node_cycling_enabled':(n.get('node_cycling') or {}).get('enable_cycling',False),
@@ -213,7 +215,7 @@ def convert(config, state, module_address=''):
                     report.append(f'BLOCKED pool {key}: pool and node tags differ.')
                 pools[new_key] = p
                 pool_states[new_key] = deployed
-                move(old_address, f'{prefix}module.cluster[{json.dumps(cluster, ensure_ascii=False)}].module.workers[0].{suffix}[{json.dumps(p["name"], ensure_ascii=False)}]')
+                move(old_address, f'{prefix}module.cluster["cluster"].module.workers[0].{suffix}[{json.dumps(p["name"], ensure_ascii=False)}]')
         cluster_keys = {p['cluster_ref'].get('key') for p in pools.values()}
         if None in cluster_keys:
             raise ValueError('External cluster references are blocked in this release.')
@@ -234,9 +236,34 @@ def convert(config, state, module_address=''):
                     raise ValueError('Worker compartment differs from the cluster compartment; migration is blocked.')
                 for field in ['cluster_ref','cis_level','compartment_id','image_type']:
                     pool.pop(field, None)
-            result['workers_configuration'] = {'cluster_ref':{'key':cluster_key}, 'worker_pools':pools}
+            result['workers_configuration'] = {'worker_pools':pools}
         else:
             result['workers_configuration'] = None
+    # Collapse the legacy envelope only after validating pool ownership/CIS inheritance.
+    result.pop('clusters_configuration', None)
+    result['cluster_configuration'] = None
+    if clusters:
+        key, c = next(iter(clusters['clusters'].items()))
+        _, deployed = previous('oci_containerengine_cluster', key)
+        c['compartment_id'] = c.get('compartment_id') or clusters.get('default_compartment_id') or deployed['compartment_id']
+        encryption = c.get('encryption') or {}
+        encryption['kube_secret_kms_key_id'] = encryption.get('kube_secret_kms_key_id') or clusters.get('default_kube_secret_kms_key_id')
+        c['encryption'] = encryption
+        signing = c.get('image_signing') or {}
+        if signing.get('kms_key_ids') is None:
+            signing['kms_key_ids'] = clusters.get('default_image_signing_key_ids')
+        c['image_signing'] = signing
+        options = c.get('options') or {}
+        for target, location in [('cluster', c), ('pv', options.setdefault('persistent_volume_config', {}) or {}), ('service_lb', options.setdefault('service_lb_config', {}) or {})]:
+            for kind in ['defined', 'freeform']:
+                field = kind + '_tags'
+                if location.get(field) is None:
+                    location[field] = copy.deepcopy(clusters.get('default_' + target + '_' + field))
+            if target == 'pv': options['persistent_volume_config'] = location
+            if target == 'service_lb': options['service_lb_config'] = location
+        c['options'] = options
+        c.pop('override_defaults', None)
+        result['cluster_configuration'] = c
     orphaned = [a for a,r in resources.items() if a.startswith(prefix) and r['type'] in TYPES and re.fullmatch(re.escape(prefix) + r'oci_containerengine_(?:cluster|node_pool|virtual_node_pool)\.these\[.*\]',a) and a not in seen]
     if orphaned:
         raise ValueError(f'State has legacy resources absent from configuration: {orphaned}')

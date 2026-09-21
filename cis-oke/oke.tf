@@ -6,7 +6,7 @@ locals {
     kms_key_id       = local.cluster_refs[k].kms == null ? null : local.keys[local.cluster_refs[k].kms]
     pods_cidr        = try(c.options.kubernetes_network_config.pods_cidr, null)
     services_cidr    = try(c.options.kubernetes_network_config.services_cidr, null)
-    cis_level        = coalesce(c.cis_level, var.clusters_configuration.default_cis_level, "1")
+    cis_level        = c.cis_level
     lb_subnets       = [for ref in coalesce(c.networking.service_lb_subnet_ids, []) : local.subnets[ref]]
     defined_tags     = module.configuration.cluster_collections[k].maps["defined_tags"]
     freeform_tags    = merge({ state_id = k, role = "cluster" }, local.cislz_module_tag, module.configuration.cluster_collections[k].maps["freeform_tags"])
@@ -41,7 +41,7 @@ resource "terraform_data" "cluster_validation" {
     }
     precondition {
       condition     = local.cluster_settings[each.key].compartment_id != null
-      error_message = "Cluster ${each.key}: specify a resolvable compartment_id or default_compartment_id."
+      error_message = "Cluster ${each.key}: specify a resolvable compartment_id."
     }
     precondition {
       condition     = local.cluster_settings[each.key].cis_level != "2" || local.cluster_settings[each.key].kms_key_id != null
@@ -50,10 +50,6 @@ resource "terraform_data" "cluster_validation" {
     precondition {
       condition     = each.value.kubernetes_version == null ? true : contains(data.oci_containerengine_cluster_option.cluster_options[each.key].kubernetes_versions, each.value.kubernetes_version)
       error_message = "Cluster ${each.key}: kubernetes_version is not supported by OCI."
-    }
-    precondition {
-      condition     = length([for k, c in local.cluster_settings : k if c.vcn_id == local.cluster_settings[each.key].vcn_id]) == 1
-      error_message = "Cluster ${each.key}: only one configured cluster per resolved VCN is allowed."
     }
     precondition {
       condition     = contains(["native", "flannel"], lower(each.value.cni_type))
@@ -72,8 +68,8 @@ resource "terraform_data" "cluster_validation" {
 }
 
 locals {
-  cluster_managed_pool_keys = { for c in keys(local.clusters) : c => [for k, p in local.pools : k if p.cluster_ref.key == c && p.mode == "node-pool"] }
-  cluster_pool_keys         = { for c in keys(local.clusters) : c => [for k, p in local.pools : k if p.cluster_ref.key == c] }
+  cluster_managed_pool_keys = { for c in keys(local.clusters) : c => [for k, p in local.pools : k if p.mode == "node-pool"] }
+  cluster_pool_keys         = { for c in keys(local.clusters) : c => [for k, p in local.pools : k] }
 }
 
 # Keep discovery inputs independent of validation-resource creation. A module-wide
@@ -111,7 +107,7 @@ module "cluster" {
     }
   }
   nsgs                              = { for role in ["bastion", "operator", "cp", "int_lb", "pub_lb", "workers", "pods"] : role => { create = "never" } }
-  worker_pools                      = { for k, p in local.pools : coalesce(p.name, k) => local.upstream_pools[k] if p.cluster_ref.key == each.key }
+  worker_pools                      = { for k, p in local.pools : coalesce(p.name, k) => local.upstream_pools[k] }
   ssh_public_key                    = try(local.pool_settings[local.cluster_managed_pool_keys[each.key][0]].ssh_public_key, null)
   worker_pv_transit_encryption      = try(coalesce(local.pools[local.cluster_managed_pool_keys[each.key][0]].pv_transit_encryption, false), false)
   worker_disable_default_cloud_init = try(var.workers_configuration.default_disable_default_cloud_init, false)
