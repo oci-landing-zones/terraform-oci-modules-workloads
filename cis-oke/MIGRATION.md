@@ -111,8 +111,14 @@ fault-domain placement must be reviewed even if no placement was written in tfva
 6. Apply only the saved, reviewed plan. Verify unchanged resource OCIDs, OKE and
    workload health, output documents and a stable subsequent plan.
 
-No generated plan has been applied as part of this implementation. Disposable live
-fixtures must pass this workflow before it is recommended for a customer estate.
+A disposable legacy v0.2.8 enhanced/native CIS1 cluster with one managed pool
+completed this workflow on Terraform 1.16.3 and OCI provider 8.29.0. Cluster,
+pool, instance and Kubernetes node identities were preserved; the worker remained
+Ready and all eight system pods were healthy. Preparation included the reviewed
+tag alignment described below. The follow-up plan retained the known eviction
+duration formatting drift (`PT1H` versus `PT60M`). This limited fixture is not a
+guarantee for other estates, virtual pools or workload continuity; repeat the
+workflow for each deployment. Existing workers were not cycled.
 
 ## Address layout
 
@@ -161,3 +167,45 @@ Managed pools now enforce IMDSv2-only for newly created nodes. Remove an explici
 verify custom images/scripts support IMDSv2. Plan controlled node replacement or
 cycling to cover existing nodes; a node-pool metadata update alone does not
 change the metadata endpoint setting on existing instances.
+
+## Existing Tags and Migration Preflight
+
+The plan checker remains strict by default. A tenancy-default defined tag may
+exist on a resource even when it is absent from the Terraform inputs. Review
+each such key and, when it must remain externally managed, pass the repeatable
+`--preserve-defined-tag NAMESPACE.KEY` option to `tools/check_plan.py`. This
+allows only that unconfigured key with exactly the same value in the before
+and after plan. It does not allow new/changed tags, override configured values,
+or relax freeform-tag checks. Do not use it for a tag you intend to remove.
+
+For example, a reviewed default tag can be retained with:
+
+```sh
+python3 cis-oke/tools/check_plan.py plan.json \
+  --module-address 'module.oke[0]' \
+  --preserve-defined-tag Company.CostCenter
+```
+
+An absent capacity reservation may be serialized as either null or an empty
+string. The checker treats those representations as equivalent; any nonempty
+reservation change remains an error.
+
+Official upstream v5.5.1 ignores pool-level freeform-tag updates. Consequently,
+a legacy pool lacking the wrapper's tracking tags can fail migration checks
+even though its address move is valid. Do not suppress that failure. Either
+adopt an upstream fix or perform a separately reviewed preparation step:
+
+1. Inspect the target plan's worker validation input to identify the effective
+   tracking tags for this pool. Do not copy another pool's name or state ID.
+2. Merge those tags into the legacy pool's freeform tags, preserving customer
+   tags and explicitly reviewing any conflicting values. Align the node-template
+   tags too: the current wrapper requires equal pool/node tag inputs.
+3. Plan and apply this tag-only update using the legacy module, with cycling
+   disabled. Require no replacements or unrelated changes. Verify the existing
+   worker identity and obtain a new clean legacy baseline/state backup.
+4. Carry the aligned tags into the new input and rerun the migration plan and
+   checker. The original state-address migration remains a separate operation.
+
+This preparation changes pool and future-node template tags; it does not prove
+existing instances were retagged or adopted IMDSv2. Record it in the migration
+review. Do not use CLI retagging outside Terraform to conceal configuration drift.

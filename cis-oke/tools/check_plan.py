@@ -8,7 +8,7 @@ from pathlib import Path
 OKE = {'oci_containerengine_cluster','oci_containerengine_node_pool','oci_containerengine_virtual_node_pool'}
 
 
-def check(plan, module_address=''):
+def check(plan, module_address='', preserve_defined_tags=()):
     prefix = module_address + '.' if module_address else ''
     errors = []
     changes = {r['address']:r for r in plan.get('resource_changes',[]) if r['address'].startswith(prefix)}
@@ -30,6 +30,7 @@ def check(plan, module_address=''):
             errors.append(f'{address}: expected resource missing from plan')
             continue
         after = actual['change'].get('after') or {}
+        before = actual['change'].get('before') or {}
         unknown = actual['change'].get('after_unknown') or {}
         for name in ['defined_tags', 'freeform_tags']:
             # Empty desired maps can remain computed until create (automatic OCI tags).
@@ -37,7 +38,14 @@ def check(plan, module_address=''):
                 if 'create' not in actual['change']['actions']:
                     errors.append(f'{address}: {name} unknown; cannot verify migration')
                 continue
-            if (after.get(name) or {}) != (wanted.get(name) or {}):
+            planned_tags = dict(after.get(name) or {})
+            desired_tags = wanted.get(name) or {}
+            if name == 'defined_tags':
+                old_tags = before.get(name) or {}
+                for key in preserve_defined_tags:
+                    if key not in desired_tags and key in old_tags and key in planned_tags and old_tags[key] == planned_tags[key]:
+                        del planned_tags[key]
+            if planned_tags != desired_tags:
                 errors.append(f'{address}: desired {name} differ from plan; upstream ignore_changes may hide the update')
         if actual['type'] == 'oci_containerengine_cluster':
             options = (after.get('options') or [{}])[0]
@@ -83,7 +91,7 @@ def check(plan, module_address=''):
                 desired_fds = (wanted.get('placement_fds') or []) if virtual else wanted.get('placement_fds')
                 if desired_fds is not None and sorted(p.get('fault_domain' if virtual else 'fault_domains') or []) != sorted(desired_fds):
                     errors.append(f'{address}: desired fault domains differ from plan')
-                if not virtual and 'capacity_reservation_id' in wanted and p.get('capacity_reservation_id') != wanted['capacity_reservation_id']:
+                if not virtual and 'capacity_reservation_id' in wanted and (p.get('capacity_reservation_id') or None) != (wanted['capacity_reservation_id'] or None):
                     errors.append(f'{address}: desired capacity reservation differs from plan')
                 if not virtual and 'preemptible' in wanted:
                     actual_preempt = p.get('preemptible_node_config') or []
@@ -102,8 +110,10 @@ def main():
     p=argparse.ArgumentParser(description=__doc__)
     p.add_argument('plan_json',type=Path)
     p.add_argument('--module-address',default='')
+    p.add_argument('--preserve-defined-tag', action='append', default=[], metavar='NAMESPACE.KEY',
+                   help='Allow this unconfigured defined tag only when its existing value is unchanged; repeat for each reviewed tenancy-default tag.')
     args=p.parse_args()
-    errors=check(json.loads(args.plan_json.read_text()),args.module_address)
+    errors=check(json.loads(args.plan_json.read_text()),args.module_address,args.preserve_defined_tag)
     if errors:
         p.exit(1,'Plan blocked:\n'+'\n'.join('- '+e for e in errors)+'\n')
     print('Plan checks passed. Review all remaining in-place changes before apply; this is not a live migration rehearsal.')
