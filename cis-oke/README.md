@@ -105,8 +105,7 @@ callers may pass `file("path/to/key.pub")` themselves.
 Memory/boot-volume sizes are GB; eviction duration is seconds.
 
 The full typed schema is in [variables.tf](variables.tf). Normalization is in
-[modules/configuration](modules/configuration). The detailed [contract guide](design/input-contract/README.md)
-explains fields and migration mappings. A [current example](examples/upstream-wrapper)
+[modules/configuration](modules/configuration). A [current example](examples/upstream-wrapper)
 shows the complete module call. Older examples are explicitly pinned to the
 pre-refactor module, so their legacy templates remain usable.
 
@@ -313,7 +312,7 @@ permissions. No deployment credentials are stored in this repository.
 ```sh
 terraform init -backend=false
 terraform validate
-TERRAFORM_BIN=/path/to/terraform-1.5.7 python3 design/input-contract/test_contract.py
+TERRAFORM_BIN=/path/to/terraform-1.5.7 python3 tests/test_contract.py
 TERRAFORM_BIN=/path/to/terraform-1.5.7 python3 tests/test_offline.py
 python3 -m unittest discover -s tests -p test_migration.py
 ```
@@ -324,10 +323,22 @@ existing compartment/network dependencies. This was repeated successfully with t
 flat single-cluster API. It planned six additions (cluster,
 node pool, three validation resources and upstream random state ID), with no
 changes/deletions, and passed the plan checker. No targeting or staged apply was
-used. No infrastructure apply, existing-customer state mutation or live migration
-rehearsal has been performed. Live provider reconciliation, full historical-release coverage,
-output-consumer compatibility and the upstream limitations above must be resolved
-or explicitly scoped before publishing the major release. See [MIGRATION.md](MIGRATION.md).
+used. A separate v0.2.8 native CIS1 managed-pool migration subsequently preserved
+cluster, pool, instance and Kubernetes node identities, with healthy system pods.
+Full historical-release coverage and virtual-pool live migration remain unqualified.
+The follow-up plan retains eviction-duration formatting drift (`PT1H` versus `PT60M`).
+
+### Upgrading existing deployments
+
+This is a breaking change to inputs, outputs and Terraform resource addresses.
+Do not upgrade by changing the module version alone. Back up state, obtain a clean
+legacy plan, pin deployed images/settings and review the unsupported combinations
+above. Use `tools/migrate.py --help` for legacy conversion and address-move review
+artifacts, and `tools/check_plan.py --help` to validate a saved plan. Multiple
+clusters require separate module invocations and reviewed per-resource moves.
+Stop on unexpected replacement, deletion or cycling; verify identities and health
+after applying. Upstream-ignored pool tags may require a separately reviewed legacy
+tag update. Existing workers need separate controlled cycling to adopt IMDSv2.
 
 Bare-metal (`BM.*`) shapes cannot enable `pv_transit_encryption`. This is a blocking
 validation after global defaults and pool overrides are resolved. Use a supported
