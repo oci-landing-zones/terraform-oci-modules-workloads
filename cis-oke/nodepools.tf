@@ -1,132 +1,159 @@
-# Copyright (c) 2023, Oracle and/or its affiliates. All rights reserved.
-# Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
-
-data "oci_containerengine_clusters" "existing" {
-  for_each       = var.workers_configuration != null ? var.workers_configuration["node_pools"] : {}
-  compartment_id = each.value.compartment_id != null ? (length(regexall("^ocid1.*$", each.value.compartment_id)) > 0 ? each.value.compartment_id : var.compartments_dependency[each.value.compartment_id].id) : var.workers_configuration.default_compartment_id != null ? (length(regexall("^ocid1.*$", var.workers_configuration.default_compartment_id)) > 0 ? var.workers_configuration.default_compartment_id : var.compartments_dependency[var.workers_configuration.default_compartment_id].id) : length(regexall("^ocid1.*$", each.value.cluster_id)) > 0 ? null : oci_containerengine_cluster.these[each.value.cluster_id].compartment_id
+locals {
+  pool_targets = { for k, p in local.pools : k => {
+    cluster_type   = local.clusters[local.cluster_key].cluster_type
+    cni_type       = lower(local.clusters[local.cluster_key].cni_type)
+    version        = coalesce(local.clusters[local.cluster_key].kubernetes_version, reverse(data.oci_containerengine_cluster_option.cluster_options[local.cluster_key].kubernetes_versions)[0])
+    compartment_id = local.cluster_settings[local.cluster_key].compartment_id
+    cis_level      = local.cluster_settings[local.cluster_key].cis_level
+  } }
+  pool_settings = { for k, p in local.pools : k => {
+    compartment_id     = local.pool_targets[k].compartment_id
+    version            = coalesce(p.kubernetes_version, local.pool_targets[k].version, "v0.0.0")
+    subnet_id          = local.subnets[p.subnet_id]
+    pod_subnet_id      = p.pod_subnet_id == null ? null : local.subnets[p.pod_subnet_id]
+    nsg_ids            = distinct([for ref in coalesce(p.nsg_ids, []) : local.nsgs[ref]])
+    pod_nsg_ids        = distinct([for ref in coalesce(p.pod_nsg_ids, []) : local.nsgs[ref]])
+    kms_key_id         = p.volume_kms_key_id == null ? null : local.keys[p.volume_kms_key_id]
+    defined_tags       = coalesce(p.defined_tags, {})
+    freeform_tags      = merge(local.cislz_module_tag, coalesce(p.freeform_tags, {}))
+    node_defined_tags  = coalesce(p.node_defined_tags, p.defined_tags, {})
+    node_freeform_tags = merge(local.cislz_module_tag, coalesce(p.node_freeform_tags, p.freeform_tags, {}))
+    ssh_public_key     = p.ssh_public_key
+    placement_ads      = coalesce(p.placement_ads, [1])
+    placement_fds      = p.placement_fds
+    preemptible        = coalesce(p.preemptible_config, { enable = false, is_preserve_boot_volume = false })
+  } }
 }
 
-data "oci_containerengine_cluster_option" "kube_versions" {
-  for_each          = var.workers_configuration != null ? var.workers_configuration["node_pools"] : {}
+data "oci_containerengine_cluster_option" "worker_versions" {
+  for_each          = { for k, p in local.pools : k => p if p.mode == "node-pool" }
   cluster_option_id = "all"
-  compartment_id    = each.value.compartment_id != null ? (length(regexall("^ocid1.*$", each.value.compartment_id)) > 0 ? each.value.compartment_id : var.compartments_dependency[each.value.compartment_id].id) : var.workers_configuration.default_compartment_id != null ? (length(regexall("^ocid1.*$", var.workers_configuration.default_compartment_id)) > 0 ? var.workers_configuration.default_compartment_id : var.compartments_dependency[var.workers_configuration.default_compartment_id].id) : length(regexall("^ocid1.*$", each.value.cluster_id)) > 0 ? null : oci_containerengine_cluster.these[each.value.cluster_id].compartment_id
+  compartment_id    = local.pool_targets[each.key].compartment_id
 }
-
-data "oci_containerengine_node_pool_option" "np_option" {
-  for_each            = var.workers_configuration != null ? var.workers_configuration["node_pools"] : {}
-  node_pool_option_id = length(regexall("^ocid1.*$", each.value.cluster_id)) > 0 ? each.value.cluster_id : oci_containerengine_cluster.these[each.value.cluster_id].id
-}
-
-data "oci_identity_availability_domains" "ads" {
-  for_each       = var.workers_configuration != null ? var.workers_configuration["node_pools"] : {}
-  compartment_id = each.value.compartment_id != null ? (length(regexall("^ocid1.*$", each.value.compartment_id)) > 0 ? each.value.compartment_id : var.compartments_dependency[each.value.compartment_id].id) : var.workers_configuration.default_compartment_id != null ? (length(regexall("^ocid1.*$", var.workers_configuration.default_compartment_id)) > 0 ? var.workers_configuration.default_compartment_id : var.compartments_dependency[var.workers_configuration.default_compartment_id].id) : length(regexall("^ocid1.*$", each.value.cluster_id)) > 0 ? null : oci_containerengine_cluster.these[each.value.cluster_id].compartment_id
-}
-
-resource "oci_containerengine_node_pool" "these" {
-  for_each = var.workers_configuration != null ? var.workers_configuration["node_pools"] != null ? var.workers_configuration["node_pools"] : {} : {}
+resource "terraform_data" "worker_validation" {
+  for_each = local.pools
+  input = {
+    resource_address        = "module.cluster[${jsonencode(local.cluster_key)}].module.workers[0].${each.value.mode == "node-pool" ? "oci_containerengine_node_pool.tfscaled_workers" : "oci_containerengine_virtual_node_pool.workers"}[${jsonencode(coalesce(each.value.name, each.key))}]"
+    defined_tags            = local.pool_settings[each.key].defined_tags
+    freeform_tags           = merge({ state_id = local.cluster_key, role = "worker", pool = coalesce(each.value.name, each.key), cluster_autoscaler = "disabled" }, local.pool_settings[each.key].freeform_tags)
+    placement_ads_numbers   = local.pool_settings[each.key].placement_ads
+    placement_fds           = local.pool_settings[each.key].placement_fds
+    subnet_id               = local.pool_settings[each.key].subnet_id
+    capacity_reservation_id = each.value.capacity_reservation_id
+    gva_secondary_vnics = [for name, vnic in each.value.gva_secondary_vnics : {
+      display_name = coalesce(vnic.display_name, name)
+      defined_tags = coalesce(vnic.defined_tags, local.pool_settings[each.key].defined_tags)
+    }]
+    preemptible = local.pool_settings[each.key].preemptible
+  }
   lifecycle {
-    ## Check 1: Customer managed key must be provided if CIS profile level is "2".
     precondition {
-      condition     = coalesce(each.value.cis_level, var.workers_configuration.default_cis_level, "1") == "2" ? (each.value.node_config_details.encryption != null ? (each.value.node_config_details.encryption.kms_key_id != null || var.workers_configuration.default_kms_key_id != null) : var.workers_configuration.default_kms_key_id != null) : true # false triggers this.
-      error_message = "VALIDATION FAILURE (CIS Storage 4.1.2) in nodepool \"${each.key}\": a customer managed key is required when CIS level is set to 2. Either \"encryption.kms_key_id\" or \"default_kms_key_id\" must be provided."
+      condition     = each.value.mode != "node-pool" || local.pool_targets[each.key].cis_level != "2" || local.pool_settings[each.key].kms_key_id != null
+      error_message = "Pool ${each.key}: CIS level 2 requires a customer-managed worker volume key."
     }
-    ## Check 2: The kubernetes version of the worker nodes must not run a more recent version or be more than two versions behind than the associated OKE Cluster.
     precondition {
-      condition     = each.value.kubernetes_version != null ? length(regexall("^ocid1.*$", each.value.cluster_id)) > 0 ? (contains(data.oci_containerengine_cluster_option.kube_versions[each.key].kubernetes_versions, each.value.kubernetes_version) && contains(data.oci_containerengine_cluster_option.kube_versions[each.key].kubernetes_versions, [for cluster in data.oci_containerengine_clusters.existing[each.key].clusters : cluster.kubernetes_version if cluster.id == each.value.cluster_id][0]) ? index(data.oci_containerengine_cluster_option.kube_versions[each.key].kubernetes_versions, each.value.kubernetes_version) <= index(data.oci_containerengine_cluster_option.kube_versions[each.key].kubernetes_versions, [for cluster in data.oci_containerengine_clusters.existing[each.key].clusters : cluster.kubernetes_version if cluster.id == each.value.cluster_id][0]) ? index(data.oci_containerengine_cluster_option.kube_versions[each.key].kubernetes_versions, [for cluster in data.oci_containerengine_clusters.existing[each.key].clusters : cluster.kubernetes_version if cluster.id == each.value.cluster_id][0]) - index(data.oci_containerengine_cluster_option.kube_versions[each.key].kubernetes_versions, each.value.kubernetes_version) <= 2 ? true : false : false : false) : (contains(data.oci_containerengine_cluster_option.kube_versions[each.key].kubernetes_versions, each.value.kubernetes_version) && contains(data.oci_containerengine_cluster_option.kube_versions[each.key].kubernetes_versions, oci_containerengine_cluster.these[each.value.cluster_id].kubernetes_version) ? index(data.oci_containerengine_cluster_option.kube_versions[each.key].kubernetes_versions, each.value.kubernetes_version) <= index(data.oci_containerengine_cluster_option.kube_versions[each.key].kubernetes_versions, oci_containerengine_cluster.these[each.value.cluster_id].kubernetes_version) ? index(data.oci_containerengine_cluster_option.kube_versions[each.key].kubernetes_versions, oci_containerengine_cluster.these[each.value.cluster_id].kubernetes_version) - index(data.oci_containerengine_cluster_option.kube_versions[each.key].kubernetes_versions, each.value.kubernetes_version) <= 2 ? true : false : false : false) : true
-      error_message = "VALIDATION FAILURE in in nodepool \"${each.key}\": The kubernetes version of the worker nodes must not run a more recent version or be more than two versions behind than the associated OKE Cluster. "
+      condition     = each.value.mode != "node-pool" ? true : contains(data.oci_containerengine_cluster_option.worker_versions[each.key].kubernetes_versions, local.pool_settings[each.key].version)
+      error_message = "Pool ${each.key}: worker Kubernetes version must be supported by OCI."
     }
-    ## Check 3: Image validation with kubernetes version.
     precondition {
-      condition     = each.value.node_config_details.image != null ? length(regexall("^ocid1.*$", each.value.node_config_details.image)) > 0 ? length([for source in data.oci_containerengine_node_pool_option.np_option[each.key].sources : source.image_id if length(regexall(each.value.node_config_details.image, source.image_id)) > 0]) > 0 ? true : false : length([for source in data.oci_containerengine_node_pool_option.np_option[each.key].sources : source.source_name if length(regexall("Oracle-Linux-${each.value.node_config_details.image}", source.source_name)) > 0]) > 0 ? true : false : true
-      error_message = "VALIDATION FAILURE in in nodepool \"${each.key}\": The image ocid or version is not available for the Worker nodes using that kubernetes_version."
+      condition = each.value.mode != "node-pool" ? true : (
+        split(".", trimprefix(local.pool_settings[each.key].version, "v"))[0] == split(".", trimprefix(local.pool_targets[each.key].version, "v"))[0] &&
+        tonumber(split(".", trimprefix(local.pool_settings[each.key].version, "v"))[1]) <= tonumber(split(".", trimprefix(local.pool_targets[each.key].version, "v"))[1]) &&
+        tonumber(split(".", trimprefix(local.pool_targets[each.key].version, "v"))[1]) - tonumber(split(".", trimprefix(local.pool_settings[each.key].version, "v"))[1]) <= 2
+      )
+      error_message = "Pool ${each.key}: workers must be no newer than their control plane and no more than two minor versions behind."
     }
-    ## Check 4: Compartment validation when the cluster is not created with terraform.
     precondition {
-      condition     = each.value.compartment_id != null ? true : var.workers_configuration.default_compartment_id != null ? true : length(regexall("^ocid1.*$", each.value.cluster_id)) > 0 ? false : true
-      error_message = "VALIDATION FAILURE in in nodepool \"${each.key}\": One of the attributes compartment_id or default_compartment_id must be used when specifying an ocid in the cluster_id attribute."
+      condition     = each.value.mode != "virtual-node-pool" || local.pool_targets[each.key].cluster_type == "enhanced"
+      error_message = "Pool ${each.key}: virtual node pools require an enhanced cluster."
+    }
+    precondition {
+      condition     = each.value.mode != "virtual-node-pool" || local.pool_targets[each.key].cni_type == "native"
+      error_message = "Pool ${each.key}: virtual node pools require native CNI."
+    }
+    precondition {
+      condition     = local.pool_targets[each.key].cni_type != "native" || local.pool_settings[each.key].pod_subnet_id != null || length(each.value.gva_secondary_vnics) > 0
+      error_message = "Pool ${each.key}: native CNI requires a pod subnet or GVA secondary VNIC profiles."
+    }
+    precondition {
+      condition     = local.pool_settings[each.key].defined_tags == local.pool_settings[each.key].node_defined_tags && local.pool_settings[each.key].freeform_tags == local.pool_settings[each.key].node_freeform_tags
+      error_message = "Pool ${each.key}: official upstream v5.5.1 cannot apply different pool and node tags. This configuration is blocked pending upstream support."
+    }
+    precondition {
+      condition     = length(distinct(local.pool_settings[each.key].placement_ads)) == length(local.pool_settings[each.key].placement_ads)
+      error_message = "Pool ${each.key}: placement_ads must not contain duplicate AD numbers."
+    }
+    precondition {
+      condition     = alltrue([for ad in local.pool_settings[each.key].placement_ads : ad >= 1 && floor(ad) == ad])
+      error_message = "Pool ${each.key}: placement AD numbers must be positive whole numbers; upstream resolves them against the region."
+    }
+    precondition {
+      condition     = length(distinct([for t in coalesce(each.value.taints, []) : t.key])) == length(coalesce(each.value.taints, []))
+      error_message = "Pool ${each.key}: official upstream requires unique virtual taint keys. Duplicate keys are blocked."
+    }
+    precondition {
+      condition     = each.value.mode != "virtual-node-pool" ? true : length(coalesce(local.pool_settings[each.key].placement_fds, [])) == 0
+      error_message = "Pool ${each.key}: explicit virtual fault domains are blocked by the pinned upstream fault-domain mapping. Only automatic FD placement is supported."
+    }
+    precondition {
+      condition     = each.value.mode != "virtual-node-pool" || length(local.pool_settings[each.key].pod_nsg_ids) > 0
+      error_message = "Pool ${each.key}: pinned upstream virtual pools require explicit nonempty pod_nsg_ids; empty NSG lists are blocked."
+    }
+    precondition {
+      condition     = each.value.size == null ? true : (floor(each.value.size) == each.value.size && each.value.size >= (each.value.mode == "virtual-node-pool" ? 1 : 0))
+      error_message = "Pool ${each.key}: size must be a whole number, at least zero for managed pools and one for virtual pools."
+    }
+    precondition {
+      condition     = each.value.mode != "node-pool" || each.value.ocpus > 0 && each.value.memory > 0 && each.value.boot_volume_size > 0
+      error_message = "Pool ${each.key}: OCPUs, memory and boot volume size must be positive."
+    }
+    precondition {
+      condition     = each.value.size != null
+      error_message = "Pool ${each.key}: set size on the pool or default_size. Official upstream requires an explicit size; migrate the deployed size rather than assuming zero."
     }
   }
-  cluster_id     = length(regexall("^ocid1.*$", each.value.cluster_id)) > 0 ? each.value.cluster_id : oci_containerengine_cluster.these[each.value.cluster_id].id
-  compartment_id = each.value.compartment_id != null ? (length(regexall("^ocid1.*$", each.value.compartment_id)) > 0 ? each.value.compartment_id : var.compartments_dependency[each.value.compartment_id].id) : var.workers_configuration.default_compartment_id != null ? (length(regexall("^ocid1.*$", var.workers_configuration.default_compartment_id)) > 0 ? var.workers_configuration.default_compartment_id : var.compartments_dependency[var.workers_configuration.default_compartment_id].id) : length(regexall("^ocid1.*$", each.value.cluster_id)) > 0 ? null : oci_containerengine_cluster.these[each.value.cluster_id].compartment_id
-  name           = each.value.name
-  node_shape     = each.value.node_config_details.node_shape
-  defined_tags   = each.value.defined_tags != null ? each.value.defined_tags : var.workers_configuration.default_defined_tags
-  freeform_tags  = merge(local.cislz_module_tag, each.value.freeform_tags != null ? each.value.freeform_tags : var.workers_configuration.default_freeform_tags)
-  dynamic "initial_node_labels" {
-    for_each = each.value.initial_node_labels != null ? each.value.initial_node_labels : var.workers_configuration.default_initial_node_labels != null ? var.workers_configuration.default_initial_node_labels : {}
-    iterator = label
-    content {
-      key   = label.key
-      value = label.value
+  depends_on = [terraform_data.dependencies]
+}
+
+locals {
+  upstream_pools = { for key, pool in local.pools : key => merge(
+    { for field, value in pool : field => value if value != null && !contains(["override_defaults", "placement_ads", "placement_fds", "taints", "image_type", "image_id", "defined_tags", "freeform_tags", "node_defined_tags", "node_freeform_tags", "node_labels", "node_metadata", "volume_kms_key_id", "subnet_id", "pod_subnet_id", "nsg_ids", "pod_nsg_ids"], field) },
+    {
+      create                   = true
+      autoscale                = false
+      allow_autoscaler         = false
+      ignore_initial_pool_size = false
+      compartment_id           = local.pool_settings[key].compartment_id
+      size                     = coalesce(pool.size, 0)
+      subnet_id                = local.pool_settings[key].subnet_id
+      pod_subnet_id            = local.pool_settings[key].pod_subnet_id
+      nsg_ids                  = local.pool_settings[key].nsg_ids
+      pod_nsg_ids              = pool.mode == "virtual-node-pool" && length(local.pool_settings[key].pod_nsg_ids) == 0 ? ["blocked"] : local.pool_settings[key].pod_nsg_ids
+      image_type               = pool.image_type
+      image_id                 = pool.image_id
+      kubernetes_version       = local.pool_settings[key].version
+      volume_kms_key_id        = local.pool_settings[key].kms_key_id
+      placement_ads            = local.pool_settings[key].placement_ads
+      placement_fds            = pool.mode == "virtual-node-pool" ? [] : local.pool_settings[key].placement_fds
+      preemptible_config       = local.pool_settings[key].preemptible
+      defined_tags             = local.pool_settings[key].defined_tags
+      freeform_tags            = local.pool_settings[key].freeform_tags
+      node_labels              = coalesce(pool.node_labels, {})
+      # Preserve upstream rendering whenever default scripts or custom parts are enabled.
+      # OKE managed pools use this metadata key, not the standalone-compute IMDS switch.
+      node_metadata = merge(
+        pool.disable_default_cloud_init && length(pool.cloud_init) == 0 ? { user_data = "" } : {},
+        coalesce(pool.node_metadata, {}),
+        pool.mode == "node-pool" ? { areLegacyImdsEndpointsDisabled = "true" } : {}
+      )
+      cloud_init = pool.disable_default_cloud_init && length(pool.cloud_init) == 0 ? [{ content = "#cloud-config\n{}\n", content_type = "text/cloud-config" }] : [for part in pool.cloud_init : { for k, v in part : k => v if v != null }]
+      gva_secondary_vnics = { for name, vnic in pool.gva_secondary_vnics : name => merge(
+        { for k, v in vnic : k => v if v != null },
+        { subnet_id = local.subnets[vnic.subnet_id], nsg_ids = distinct([for ref in vnic.nsg_ids : local.nsgs[ref]]) }
+      ) }
+      force_node_action    = false
+      node_cycling_enabled = pool.node_cycling_enabled
+      taints               = zipmap([for t in coalesce(pool.taints, []) : coalesce(t.key, "invalid")], [for t in coalesce(pool.taints, []) : { value = t.value, effect = coalesce(t.effect, "NoSchedule") }])
     }
-  }
-  kubernetes_version = each.value.kubernetes_version != null ? each.value.kubernetes_version : length(regexall("^ocid1.*$", each.value.cluster_id)) > 0 ? [for cluster in data.oci_containerengine_clusters.existing[each.key].clusters : cluster.kubernetes_version if cluster.id == each.value.cluster_id][0] : oci_containerengine_cluster.these[each.value.cluster_id].kubernetes_version
-  node_metadata      = each.value.node_config_details.node_metadata
-  node_config_details {
-    dynamic "placement_configs" {
-      for_each = each.value.node_config_details.placement != null ? each.value.node_config_details.placement : tolist([(tomap({ 1 = 1 }))])
-      iterator = pc
-      content {
-        availability_domain     = each.value.node_config_details.placement != null ? data.oci_identity_availability_domains.ads[each.key].availability_domains[(pc.value.availability_domain != null ? pc.value.availability_domain : 1) - 1].name : data.oci_identity_availability_domains.ads[each.key].availability_domains[0].name
-        subnet_id               = length(regexall("^ocid1.*$", each.value.networking.workers_subnet_id)) > 0 ? each.value.networking.workers_subnet_id : var.network_dependency["subnets"][each.value.networking.workers_subnet_id].id
-        capacity_reservation_id = each.value.node_config_details.capacity_reservation_id != null ? each.value.node_config_details.capacity_reservation_id : null
-        fault_domains           = each.value.node_config_details.placement != null ? pc.value.fault_domain != null ? [format("FAULT-DOMAIN-%s", pc.value.fault_domain)] : null : null
-        dynamic "preemptible_node_config" {
-          for_each = try(pc.value.enable_preemptible_node, false) ? [1] : []
-          content {
-            preemption_action {
-              type                    = try(pc.value.preemptible_node_action_type, "TERMINATE")
-              is_preserve_boot_volume = try(pc.value.preserve_boot_volume_on_preempting, false)
-            }
-          }
-        }
-      }
-    }
-    size                                = each.value.size
-    is_pv_encryption_in_transit_enabled = each.value.node_config_details.encryption != null ? each.value.node_config_details.encryption.enable_encrypt_in_transit : null
-    kms_key_id                          = each.value.node_config_details.encryption != null ? (each.value.node_config_details.encryption.kms_key_id != null ? (length(regexall("^ocid1.*$", each.value.node_config_details.encryption.kms_key_id)) > 0 ? each.value.node_config_details.encryption.kms_key_id : var.kms_dependency[each.value.node_config_details.encryption.kms_key_id].id) : (var.workers_configuration.default_kms_key_id != null ? (length(regexall("^ocid1.*$", var.workers_configuration.default_kms_key_id)) > 0 ? var.workers_configuration.default_kms_key_id : var.kms_dependency[var.workers_configuration.default_kms_key_id].id) : null)) : (var.workers_configuration.default_kms_key_id != null ? (length(regexall("^ocid1.*$", var.workers_configuration.default_kms_key_id)) > 0 ? var.workers_configuration.default_kms_key_id : var.kms_dependency[var.workers_configuration.default_kms_key_id].id) : null)
-    node_pool_pod_network_option_details {
-      cni_type          = length(regexall("^ocid1.*$", each.value.cluster_id)) > 0 ? [for cluster in data.oci_containerengine_clusters.existing[each.key].clusters : cluster.cluster_pod_network_options[0].cni_type if cluster.id == each.value.cluster_id][0] : oci_containerengine_cluster.these[each.value.cluster_id].cluster_pod_network_options[0].cni_type
-      max_pods_per_node = length(regexall("^ocid1.*$", each.value.cluster_id)) > 0 ? [for cluster in data.oci_containerengine_clusters.existing[each.key].clusters : cluster.cluster_pod_network_options[0].cni_type if cluster.id == each.value.cluster_id][0] == "OCI_VCN_IP_NATIVE" ? each.value.networking.max_pods_per_node != null ? min(max(each.value.networking.max_pods_per_node, 1), 110) : null : null : oci_containerengine_cluster.these[each.value.cluster_id].cluster_pod_network_options[0].cni_type == "OCI_VCN_IP_NATIVE" ? each.value.networking.max_pods_per_node != null ? min(max(each.value.networking.max_pods_per_node, 1), 110) : null : null
-      pod_nsg_ids       = length(regexall("^ocid1.*$", each.value.cluster_id)) > 0 ? [for cluster in data.oci_containerengine_clusters.existing[each.key].clusters : cluster.cluster_pod_network_options[0].cni_type if cluster.id == each.value.cluster_id][0] == "OCI_VCN_IP_NATIVE" ? each.value.networking.pods_nsg_ids != null ? [for nsg in each.value.networking.pods_nsg_ids : (length(regexall("^ocid1.*$", nsg))) > 0 ? nsg : var.network_dependency["network_security_groups"][nsg].id] : [] : null : oci_containerengine_cluster.these[each.value.cluster_id].cluster_pod_network_options[0].cni_type == "OCI_VCN_IP_NATIVE" ? each.value.networking.pods_nsg_ids != null ? [for nsg in each.value.networking.pods_nsg_ids : (length(regexall("^ocid1.*$", nsg))) > 0 ? nsg : var.network_dependency["network_security_groups"][nsg].id] : [] : null
-      pod_subnet_ids    = length(regexall("^ocid1.*$", each.value.cluster_id)) > 0 ? [for cluster in data.oci_containerengine_clusters.existing[each.key].clusters : cluster.cluster_pod_network_options[0].cni_type if cluster.id == each.value.cluster_id][0] == "OCI_VCN_IP_NATIVE" ? length(regexall("^ocid1.*$", each.value.networking.pods_subnet_id)) > 0 ? [each.value.networking.pods_subnet_id] : [var.network_dependency["subnets"][each.value.networking.pods_subnet_id].id] : null : oci_containerengine_cluster.these[each.value.cluster_id].cluster_pod_network_options[0].cni_type == "OCI_VCN_IP_NATIVE" ? length(regexall("^ocid1.*$", each.value.networking.pods_subnet_id)) > 0 ? [each.value.networking.pods_subnet_id] : [var.network_dependency["subnets"][each.value.networking.pods_subnet_id].id] : null
-    }
-    defined_tags  = each.value.node_config_details.defined_tags != null ? each.value.node_config_details.defined_tags : var.workers_configuration.default_defined_tags
-    freeform_tags = merge(local.cislz_module_tag, each.value.node_config_details.freeform_tags != null ? each.value.node_config_details.freeform_tags : var.workers_configuration.default_freeform_tags)
-    nsg_ids       = each.value.networking.workers_nsg_ids != null ? [for nsg in each.value.networking.workers_nsg_ids : (length(regexall("^ocid1.*$", nsg))) > 0 ? nsg : var.network_dependency["network_security_groups"][nsg].id] : []
-  }
-  node_eviction_node_pool_settings {
-    eviction_grace_duration = each.value.node_config_details.node_eviction != null ? each.value.node_config_details.node_eviction.grace_duration != null ? (floor(tonumber(each.value.node_config_details.node_eviction.grace_duration) / 60) > 0 ?
-      (each.value.node_config_details.node_eviction.grace_duration >= 3600 ?
-        format("PT%dH", 1) :
-        (each.value.node_config_details.node_eviction.grace_duration % 60 == 0 ?
-          format("PT%dM", floor(each.value.node_config_details.node_eviction.grace_duration / 60)) :
-          format("PT%dM%dS", floor(each.value.node_config_details.node_eviction.grace_duration / 60), each.value.node_config_details.node_eviction.grace_duration % 60)
-        )
-      ) :
-      format("PT%dS", each.value.node_config_details.node_eviction.grace_duration)
-    ) : "PT1H" : "PT1H"
-    is_force_delete_after_grace_duration = each.value.node_config_details.node_eviction != null ? each.value.node_config_details.node_eviction.force_delete != null ? each.value.node_config_details.node_eviction.force_delete : false : false
-  }
-  dynamic "node_pool_cycling_details" {
-    for_each = each.value.node_config_details.node_cycling != null ? length(regexall("^ocid1.*$", each.value.cluster_id)) > 0 ? length(regexall("^ENHANCED.*$", [for cluster in data.oci_containerengine_clusters.existing[each.key].clusters : cluster.type if cluster.id == each.value.cluster_id][0])) > 0 ? [1] : [] : length(regexall("^ENHANCED.*$", oci_containerengine_cluster.these[each.value.cluster_id].type)) > 0 ? [1] : [] : []
-    content {
-      is_node_cycling_enabled = each.value.node_config_details.node_cycling != null ? each.value.node_config_details.node_cycling.enable_cycling != null ? each.value.node_config_details.node_cycling.enable_cycling : false : false
-      maximum_surge           = each.value.node_config_details.node_cycling != null ? each.value.node_config_details.node_cycling.max_surge != null ? each.value.node_config_details.node_cycling.max_surge : 1 : 1
-      maximum_unavailable     = each.value.node_config_details.node_cycling != null ? each.value.node_config_details.node_cycling.max_unavailable != null ? each.value.node_config_details.node_cycling.max_unavailable : 0 : 0
-    }
-  }
-  dynamic "node_shape_config" {
-    for_each = length(regexall("Flex", each.value.node_config_details.node_shape)) > 0 ? [each.value.node_config_details.node_shape] : []
-    content {
-      memory_in_gbs = each.value.node_config_details.flex_shape_settings != null ? each.value.node_config_details.flex_shape_settings.memory : 16
-      ocpus         = each.value.node_config_details.flex_shape_settings != null ? each.value.node_config_details.flex_shape_settings.ocpus : 1
-    }
-  }
-  node_source_details {
-    image_id                = each.value.node_config_details.image != null ? length(regexall("^ocid1.*$", each.value.node_config_details.image)) > 0 ? each.value.node_config_details.image : each.value.kubernetes_version != null ? element([for source in data.oci_containerengine_node_pool_option.np_option[each.key].sources : source.image_id if length(regexall("Oracle-Linux-${each.value.node_config_details.image}-20[0-9]*.*-OKE-${substr(each.value.kubernetes_version, 1, -1)}", source.source_name)) > 0], 0) : length(regexall("^ocid1.*$", each.value.cluster_id)) > 0 ? element([for source in data.oci_containerengine_node_pool_option.np_option[each.key].sources : source.image_id if length(regexall("Oracle-Linux-${each.value.node_config_details.image}-20[0-9]*.*-OKE-${substr([for cluster in data.oci_containerengine_clusters.existing[each.key].clusters : cluster.kubernetes_version if cluster.id == each.value.cluster_id][0], 1, -1)}", source.source_name)) > 0], 0) : element([for source in data.oci_containerengine_node_pool_option.np_option[each.key].sources : source.image_id if length(regexall("Oracle-Linux-${each.value.node_config_details.image}-20[0-9]*.*-OKE-${substr(oci_containerengine_cluster.these[each.value.cluster_id].kubernetes_version, 1, -1)}", source.source_name)) > 0], 0) : each.value.kubernetes_version != null ? [for source in data.oci_containerengine_node_pool_option.np_option[each.key].sources : source.image_id if length(regexall("Oracle-Linux-[0-9].[0-9]-20[0-9]*.*-OKE-${substr(each.value.kubernetes_version, 1, -1)}", source.source_name)) > 0][0] : length(regexall("^ocid1.*$", each.value.cluster_id)) > 0 ? [for source in data.oci_containerengine_node_pool_option.np_option[each.key].sources : source.image_id if length(regexall("Oracle-Linux-[0-9].[0-9]-20[0-9]*.*-OKE-${substr([for cluster in data.oci_containerengine_clusters.existing[each.key].clusters : cluster.kubernetes_version if cluster.id == each.value.cluster_id][0], 1, -1)}", source.source_name)) > 0][0] : [for source in data.oci_containerengine_node_pool_option.np_option[each.key].sources : source.image_id if length(regexall("Oracle-Linux-[0-9].[0-9]-20[0-9]*.*-OKE-${substr(oci_containerengine_cluster.these[each.value.cluster_id].kubernetes_version, 1, -1)}", source.source_name)) > 0][0]
-    source_type             = "image"
-    boot_volume_size_in_gbs = try(each.value.node_config_details.boot_volume_size, 60)
-  }
-  ssh_public_key = each.value.node_config_details.ssh_public_key_path != null ? (fileexists(each.value.node_config_details.ssh_public_key_path) ? file(each.value.node_config_details.ssh_public_key_path) : each.value.node_config_details.ssh_public_key_path) : var.workers_configuration.default_ssh_public_key_path != null ? (fileexists(var.workers_configuration.default_ssh_public_key_path) ? file(var.workers_configuration.default_ssh_public_key_path) : var.workers_configuration.default_ssh_public_key_path) : null
+  ) }
 }

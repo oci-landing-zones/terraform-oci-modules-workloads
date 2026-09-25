@@ -1,125 +1,156 @@
-# Copyright (c) 2023, Oracle and/or its affiliates. All rights reserved.
-# Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
-
 locals {
-  found_vcn_duplicates = join(" ; ", [for k, v in { for k, v in { for key1, value1 in { for cluster in var.clusters_configuration["clusters"] : cluster.name => cluster.networking.vcn_id } : value1 => [for key2, value2 in { for cluster in var.clusters_configuration["clusters"] : cluster.name => cluster.networking.vcn_id } : key1 if key1 != key2 && value1 == value2]... } : k => join(", ", flatten(v)) if length(v) > 1 } : "${k} = ${v}"])
+  cluster_settings = { for k, c in local.clusters : k => {
+    compartment_id   = try(local.compartments[local.cluster_refs[k].compartment], null)
+    vcn_id           = local.vcns[c.networking.vcn_id]
+    subnet_id        = local.subnets[c.networking.api_endpoint_subnet_id]
+    kms_key_id       = local.cluster_refs[k].kms == null ? null : local.keys[local.cluster_refs[k].kms]
+    pods_cidr        = try(c.options.kubernetes_network_config.pods_cidr, null)
+    services_cidr    = try(c.options.kubernetes_network_config.services_cidr, null)
+    cis_level        = c.cis_level
+    lb_subnets       = [for ref in coalesce(c.networking.service_lb_subnet_ids, []) : local.subnets[ref]]
+    defined_tags     = module.configuration.cluster_collections[k].maps["defined_tags"]
+    freeform_tags    = merge({ state_id = k, role = "cluster" }, local.cislz_module_tag, module.configuration.cluster_collections[k].maps["freeform_tags"])
+    pv_defined_tags  = module.configuration.cluster_collections[k].maps["options.persistent_volume_config.defined_tags"]
+    pv_freeform_tags = merge(local.cislz_module_tag, module.configuration.cluster_collections[k].maps["options.persistent_volume_config.freeform_tags"])
+    lb_defined_tags  = module.configuration.cluster_collections[k].maps["options.service_lb_config.defined_tags"]
+    lb_freeform_tags = merge(local.cislz_module_tag, module.configuration.cluster_collections[k].maps["options.service_lb_config.freeform_tags"])
+  } }
 }
 
 data "oci_containerengine_cluster_option" "cluster_options" {
-  for_each          = var.clusters_configuration != null ? var.clusters_configuration["clusters"] : {}
+  for_each          = local.clusters
   cluster_option_id = "all"
-  compartment_id    = each.value.compartment_id != null ? (length(regexall("^ocid1.*$", each.value.compartment_id)) > 0 ? each.value.compartment_id : var.compartments_dependency[each.value.compartment_id].id) : (length(regexall("^ocid1.*$", var.clusters_configuration.default_compartment_id)) > 0 ? var.clusters_configuration.default_compartment_id : var.compartments_dependency[var.clusters_configuration.default_compartment_id].id)
+  compartment_id    = local.cluster_settings[each.key].compartment_id
 }
 
-data "oci_core_subnet" "subnet" {
-  for_each  = var.clusters_configuration != null ? var.clusters_configuration["clusters"] : {}
-  subnet_id = length(regexall("^ocid1.*$", each.value.networking.api_endpoint_subnet_id)) > 0 ? each.value.networking.api_endpoint_subnet_id : var.network_dependency["subnets"][each.value.networking.api_endpoint_subnet_id].id
-}
-
-resource "oci_containerengine_cluster" "these" {
-  for_each = var.clusters_configuration != null ? var.clusters_configuration["clusters"] : {}
+resource "terraform_data" "cluster_validation" {
+  for_each = local.clusters
+  input    = merge(local.cluster_settings[each.key], { resource_address = "module.cluster[${jsonencode(each.key)}].module.cluster[0].oci_containerengine_cluster.k8s_cluster" })
   lifecycle {
-    ## Check 1: Customer managed key must be provided if CIS profile level is "2".
     precondition {
-      condition     = coalesce(each.value.cis_level, var.clusters_configuration.default_cis_level, "1") == "2" ? (each.value.encryption != null ? (each.value.encryption.kube_secret_kms_key_id != null || var.clusters_configuration.default_kube_secret_kms_key_id != null) : var.clusters_configuration.default_kube_secret_kms_key_id != null) : true # false triggers this.
-      error_message = "VALIDATION FAILURE (CIS Storage 4.1.2) in cluster \"${each.key}\": a customer managed key is required when CIS level is set to 2. Either \"encryption.kube_secret_kms_key_id\" or \"default_kube_secret_kms_key_id\" must be provided."
+      condition     = length(distinct([for k in local.cluster_managed_pool_keys[each.key] : local.pool_settings[k].ssh_public_key])) <= 1 && length(distinct([for k in local.cluster_managed_pool_keys[each.key] : coalesce(local.pools[k].pv_transit_encryption, false)])) <= 1
+      error_message = "Cluster ${each.key}: official upstream root requires the same SSH key and transit-encryption setting for all pools. Differing values are blocked."
     }
-    ## Check 2: Kubernetes version validation.
     precondition {
-      condition     = each.value.kubernetes_version != null ? contains(data.oci_containerengine_cluster_option.cluster_options[each.key].kubernetes_versions, each.value.kubernetes_version) : true
-      error_message = "VALIDATION FAILURE in cluster \"${each.key}\": Supported values for kubernetes_version are: ${join(",", data.oci_containerengine_cluster_option.cluster_options[each.key].kubernetes_versions)}"
+      condition     = length(distinct([for k in local.cluster_pool_keys[each.key] : coalesce(local.pools[k].name, k)])) == length(local.cluster_pool_keys[each.key])
+      error_message = "Cluster ${each.key}: pool names must be unique within the upstream root module."
     }
-    ## Check 3: Network validation, only one cluster per vcn.
     precondition {
-      condition     = length(local.found_vcn_duplicates) > 0 ? false : true
-      error_message = "VALIDATION FAILURE in cluster \"${each.key}\": Cannot specify the same VCN for more than 1 OKE Cluster. Duplicates found: ${local.found_vcn_duplicates}"
+      condition     = length(local.cluster_pool_keys[each.key]) == 0 ? true : sum([for k in local.cluster_pool_keys[each.key] : coalesce(local.pools[k].size, 0)]) > 0
+      error_message = "Cluster ${each.key}: upstream hides pool outputs when total pool size is zero; this configuration is blocked pending upstream support."
     }
-    ## Check 4: CNI type validation.
     precondition {
-      condition     = lower(each.value.cni_type) == "flannel" || lower(each.value.cni_type) == "native"
-      error_message = " VALIDATION FAILURE in cluster \"${each.key}\": Supported values for cni_type are flannel or native."
+      condition     = local.cluster_settings[each.key].compartment_id != null
+      error_message = "Cluster ${each.key}: specify a resolvable compartment_id."
     }
-    ## Check 5: Network validation, private endpoint in private subnet.
     precondition {
-      condition     = each.value.networking.is_api_endpoint_public == true ? data.oci_core_subnet.subnet[each.key].prohibit_internet_ingress == false ? true : false : true
-      error_message = "VALIDATION FAILURE in cluster \"${each.key}\": Cannot specify public endpoint on a private subnet."
+      condition     = local.cluster_settings[each.key].cis_level != "2" || local.cluster_settings[each.key].kms_key_id != null
+      error_message = "Cluster ${each.key}: CIS level 2 requires a customer-managed secret-encryption key."
+    }
+    precondition {
+      condition     = each.value.kubernetes_version == null ? true : contains(data.oci_containerengine_cluster_option.cluster_options[each.key].kubernetes_versions, each.value.kubernetes_version)
+      error_message = "Cluster ${each.key}: kubernetes_version is not supported by OCI."
+    }
+    precondition {
+      condition     = contains(["native", "flannel"], lower(each.value.cni_type))
+      error_message = "Cluster ${each.key}: cni_type must be native or flannel."
+    }
+    precondition {
+      condition     = length(local.cluster_settings[each.key].lb_subnets) == 1
+      error_message = "Cluster ${each.key}: official upstream v5.5.1 requires exactly one service_lb_subnet_ids entry. Omitted/multiple LB subnets are blocked pending upstream support."
+    }
+    precondition {
+      condition     = !try(coalesce(each.value.image_signing.image_policy_enabled, false), false) || length(local.cluster_refs[each.key].signing_keys) > 0
+      error_message = "Cluster ${each.key}: enabled image signing requires at least one KMS key."
     }
   }
-  compartment_id     = each.value.compartment_id != null ? (length(regexall("^ocid1.*$", each.value.compartment_id)) > 0 ? each.value.compartment_id : var.compartments_dependency[each.value.compartment_id].id) : (length(regexall("^ocid1.*$", var.clusters_configuration.default_compartment_id)) > 0 ? var.clusters_configuration.default_compartment_id : var.compartments_dependency[var.clusters_configuration.default_compartment_id].id)
-  kubernetes_version = each.value.kubernetes_version != null ? each.value.kubernetes_version : reverse(data.oci_containerengine_cluster_option.cluster_options[each.key].kubernetes_versions)[0]
-  name               = each.value.name
-  vcn_id             = length(regexall("^ocid1.*$", each.value.networking.vcn_id)) > 0 ? each.value.networking.vcn_id : var.network_dependency["vcns"][each.value.networking.vcn_id].id
-  cluster_pod_network_options {
-    cni_type = lower(each.value.cni_type) == "native" ? "OCI_VCN_IP_NATIVE" : "FLANNEL_OVERLAY"
-  }
-  defined_tags  = each.value.defined_tags != null ? each.value.defined_tags : var.clusters_configuration.default_defined_tags
-  freeform_tags = merge(local.cislz_module_tag, each.value.freeform_tags != null ? each.value.freeform_tags : var.clusters_configuration.default_freeform_tags)
-  endpoint_config {
-    is_public_ip_enabled = each.value.networking.is_api_endpoint_public != null ? each.value.networking.is_api_endpoint_public : false
-    nsg_ids              = each.value.networking.api_endpoint_nsg_ids != null ? [for nsg in each.value.networking.api_endpoint_nsg_ids : (length(regexall("^ocid1.*$", nsg))) > 0 ? nsg : var.network_dependency["network_security_groups"][nsg].id] : []
-    subnet_id            = length(regexall("^ocid1.*$", each.value.networking.api_endpoint_subnet_id)) > 0 ? each.value.networking.api_endpoint_subnet_id : var.network_dependency["subnets"][each.value.networking.api_endpoint_subnet_id].id
-  }
-  dynamic "image_policy_config" {
-    for_each = each.value.image_signing != null ? each.value.image_signing.image_policy_enabled ? [1] : [] : []
-    content {
-      is_policy_enabled = each.value.image_signing.image_policy_enabled
-      key_details {
-        kms_key_id = each.value.image_signing != null ? (each.value.image_signing.img_kms_key_id != null ? (length(regexall("^ocid1.*$", each.value.image_signing.img_kms_key_id)) > 0 ? each.value.image_signing.img_kms_key_id : var.kms_dependency[each.value.image_signing.img_kms_key_id].id) : (var.clusters_configuration.default_img_kms_key_id != null ? (length(regexall("^ocid1.*$", var.clusters_configuration.default_img_kms_key_id)) > 0 ? var.clusters_configuration.default_img_kms_key_id : var.kms_dependency[var.clusters_configuration.default_img_kms_key_id].id) : null)) : (var.clusters_configuration.default_img_kms_key_id != null ? (length(regexall("^ocid1.*$", var.clusters_configuration.default_img_kms_key_id)) > 0 ? var.clusters_configuration.default_img_kms_key_id : var.kms_dependency[var.clusters_configuration.default_img_kms_key_id].id) : null)
-      }
+  depends_on = [terraform_data.dependencies]
+}
+
+locals {
+  cluster_managed_pool_keys = { for c in keys(local.clusters) : c => [for k, p in local.pools : k if p.mode == "node-pool"] }
+  cluster_pool_keys         = { for c in keys(local.clusters) : c => [for k, p in local.pools : k] }
+}
+
+# Keep discovery inputs independent of validation-resource creation. A module-wide
+# depends_on defers upstream AD discovery and makes fault-domain for_each keys unknown.
+# Validation resources retain blocking preconditions in ordinary plan/apply runs.
+module "cluster" {
+  providers                    = { oci = oci, oci.home = oci }
+  create_cluster               = true
+  create_vcn                   = false
+  create_drg                   = false
+  create_bastion               = false
+  cluster_addons               = {}
+  cluster_addons_to_remove     = {}
+  create_operator              = false
+  create_iam_resources         = false
+  create_iam_tag_namespace     = false
+  create_iam_defined_tags      = false
+  create_iam_worker_policy     = "never"
+  create_iam_autoscaler_policy = "never"
+  create_iam_operator_policy   = "never"
+  create_iam_kms_policy        = "never"
+  create_iam_karpenter_policy  = "never"
+  vcn_create_internet_gateway  = "never"
+  vcn_create_nat_gateway       = "never"
+  vcn_create_service_gateway   = "never"
+  # Only affects upstream-created networking/standalone compute, neither managed nor virtual pools.
+  assign_dns              = false
+  output_detail           = true
+  load_balancers          = "internal"
+  preferred_load_balancer = "internal"
+  subnets = {
+    for role in ["bastion", "operator", "cp", "int_lb", "pub_lb", "workers", "pods"] : role => {
+      create = "never"
+      id     = role == "cp" ? local.cluster_settings[each.key].subnet_id : (role == "int_lb" ? try(local.cluster_settings[each.key].lb_subnets[0], null) : null)
     }
   }
-  kms_key_id = each.value.encryption != null ? (each.value.encryption.kube_secret_kms_key_id != null ? (length(regexall("^ocid1.*$", each.value.encryption.kube_secret_kms_key_id)) > 0 ? each.value.encryption.kube_secret_kms_key_id : var.kms_dependency[each.value.encryption.kube_secret_kms_key_id].id) : (var.clusters_configuration.default_kube_secret_kms_key_id != null ? (length(regexall("^ocid1.*$", var.clusters_configuration.default_kube_secret_kms_key_id)) > 0 ? var.clusters_configuration.default_kube_secret_kms_key_id : var.kms_dependency[var.clusters_configuration.default_kube_secret_kms_key_id].id) : null)) : (var.clusters_configuration.default_kube_secret_kms_key_id != null ? (length(regexall("^ocid1.*$", var.clusters_configuration.default_kube_secret_kms_key_id)) > 0 ? var.clusters_configuration.default_kube_secret_kms_key_id : var.kms_dependency[var.clusters_configuration.default_kube_secret_kms_key_id].id) : null)
-  options {
-    add_ons {
-      is_kubernetes_dashboard_enabled = each.value.options != null ? each.value.options.add_ons != null ? each.value.options.add_ons.dashboard_enabled : false : false
-      is_tiller_enabled               = each.value.options != null ? each.value.options.add_ons != null ? each.value.options.add_ons.tiller_enabled : false : false
-    }
-    admission_controller_options {
-      is_pod_security_policy_enabled = each.value.options != null ? each.value.options.admission_controller != null ? each.value.options.admission_controller.pod_policy_enabled : false : false
-    }
-    kubernetes_network_config {
-      pods_cidr     = each.value.options != null ? each.value.options.kubernetes_network_config != null ? each.value.options.kubernetes_network_config.pods_cidr != null ? each.value.options.kubernetes_network_config.pods_cidr : null : null : null
-      services_cidr = each.value.options != null ? each.value.options.kubernetes_network_config != null ? each.value.options.kubernetes_network_config.services_cidr != null ? each.value.options.kubernetes_network_config.services_cidr : null : null : null
-    }
-    persistent_volume_config {
-      defined_tags  = each.value.options != null ? each.value.options.persistent_volume_config != null ? each.value.options.persistent_volume_config.defined_tags != null ? each.value.options.persistent_volume_config.defined_tags : var.clusters_configuration.default_defined_tags : var.clusters_configuration.default_defined_tags : var.clusters_configuration.default_defined_tags
-      freeform_tags = merge(local.cislz_module_tag, each.value.options != null ? each.value.options.persistent_volume_config != null ? each.value.options.persistent_volume_config.freeform_tags != null ? each.value.options.persistent_volume_config.freeform_tags : var.clusters_configuration.default_freeform_tags : var.clusters_configuration.default_freeform_tags : var.clusters_configuration.default_freeform_tags)
-    }
-    service_lb_config {
-      defined_tags  = each.value.options != null ? each.value.options.service_lb_config != null ? each.value.options.service_lb_config.defined_tags != null ? each.value.options.service_lb_config.defined_tags : var.clusters_configuration.default_defined_tags : var.clusters_configuration.default_defined_tags : var.clusters_configuration.default_defined_tags
-      freeform_tags = merge(local.cislz_module_tag, each.value.options != null ? each.value.options.service_lb_config != null ? each.value.options.service_lb_config.freeform_tags != null ? each.value.options.service_lb_config.freeform_tags : var.clusters_configuration.default_freeform_tags : var.clusters_configuration.default_freeform_tags : var.clusters_configuration.default_freeform_tags)
-    }
-    service_lb_subnet_ids = each.value.networking.services_subnet_id != null ? [for lb_sub in each.value.networking.services_subnet_id : (length(regexall("^ocid1.*$", lb_sub)) > 0 ? lb_sub : var.network_dependency["subnets"][lb_sub].id)] : []
-    dynamic "open_id_connect_discovery" {
-      for_each = (try(each.value.is_enhanced, false) && try(each.value.options.openid_connect.enable_discovery, false)) ? [1] : []
-      content {
-        is_open_id_connect_discovery_enabled = (
-          try(each.value.options.openid_connect.enable_discovery, false) && lower(try(each.value.cni_type, "")) == "native"
-        )
-      }
-    }
-    dynamic "open_id_connect_token_authentication_config" {
-      for_each = (try(each.value.is_enhanced, false) && try(each.value.options.openid_connect.enable_authentication, false)) ? [1] : []
-      content {
-        is_open_id_connect_auth_enabled = try(each.value.options.openid_connect.enable_authentication, false)
-        ca_certificate                  = try(each.value.options.openid_connect.ca_certificate, null)
-        signing_algorithms              = try(each.value.options.openid_connect.signing_algorithms, null)
-        client_id                       = try(each.value.options.openid_connect.client_id, null)
-        configuration_file              = try(each.value.options.openid_connect.configuration_file, null)
-        issuer_url                      = try(each.value.options.openid_connect.issuer_url, null)
-        username_claim                  = try(each.value.options.openid_connect.username_claim, null)
-        username_prefix                 = try(each.value.options.openid_connect.username_prefix, null)
-        groups_claim                    = try(each.value.options.openid_connect.groups_claim, null)
-        groups_prefix                   = try(each.value.options.openid_connect.groups_prefix, null)
-        dynamic "required_claims" {
-          for_each = try(each.value.options.openid_connect.required_claims, {})
-          content {
-            key   = required_claims.key
-            value = required_claims.value
-          }
-        }
-      }
-    }
-  }
-  type = each.value.is_enhanced == true ? "ENHANCED_CLUSTER" : "BASIC_CLUSTER"
+  nsgs                              = { for role in ["bastion", "operator", "cp", "int_lb", "pub_lb", "workers", "pods"] : role => { create = "never" } }
+  worker_pools                      = { for k, p in local.pools : coalesce(p.name, k) => local.upstream_pools[k] }
+  ssh_public_key                    = try(local.pool_settings[local.cluster_managed_pool_keys[each.key][0]].ssh_public_key, null)
+  worker_pv_transit_encryption      = try(coalesce(local.pools[local.cluster_managed_pool_keys[each.key][0]].pv_transit_encryption, false), false)
+  worker_disable_default_cloud_init = try(var.workers_configuration.default_disable_default_cloud_init, false)
+  # Effective custom parts are selected per pool by configuration (local replaces global).
+  worker_cloud_init                 = []
+  worker_is_public                  = false
+  for_each                          = local.clusters
+  source                            = "git::https://github.com/oracle-terraform-modules/terraform-oci-oke.git?ref=v5.5.1"
+  compartment_id                    = local.cluster_settings[each.key].compartment_id
+  state_id                          = each.key
+  cluster_name                      = each.value.name
+  cluster_type                      = "enhanced"
+  kubernetes_version                = each.value.kubernetes_version != null ? each.value.kubernetes_version : reverse(data.oci_containerengine_cluster_option.cluster_options[each.key].kubernetes_versions)[0]
+  cni_type                          = lower(each.value.cni_type) == "native" ? "npn" : "flannel"
+  vcn_id                            = local.cluster_settings[each.key].vcn_id
+  control_plane_is_public           = false
+  assign_public_ip_to_control_plane = false
+  control_plane_nsg_ids             = distinct([for ref in module.configuration.cluster_collections[each.key].lists["networking.api_endpoint_nsg_ids"] : local.nsgs[ref]])
+  cluster_kms_key_id                = local.cluster_settings[each.key].kms_key_id
+  pods_cidr                         = try(each.value.options.kubernetes_network_config.pods_cidr, null)
+  services_cidr                     = try(each.value.options.kubernetes_network_config.services_cidr, null)
+  oke_ip_families                   = ["IPv4"]
+  backend_nsg_ids                   = []
+  use_signed_images                 = try(coalesce(each.value.image_signing.image_policy_enabled, false), false)
+  image_signing_keys                = distinct([for ref in local.cluster_refs[each.key].signing_keys : local.keys[ref]])
+  use_defined_tags                  = false
+  tag_namespace                     = "oke"
+  cluster_defined_tags              = local.cluster_settings[each.key].defined_tags
+  cluster_freeform_tags             = local.cluster_settings[each.key].freeform_tags
+  persistent_volume_defined_tags    = local.cluster_settings[each.key].pv_defined_tags
+  persistent_volume_freeform_tags   = local.cluster_settings[each.key].pv_freeform_tags
+  service_lb_defined_tags           = local.cluster_settings[each.key].lb_defined_tags
+  service_lb_freeform_tags          = local.cluster_settings[each.key].lb_freeform_tags
+  oidc_discovery_enabled            = lower(each.value.cni_type) == "native" && try(each.value.options.openid_connect.enable_discovery, false)
+  oidc_token_auth_enabled           = try(each.value.options.openid_connect.enable_authentication, false)
+  oidc_token_authentication_config = merge(try(each.value.options.openid_connect, null), {
+    required_claims = [for k, v in coalesce(try(each.value.options.openid_connect.required_claims, null), {}) : { key = k, value = v }]
+  })
+}
+
+# Upstream exports cluster identity/endpoints, not the resource object. Read back
+# OCI attributes to retain the existing keyed cluster output for LZ consumers.
+data "oci_containerengine_cluster" "managed" {
+  for_each   = local.clusters
+  cluster_id = module.cluster[each.key].cluster_id
 }

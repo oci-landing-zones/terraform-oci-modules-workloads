@@ -1,315 +1,345 @@
-# OCI Landing Zones OKE Module
+# CIS OKE: Landing Zone wrapper for the official OKE module
 
-![Landing Zone logo](../landing_zone_300.png)
+This branch implements the major-release refactor using only official upstream
+code. It is an implementation candidate, **not yet a release-qualified migration**.
+Cluster and worker provisioning uses the official OKE root module
+pinned to release `v5.5.1` (the latest official release verified
+on 2026-09-18; commit `627560db54a123e973cd1f18c933ee6d744274ce`).
+There is no vendored snapshot, patched provider, or duplicate OCI resource
+implementation in the wrapper.
 
-This module manages Container Engine For Kubernetes (OKE) clusters, node pools and virtual node pools in Oracle Cloud Infrastructure (OCI). OKE is a fully-managed, scalable, and highly available service that you can use to deploy your containerized applications to the cloud. 
+The Landing Zone layer retains typed configuration, shared worker defaults,
+reference resolution, CIS policy validation and keyed outputs. Root-module composition explicitly disables VCN, subnet, NSG, IAM, bastion,
+operator and extension creation. Those resources must already be managed elsewhere.
 
-The module supports bringing in external dependencies that managed resources depend on, including compartments, subnets, network security groups, encryption keys, and others. 
+## Configuration
 
-Check [module specification](./SPEC.md) for a full description of module requirements, supported variables, managed resources and outputs.
+`cluster_configuration` is a flat object for exactly one enhanced cluster:
+`name`, `compartment_id`, optional `cis_level` (default 1), `networking`, tags and
+other cluster options. There is no cluster map, identity key or cluster reference.
+`workers_configuration` contains shared `default_*` values and a `worker_pools`
+map. Every pool implicitly belongs to this cluster and inherits its compartment
+and CIS level. Cluster-only calls may omit workers; workers without a cluster and
+external-cluster calls are rejected. Null cluster input permits a disabled/no-op
+invocation, but cannot be combined with nonempty worker pools.
 
-Check the [examples](./examples/) folder for actual module usage.
-
-- [Features](#features)
-- [Requirements](#requirements)
-- [How to Invoke the Module](#invoke)
-- [Module Functioning](#functioning)
-  - [OKE Clusters](#oke)
-  - [Node Pools](#node-pools)
-  - [Virtual Node Pools](#virtual-node-pools)
-  - [External Dependencies](#ext-dep) 
-- [Related Documentation](#related)
-- [Known Issues](#issues)
-
-## <a name="features">Features</a>
-The following features are currently supported by the module:
-
-- Basic and Enhanced clusters;
-- Standard node pools and virtual node pools;
-- Kubernetes secrets encryption with customer managed keys enforced, driven by CIS profile level "2".
-- Worker nodes image signing enforced, driven by CIS profile level "2".
-- Boot volumes encryption at rest enforced, driven by CIS profile level "2".
-- Boot volumes in-transit encryption enforced, drive by CIS profile level "2".
-
-## <a name="requirements">Requirements</a>
-### Terraform Version >= 1.3.0
-
-This module requires Terraform binary version 1.3.0 or greater, as it relies on Optional Object Type Attributes feature. The feature shortens the amount of input values in complex object types, by having Terraform automatically inserting a default value for any missing optional attributes.
-
-### IAM Permissions
-
-This module requires the following IAM permissions: 
-
-For deploying OKE Clusters:
-```
-Allow group <GROUP-NAME> to manage cluster-family in compartment <OKE-CLUSTER-COMPARTMENT-NAME>
-Allow group <GROUP-NAME> to manage instance-family in compartment <OKE-CLUSTER-COMPARTMENT-NAME> 
-Allow group <GROUP-NAME> to use vnics in compartment <OKE-CLUSTER-COMPARTMENT-NAME>
-Allow group <GROUP-NAME> to inspect compartments in compartment <OKE-CLUSTER-COMPARTMENT-NAME> 
-Allow group <GROUP-NAME> to read virtual-network-family in compartment <NETWORK-COMPARTMENT-NAME>
-Allow group <GROUP-NAME> to use subnets in compartment <NETWORK-COMPARTMENT-NAME> 
-Allow group <GROUP-NAME> to use network-security-groups in compartment <NETWORK-COMPARTMENT-NAME>
-Allow group <GROUP-NAME> to use vnics in compartment <NETWORK-COMPARTMENT-NAME>
-Allow group <GROUP-NAME> to manage private-ips in compartment <NETWORK-COMPARTMENT-NAME>
-Allow group <GROUP-NAME> to manage public-ips in compartment <NETWORK-COMPARTMENT-NAME> 
-```
-
-For allowing load balancers deployments by OKE clusters:
-```
-Allow any-user to use private-ips in compartment <NETWORK-COMPARTMENT-NAME> where all { request.principal.type = 'cluster', request.principal.compartment.id = '<OKE-CLUSTER-COMPARTMENT-OCID>' }
-Allow any-user to use network-security-groups in compartment <NETWORK-COMPARTMENT-NAME> where all { request.principal.type = 'cluster', request.principal.compartment.id = '<OKE-CLUSTER-COMPARTMENT-OCID>' }
-Allow any-user to use subnets in compartment <NETWORK-COMPARTMENT-NAME> where all { request.principal.type = 'cluster', request.principal.compartment.id = '<OKE-CLUSTER-COMPARTMENT-OCID>' }
-```
-
-For cluster auto-scaling:
-```
-Allow any-user to manage instances in compartment <OKE-CLUSTER-COMPARTMENT-NAME> where all { request.principal.type = 'cluster', request.principal.compartment.id = '<OKE-CLUSTER-COMPARTMENT-OCID>' }
-```
-
-For more information about OKE Policies [click here](https://docs.oracle.com/en-us/iaas/Content/ContEng/Concepts/contengpolicyconfig.htm#Policy_Configuration_for_Cluster_Creation_and_Deployment).
-
-## <a name="invoke">How to Invoke the Module</a>
-
-Terraform modules can be invoked locally or remotely. 
-
-For invoking the module locally, just set the module *source* attribute to the module file path (relative path works). The following example assumes the module is two folders up in the file system.
-```
-module "oke" {
-  source = "../.."
-  clusters_configuration = var.clusters_configuration
-  workers_configuration  = var.workers_configuration
+```hcl
+cluster_configuration = {
+  name = "platform"
+  compartment_id = "COMPARTMENT-KEY"
+  networking = {
+    vcn_id = "VCN-KEY"
+    api_endpoint_subnet_id = "API-SUBNET-KEY"
+    service_lb_subnet_ids = ["LB-SUBNET-KEY"]
+  }
 }
 ```
-For invoking the module remotely, set the module *source* attribute to the *cis-oke* module folder in this repository, as shown:
-```
-module "oke" {
-  source = "github.com/oracle-quickstart/terraform-oci-secure-workloads/cis-oke"
-  clusters_configuration = var.clusters_configuration
-  workers_configuration  = var.workers_configuration
+
+Use the [single-cluster example](examples/upstream-wrapper) or the
+[multi-cluster for_each caller example](examples/multiple-clusters). Caller map
+keys determine module-instance identities; they are not CIS OKE input fields.
+The orchestrator integration is a separate change and is not included here.
+
+```hcl
+workers_configuration = {
+  default_shape = "VM.Standard.E4.Flex"
+  default_size = 3
+  default_ocpus = 2
+  default_memory = 32
+  default_subnet_id = "WORKER-SUBNET-KEY"
+  default_pod_subnet_id = "POD-SUBNET-KEY"
+  worker_pools = {
+    general = {}
+    batch = { size = 5, ocpus = 4 }
+  }
 }
 ```
-For referring to a specific module version, add an extra slash before the folder name and append *ref=\<version\>* to the *source* attribute value, as in:
-```
-  source = "github.com/oracle-quickstart/terraform-oci-secure-workloads//cis-oke?ref=v0.1.0"
-```
 
-## <a name="functioning">Module Functioning</a>
+Pools use upstream-style names and `mode = "node-pool"` (default) or
+`"virtual-node-pool"`. Only these managed and virtual modes are supported in this
+release; other upstream worker modes are rejected. Pools cannot override cluster,
+compartment or CIS level. Logical
+compartment/network/KMS references resolve through the existing dependency maps;
+OCIDs can be supplied directly. Region selection remains the caller's OCI provider
+configuration, not a per-pool setting.
 
-The module defines two top level variables used to manage OKE clusters and node pools: 
-- **clusters_configuration**: for managing OKE clusters.
-- **workers_configuration**: for managing node pools and virtual node pools.
+Precedence is **CIS fallback < shared defaults < pool override**. Null/omitted
+fields inherit; false and zero remain explicit values. Supported maps merge by
+key (local values win), and supported set-like lists combine and deduplicate.
+Empty maps/lists retain inherited entries unless explicitly overridden.
 
-### <a name="oke">OKE Clusters</a>
+Each pool can name collections in `override_defaults`. Named fields
+use only their local value: `{}` clears a map and `[]` clears a list. Every named
+field must be supported and explicitly non-null; misspellings, scalar fields and
+missing local values are rejected. This does not remove module/upstream tracking
+tags or labels, and all CIS/upstream constraints still apply.
 
-OKE Clusters are managed using the **clusters_configuration** object. It contains a set of attributes starting with the prefix **default_** and one attribute named **clusters**. The **default_** attribute values are applied to all clusters within **clusters**, unless overridden at the cluster level.
+| Object | Supported `override_defaults` entries |
+| --- | --- |
+| Worker pool | `defined_tags`, `freeform_tags`, `node_defined_tags`, `node_freeform_tags`, `node_labels`, `nsg_ids`, `pod_nsg_ids` |
 
-The *default_* attributes are the following:
-- **default_compartment_id**: Default compartment for all clusters. It can be overridden by *compartment_id* attribute in each cluster. This attribute is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *compartments_dependency* variable. See [External Dependencies](#ext-dep) for details.
-- **default_img_kms_key_id**: (Optional) Default image signing key for all clusters. It can be overridden by *img_kms_key_id* attribute in each cluster. This attribute is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *kms_dependency* variable. See [External Dependencies](#ext-dep) for details.
-- **default_kube_secret_kms_key_id**: (Optional) Default kube secret encryption key for all clusters. It can be overridden by *kube_secret_kms_key_id* attribute in each cluster. This attribute is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *kms_dependency* variable. See [External Dependencies](#ext-dep) for details.
-- **default_cis_level**: (Optional) Default CIS OCI Benchmark profile level for all clusters. Level "2" enforces usage of customer managed keys for image signing and kube secrets encryption. Default is "1". It can be overridden by *cis_level* attribute in each cluster.
-- **default_defined_tags**: (Optional) Default defined tags for all clusters. It can be overridden by *defined_tags* attribute in each cluster.
-- **default_freeform_tags**: (Optional) Default freeform tags for all clusters. It can be overridden by *freeform_tags* attribute in each cluster.
+For example, a pool can add labels but completely replace inherited NSGs:
 
-The clusters themselves are defined within the **clusters** attribute. In Terraform terms, it is a map of objects, where each object is referred by an identifying key. The supported attributes are listed below. For better usability, most attributes are grouped in logical blocks. They are properly indented in the list.
-- **compartment_id**: (Optional) The cluster compartment. *default_compartment_id* is used if undefined. This attribute is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *compartments_dependency* variable. See [External Dependencies](#ext-dep) for details.
-- **cis_level**: (Optional) The CIS OCI Benchmark profile level to apply. *default_cis_level* is used if undefined.
-- **kubernetes_version**: (Optional) the kubernetes version. If not specified, the latest version is selected.
-- **name**: the cluster display name.
-- **is_enhanced**:(Optional) If the cluster is enhanced. It is designed to work only with native CNI. Default is basic.
-- **cni_type**: (Optional) The CNI type of the cluster. It can be either flannel or native. Default is flannel.
-- **defined_tags**: (Optional) Clusters defined_tags. *default_defined_tags* is used if undefined.
-- **freeform_tags**: (Optional) Clusters freeform_tags. *default_freeform_tags* is used if undefined.
-- **options**: (Optional) Options attributes for the cluster.
-  - **add_ons**: (Optional) Configurable cluster addons.
-    - **dashboard_enabled**: (Optional) Whether Kubernetes dashboard is enabled. Default is false.
-    - **tiller_enabled**: (Optional) Whether Tiller is enabled. Default is false.  
-  - **admission_controller**: (Optional) Configurable cluster admission controllers. 
-    - **pod_policy_enabled**: (Optional) Whether the pod policy is enabled. Default is false.   
-  - **kubernetes_network_config**: (Optional) Pods and services network configuration for kubernetes.
-    - **pods_cidr**: (Optional) The CIDR block for Kubernetes pods. Optional, defaults to *10.244.0.0/16*.
-    - **services_cidr**: (Optional) The CIDR block for Kubernetes services. Optional, defaults to *10.96.0.0/16*. 
-  - **persistent_volume_config**: (Optional) Configuration to be applied to block volumes created by Kubernetes Persistent Volume Claims (PVC).
-    - **defined_tags**: (Optional) PVC defined_tags. *default_defined_tags* is used if undefined.
-    - **freeform_tags**: (Optional) PVC freeform_tags. *default_freeform_tags* is used if undefined. 
-  - **service_lb_config**: (Optional) Configuration to be applied to load balancers created by Kubernetes services.
-    - **defined_tags**: (Ooptional) Load balancer defined_tags. *default_defined_tags* is used if undefined.
-    - **freeform_tags**: (Optional) Load balancer freeform_tags. *default_freeform_tags* is used if undefined.         
-- **networking**: (Optional) Cluster networking settings.
-  - **vcn_id**:  The vcn where the cluster is created. This attribute is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *network_dependency* variable. See [External Dependencies](#ext-dep) for details.
-  - **is_api_endpoint_public**: (Optional) Whether the OKE API endpoint is public. Default is false.
-  - **api_endpoint_nsg_ids**: (Optional) The NSGss used by the OKE API endpoint. This attribute is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *network_dependency* variable. See [External Dependencies](#ext-dep) for details.
-  - **api_endpoint_subnet_id**:  The subnet for the OKE API endpoint. This attribute is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *network_dependency* variable. See [External Dependencies](#ext-dep) for details.
-  - **services_subnet_id**: (Optional) The subnet for the cluster service. This attribute is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *network_dependency* variable. See [External Dependencies](#ext-dep) for details.
-- **encryption**: (Optional) Encryption settings.
-  - **kube_secret_kms_key_id**: (Optional) The KMS key to assign as the master encryption key for kube secrets. *default_kube_secret_kms_key_id* is used if undefined. This attribute is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *kms_dependency* variable. See [External Dependencies](#ext-dep) for details.
-- **image_signing**: (Optional) image signing encryption settings
-  - **image_policy_enabled**: (Optional) whether the image verification policy is enabled. Default is false.
-  - **img_kms_key_id**: (Optional) the KMS key to assign as the *signing* key for images. *default_img_kms_key_id* is used if this is not defined. This attribute is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *kms_dependency* variable. See [External Dependencies](#ext-dep) for details.
-
-### <a name="Workers">Workers</a>
-Workers are managed using the **workers_configuration** object.  It contains a set of attributes starting with the prefix **default_** and two attributes named **node_pools** and **virtual_node_pools**. The **default_** attribute values are applied to all node pools and some of them to all virtual node pools.
-The defined **default_** attributes are the following:
-
-- **default_compartment_id**: (Optional) The default compartment for all node pools and virtual node pools. It can be overridden by *compartment_id* attribute in each node pool or virtual pool. This attribute is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *compartments_dependency* variable. See [External Dependencies](#ext-dep) for details.
-- **default_kms_key_id**: (Optional) The default encryption key for nodes in node pools. It can be overridden by *kms_key_id* attribute in each unit. This attribute is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *kms_dependency* variable. See [External Dependencies](#ext-dep) for details.
-- **default_cis_level**: (Optional) The default CIS OCI Benchmark profile level for all node pools. Level "2" enforces usage of customer managed keys for encryption. Default is "1". It can be overridden by *cis_level* attribute in each unit.
-- **default_defined_tags**: (Optional) The default defined tags for all node pools and virtual node pools. It can be overridden by *defined_tags* attribute in each unit.
-- **default_freeform_tags**: (Optional) the default freeform tags for all node pools and virtual node pools. It can be overridden by *freeform_tags* attribute in each unit.
-- **default_ssh_public_key_path**: (Optional) The default SSH public key path used to access all nodes. It can be overridden by the *ssh_public_key* attribute in each node pool.
-- **default_initial_node_labels**: (Optional) The default initial node labels for all node pools and virtual node pools, a list of key/value pairs to add to nodes after they join the OKE cluster.
-
-#### <a name="node-pools">Node Pools</a>
-Node Pools are defined using the optional **node_pools** attribute. In Terraform terms, it is a map of objects, where each object is referred by an identifying key. The following attributes are supported:
-- **cis_level**: (Optional) The CIS OCI Benchmark profile level to apply. The *default_cis_level* is used if undefined.
-- **kubernetes_version**: (Optional) The Kubernetes version for the node pool. it cannot be two versions older or newer than the cluster version. If not specified, the version of the cluster is selected.
-- **cluster_id**: The cluster where the node pool is created. This attribute is overloaded. It can be assigned either a literal OCID or a reference (a key) to a cluster from the **clusters_configuration**.
-- **compartment_id**: (Optional) The compartment where the node pool is created. If the cluster and the node pools are both managed by this module, attributes **compartment_id** and **default_compartment_id** are ignored, as the compartment for the node pool is taken from the cluster assigned to the node pool in the *cluster_id* attribute. This attribute is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *compartments_dependency* variable. See [External Dependencies](#ext-dep) for details.
-- **name**: The node pool display name.
-- **defined_tags**: (Optional) The node pool defined_tags. *default_defined_tags* is used if undefined.
-- **freeform_tags**: (Optional) The node pool freeform_tags. *default_freeform_tags* is used if undefined.
-- **initial_node_labels**: (Optional) A list of key/value pairs to add to nodes after they join the OKE cluster.
-- **size**: (Optional) The number of nodes in the node pool.
-- **networking**: Node pool networking settings.
-  - **workers_nsg_ids**: (Optional) The NSGs where nodes are placed in. This attribute is overloaded. It can be assigned either literal OCIDs or references (keys) to an OCID in *network_dependency* variable. See [External Dependencies](#ext-dep) for details.
-  - **workers_subnet_id**: The nodes subnet. This attribute is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *network_dependency* variable. See [External Dependencies](#ext-dep) for details.
-  - **pods_subnet_id**: (Optional) The pods subnet. **Applicable to native CNI only**. This attribute is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *network_dependency* variable. See [External Dependencies](#ext-dep) for details.
-  - **pods_nsg_ids**: (Optional) The NSGs where pods are placed in. **Applicable to native CNI only**. This attribute is overloaded. It can be assigned either literal OCIDs or references (keys) to an OCID in *network_dependency* variable. See [External Dependencies](#ext-dep) for details.
-  - **max_pods_per_node**: (Optional) The maximum number of pods per node. **Applicable to native CNI only**.
-
-- **node_config_details**: The configuration of nodes in the node pool.
-  - **ssh_public_key_path**: (Optional) The SSH public key path used to access the workers. *default_ssh_public_key_path* is used if undefined.
-  - **defined_tags**: (Optional) The nodes defined_tags. *default_defined_tags* is used if undefined.
-  - **freeform_tags**: (Optional) The nodes freeform_tags. *default_freeform_tags* is used if undefined.
-  - **node_metadata**: (Optional) Key/value pairs added to each underlying worker instance when it is launched. To run a cloud-init script, provide its base64-encoded contents under the `user_data` key, for example `node_metadata = { user_data = base64encode(file("cloud-init.yaml")) }`. See [Using Custom Cloud-init Initialization Scripts to Set Up Managed Nodes](https://docs.oracle.com/en-us/iaas/Content/ContEng/Tasks/contengusingcustomcloudinitscripts.htm).
-  - **image**: (Optional) The nodes image. It can be specified as an OCID or as an Oracle Linux Version. Example: "8.8". If not specified the latest Oracle Linux image is selected.
-  - **node_shape**: The shape of the nodes.
-  - **capacity_reservation_id**: (Optional) The OCID of the compute capacity reservation in which to place the nodes.
-  - **flex_shape_settings**: (Optional) Flex shape settings.
-    - **memory**: (Optional) The amount of memory for Flex shapes. Default is 16GB.
-    - **ocpus**: (Optional) The number of OCPUs for Flex shapes. Default is 1.
-  - **boot_volume**: (Optional) The boot volume settings.
-    - **size**: (Optional) The boot volume size. Default is 60.
-    - **preserve_boot_volume**: (Optional) Whether to preserve the boot volume when nodes are terminated.
-  - **encryption**: (Optional) The encryption settings.
-    - **enable_encrypt_in_transit**: (Optional) Whether to enable in-transit encryption. Default is false.
-    - **kms_key_id**: (Optional) The KMS key to assign as the master encryption key. *default_kms_key_id* is used if undefined.
-  - **placement**: (Optional) Placement settings.
-    - **availability_domain**: (Optional) The nodes availability domain. Default is 1.
-    - **fault_domain**: (Optional) The nodes fault domain. Default is 1.
-  - **node_eviction**: (Optional) Nodes eviction settings.
-    - **grace_duration**: (Optional) The duration in seconds after which OKE gives up on pods eviction on the node. Default is 3600 seconds.
-    - **force_delete**: (Optional) Whether the nodes should be deleted if all pods are not evicted during the grace period.
-  - **node_cycling**: (Optional) Nodes cycling settings. **Applicable to enhanced clusters only**.
-    - **enable_cycling**: (Optional) Whether node cycling is enabled. Default is false.
-    - **max_surge**: (Optional) The maximum number of additional new compute instances that are temporarily created and added to node pool during the cycling process. OKE supports both integer and percentage input. Default is 1. It ranges from 0 up to node pool size or between 0% to 100%.
-    - **max_unavailable**: (Optional) The maximum number of active nodes that are terminated from node pool during the cycling process. OKE supports both integer and percentage input. Default is 0. It ranges from 0 up to node pool size or between 0% to 100%.
-
-#### <a name="virtual-node-pools">Virtual Node Pools</a>
-Virtual Node Pools are defined using the optional **virtual_node_pools** attribute. In Terraform terms, it is a map of objects, where each object is referred by an identifying key. The following attributes are supported:
-- **cluster_id**: The cluster where the virtual node pool is created. This attribute is overloaded. It can be assigned either a literal OCID or a reference (a key) to a cluster from the **clusters_configuration**.
-- **compartment_id**: (Optional) The compartment where the virtual node pool is created. If the cluster and the virtual node pools are both managed by this module, the attributes **compartment_id** and **default_compartment_id** are ignored, as the compartment for the virtual node pool is taken from the cluster assigned to the virtual node pool in the **cluster_id** attribute. This attribute is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *compartments_dependency* variable. See [External Dependencies](#ext-dep) for details.
-- **name**: The virtual node pool display name.
-- **defined_tags**: (Optional) The virtual node pool defined_tags. *default_defined_tags* is used if undefined.
-- **freeform_tags**: (Optional) The virtual node pool freeform_tags. *default_freeform_tags* is used if undefined.
-- **virtual_nodes_defined_tags**: (Optional) The defined_tags that apply to virtual nodes. *default_defined_tags* is used if undefined.
-- **virtual_nodes_freeform_tags**: (Optional) The freeform_tags that apply to virtual nodes. *default_freeform_tags* is used if undefined.
-- **initial_node_labels**: (Optional) A list of key/value pairs to add to virtual nodes when they join the OKE cluster.
-- **size**: (Optional) The number of nodes in the virtual node pool.
-- **pod_shape**: The pods shape. At the time this Terraform code was created, the shapes available are: "Pod.Standard.A1.Flex", "Pod.Standard.E3.Flex", "Pod.Standard.E4.Flex". 
-- **networking**: The virtual node pool networking settings.
-  - **workers_nsg_ids**: (Optional) The NSGs where the virtual nodes are placed. This attribute is overloaded. It can be assigned either literal OCIDs or references (keys) to an OCID in *network_dependency* variable. See [External Dependencies](#ext-dep) for details.
-  - **workers_subnet_id**: The virtual nodes subnet. This attribute is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *network_dependency* variable. See [External Dependencies](#ext-dep) for details.
-  - **pods_subnet_id**: (Optional) the pods subnet. This attribute is overloaded. It can be assigned either a literal OCID or a reference (a key) to an OCID in *network_dependency* variable. See [External Dependencies](#ext-dep) for details.
-  - **pods_nsg_ids**: (Optional) The NSGs where the pods are placed. This attribute is overloaded. It can be assigned either literal OCIDs or references (keys) to an OCID in *network_dependency* variable. See [External Dependencies](#ext-dep) for details.
-  - **placement**: (Optional) The placement settings.
-    - **availability_domain**: (Optional) The virtual nodes availability domain. Default is 1.
-    - **fault_domain**: (Optional) The virtual nodes fault domain. Default is 1.
-  - **taints**: (Optional) Taints enable virtual nodes to repel pods, thereby ensuring that pods do not run on virtual nodes in a particular virtual node pool. Taints work together with Kubernetes tolerations to ensure that pods are not scheduled in undesired nodes.
-    - **effect**: (Optional) The taint effect. Valid values are "NoSchedule", "NoExecute", or "PreferNoSchedule".
-    - **key**: (Optional) The node label key to apply the taint to.
-    - **value**: (Optional) The node label value to apply the taint to.
-
-
-### <a name="ext-dep">External Dependencies</a>
-An optional feature, external dependencies are resources managed elsewhere that resources managed by this module may depend on. The following dependencies are supported:
-- **compartments_dependency**: A map of objects containing the externally managed compartments this module may depend on. All map objects must have the same type and must contain at least an *id* attribute with the compartment OCID.
-
-Example:
-```
-{
-	"APP-CMP": {
-		"id": "ocid1.compartment.oc1..aaaaaaaa...7xq"
-	}
+```hcl
+batch = {
+  node_labels       = { workload = "batch" }
+  nsg_ids           = ["BATCH-NSG"]
+  override_defaults = ["nsg_ids"]
 }
 ```
-- **network_dependency**: A map of objects containing the externally managed network resources (including subnets and network security groups) this module may depend on. All map objects must have the same type and should contain the following attributes:
-  - An *id* attribute with the VCN OCID.
-  - An *id* attribute with the subnet OCID.
-  - An *id* attribute with the network security group OCID.
 
-Example:
-```
-{
-  "vcns" : {
-    "OKE-VCN" : {
-      "id" : "ocid1.vcn.oc1.iad.aaaaaaaax...t6h"
+Nested cluster collection names use paths relative to the cluster object. Worker
+collection names are relative to the pool. NSG and signing-key references are
+resolved after merging/replacement and deduplicated again by OCID. Replaced
+references do not need dependency entries. Other lists and structured settings
+retain their field-specific behavior; placement and metadata remain pool-only.
+`taints` is virtual-only. Workers inherit the cluster’s CIS level; level `"2"`
+requires `volume_kms_key_id` for managed workers.
+
+Only general worker settings are shared defaults. Names, image IDs, placement,
+capacity reservations, metadata, eviction, cycling, preemption and taints are per
+pool. `max_pods_per_node` is per pool and defaults to 31. SSH accepts key content
+(`default_ssh_public_key` or pool `ssh_public_key`), not a filesystem-path input;
+callers may pass `file("path/to/key.pub")` themselves.
+
+Memory/boot-volume sizes are GB; eviction duration is seconds.
+
+The full typed schema is in [variables.tf](variables.tf). Normalization is in
+[modules/configuration](modules/configuration). A [current example](examples/upstream-wrapper)
+shows the complete module call. Older examples are explicitly pinned to the
+pre-refactor module, so their legacy templates remain usable.
+
+Clusters default to `cluster_type = "enhanced"` and `cni_type = "native"`
+(VCN-native CNI). Native CNI requires `pods_cidr` to be omitted (or null); pod
+addresses come from the pod subnet. Only enhanced clusters are supported; explicit `basic` is rejected. Flannel remains supported on enhanced clusters.
+
+Managed pools always set `node_metadata.areLegacyImdsEndpointsDisabled = "true"`,
+requiring IMDSv2-only access on new managed nodes. It cannot be disabled by input;
+conflicting metadata is rejected. Existing nodes require replacement/cycling for
+this pool setting to take effect; updating the pool alone does not retrofit them.
+Use images and bootstrap scripts compatible with IMDSv2. See
+[Oracle's managed-node IMDS guidance](https://docs.oracle.com/en-us/iaas/Content/ContEng/Tasks/contengconfiguringimds.htm).
+
+Cluster API endpoints are always private. There is no public-endpoint input.
+Deprecated Dashboard, Tiller and pod-security-policy switches are no longer exposed.
+
+Cluster tags are explicit `defined_tags`/`freeform_tags`. PV and service-LB tags
+are explicit maps under `options.persistent_volume_config` and
+`options.service_lb_config`. There are no cluster-level `default_*` fields or
+`override_defaults`; compose shared values in the caller if needed. Module and
+upstream tracking metadata is still added separately.
+
+`networking.api_endpoint_nsg_ids` is the complete endpoint NSG list. It resolves
+dependency keys/OCIDs and deduplicates resolved OCIDs; `[]` requests no endpoint
+NSGs. Cluster image-signing keys are also explicit and deduplicated.
+
+## Provisioning and validation
+
+Each cluster calls the official OKE root module, with its pools supplied together.
+Upstream owns image discovery, architecture/GPU/version selection, and AD-number
+translation. The wrapper supplies numeric `placement_ads` and normalized inputs;
+it does not query ADs or implement image selection. Cluster-only configurations
+remain supported. Pool names must be unique within a cluster because upstream
+uses them as resource keys. Renaming a pool requires address-move and plan review.
+
+The wrapper retains the applicable original validation policies: cluster and managed
+worker CIS level-2 keys, supported cluster version,
+CNI values, supported worker version/skew,
+inherited cluster compartment/CIS policy, and enhanced/native
+requirements for virtual pools. Configuration checks occur before provisioning;
+checks requiring facts from a newly created cluster can defer to apply before
+creating its workers. The helper `terraform_data` resources enforce these gates.
+
+Version skew is compared numerically by major/minor, avoiding dependence on OCI
+list ordering. Upstream handles image selection and its failure diagnostics.
+The default OS is Oracle Linux 9; image type is inferred from a pool image ID.
+An explicit image ID is passed to upstream as custom, without requiring membership
+in the OKE catalog. Migration pins deployed images rather than selecting new ones.
+
+## Explicit upstream limitations
+
+The maintainer selected **official upstream only**. The following cases are blocked by wrapper validation or the migration converter
+pending official upstream support:
+
+- Missing or multiple service load-balancer subnets; upstream needs exactly one.
+- Different tags on a pool and its nodes.
+- Heterogeneous legacy per-AD settings: the flat upstream schema cannot express
+  them, so the migration converter refuses those mappings. Duplicate AD entries
+  are rejected.
+- Duplicate virtual taint keys.
+- Explicit virtual fault-domain placement. The pinned upstream lookup uses AD
+  names against a numerically keyed map and falls back to `FD-*` rather than OCI's
+  `FAULT-DOMAIN-*`; passing the requested FDs would be silently lost. Automatic FD
+  placement works, but is not a silent substitute for an existing placement.
+- Empty virtual pod NSG lists; upstream's `coalescelist` path either inherits
+  worker NSGs or errors when both lists are empty.
+- Different managed-pool SSH keys or transit-encryption settings within one
+  cluster: v5.5.1's effective worker implementation reads the global SSH key and
+  recomputes transit encryption from the global flag. Equal per-pool values are
+  forwarded through those globals; virtual pools are excluded from this check.
+- Duplicate pool names within a cluster.
+- A nonempty set of pools whose total size is zero: upstream suppresses detailed
+  pool outputs in that case, so the wrapper cannot preserve its output contract.
+- An omitted pool size; migrate the deployed size instead of accepting a new
+  zero-size default.
+
+Upstream ignores some subsequent changes to cluster defined tags/network CIDRs
+and pool names/tags/placements. Terraform alone may therefore report a successful
+no-op for a desired change. **Run [check_plan.py](tools/check_plan.py) on every
+saved migration/update plan before apply.** It rejects destructive OKE changes,
+unexpected OCI resource ownership and detectable ignored tag/placement/CIDR
+updates, including AD numbers that upstream filtered out as unavailable. It does not replace review of all provider diffs or qualify live OCI
+migration. Unsupported ignored updates remain a release blocker; no claim is made
+that the parent module can override an upstream lifecycle block.
+
+Upstream also adds tracking tags, labels and metadata, including state/pool
+identity. These are observable differences to review. Upstream default cloud-init
+scripts are enabled by default for managed pools. Set
+`workers_configuration.default_disable_default_cloud_init = true` to disable them
+globally. A pool's `disable_default_cloud_init` overrides that setting; explicit
+`false` re-enables the scripts, and null/omitted inherits the global value.
+
+Use `workers_configuration.default_cloud_init` for custom MIME parts shared by
+all managed pools. Its part schema is identical to pool `cloud_init`. An omitted
+or null pool value inherits global parts. A supplied pool value replaces the entire
+global configuration; `cloud_init = []` clears it. No concatenation or deduplication
+is performed, and `cloud_init` is not supported in `override_defaults`. Virtual
+pools do not inherit these boot scripts.
+The `disable_default_cloud_init` switches only affect upstream's built-in scripts,
+not your global or pool custom parts.
+
+Managed pools can also supply `cloud_init`, a list of upstream-style MIME parts
+(`content`, `content_type`, optional `filename` and `merge_type`). Custom parts are
+included alongside enabled defaults and remain included when defaults are disabled.
+The upstream module renders and encodes these parts into node user data.
+Alternatively, use base64 `node_metadata.user_data` with default scripts disabled
+and no `cloud_init` parts; validation prevents it from silently replacing enabled
+scripts. With defaults disabled and neither input supplied, node user data stays
+empty and an internal no-op part satisfies the cloudinit provider.
+
+`merge_type` is cloud-init's policy for merging cloud-config YAML from MIME parts;
+it is unrelated to Terraform's `override_defaults`. The upstream-compatible default
+`list(append)+dict(no_replace,recurse_list)+str(append)` appends lists, preserves
+existing dictionary values while recursively merging lists, and enables string
+appending. It does not merge shell-script text into a single script. See the
+[cloud-init merge documentation](https://docs.cloud-init.io/en/latest/reference/merging.html).
+Cloud-init changes affect newly booted nodes; review node replacement/cycling for
+existing pools.
+
+### Managed-pool GVA and cloud-init
+
+`gva_secondary_vnics` is a per-pool map matching the pinned upstream VNIC profile
+fields. Each profile requires `subnet_id` (a Landing Zone dependency key or OCID);
+`nsg_ids` also resolves keys/OCIDs and deduplicates. Profiles are explicit pool
+configuration, without new global defaults or `override_defaults` paths. Their
+NSG lists are independent of ordinary pod NSGs. Omitted profile tags inherit pool
+tags through upstream; explicit tag maps replace them.
+
+```hcl
+worker_pools = {
+  APP = {
+    cloud_init = [{
+      content_type = "text/cloud-config"
+      filename     = "custom.yaml"
+      content      = "#cloud-config\nwrite_files: []\n"
+    }]
+    gva_secondary_vnics = {
+      data = {
+        subnet_id             = "PODS-DATA"
+        nsg_ids               = ["PODS-DATA-NSG"]
+        application_resources = ["example.com/data"] # Optional; omit for NAD selection.
+        ip_count              = 32
+        nic_index             = 0
+      }
     }
-  },
-  "subnets" : {
-    "APP-SUBNET" : {
-      "id" : "ocid1.subnet.oc1.iad.aaaaaaaax...e7a"
-    }
-  },
-  "network_security_groups" : {  
-    "APP-NSG" : {
-      "id" : "ocid1.networksecuritygroup.oc1.iad.aaaaaaaa...xlq"
-    }
-  }  
-} 
-```  
-- **kms_dependency**: A map of objects containing the externally managed encryption keys this module may depend on. All map objects must have the same type and must contain at least an *id* attribute with the encryption key OCID.
-
-Example:
-```
-{
-	"APP-KEY": {
-		"id": "ocid1.key.oc1.iad.ejsppeqvaafyi.abuwcl...yna"
-	}
+  }
 }
 ```
 
-## <a name="related">Related Documentation</a>
-- [OKE](https://docs.oracle.com/en-us/iaas/Content/ContEng/Concepts/contengoverview.htm)
+GVA requires managed pools with native CNI. Each `ip_count` defaults to 16 and
+must be a power of two from 1 to 256; their sum per node cannot exceed 256.
+The ordinary `pod_subnet_id` is not required for a GVA pool: upstream uses the
+secondary profiles and omits ordinary pod subnet/NSG/max-pod settings in that
+pool's CNI options. Shape VNIC limits, subnet address capacity, IPv6 subnet support
+and required network/IAM configuration remain deployment prerequisites owned by
+the Landing Zone. The wrapper does not install Multus or create Kubernetes network
+attachments. See [OCI GVA documentation](https://docs.oracle.com/en-us/iaas/Content/ContEng/Tasks/contengAttaching_Multiple_VNICs.htm).
 
+The schema also exposes upstream's optional `display_name`, `assign_public_ip`,
+`assign_ipv6ip`, `ipv6_addresses`, `ipv6_cidrs`, `skip_source_dest_check`, and VNIC
+`defined_tags`/`freeform_tags`. Public IP and IPv6 assignment default to false;
+source/destination-check skipping defaults to true, matching upstream.
+The plan checker detects ignored GVA defined-tag changes as well as pool tags.
 
-## <a name="issues">Known Issues</a>
+## Outputs and dependencies
 
-### Node pool
-1. When updating the *node_cycling* attribute, if you are changing anything else to node_config_details, you will get the following error:
+`cluster` returns the single cluster object. `node_pools`, `virtual_node_pools`
+and `nodes` remain keyed by pool identity. The old `clusters` map output is removed. Cluster attributes are read back using the OCI cluster data source
+because upstream exports only selected attributes. Pool objects come from upstream
+and include OCI attributes plus upstream configuration fields. This is not a claim
+of byte-identical serialized resource objects; downstream consumers must be checked
+against the fields they actually use. Legacy `nodes` remains available regardless
+of `enable_output`; the other three outputs honor that flag.
 
+Requires Terraform >=1.4 (for built-in validation guards) and OCI provider >=8.19,
+<9. Tested locally with **Terraform 1.5.7, OCI 8.29.0, cloudinit 2.4.1**. Cloudinit
+is required by the official workers submodule even though boot scripts are
+disabled. The root module also loads Helm, null, random, time and transitive HTTP provider
+dependencies, even with ancillary features disabled. Its `oci.home` alias is
+mapped internally to the supplied OCI provider; IAM writes are disabled.
+For Terraform 1.5, pass `providers = { oci = oci }` explicitly when calling the
+wrapper, as shown in the example. It
+creates an auxiliary random state-ID resource. Callers should lock tested provider
+versions in their root configuration.
+
+Read-only permissions are needed for cluster options, clusters/kubeconfigs, node-pool
+options, VCNs, services, availability/fault domains, images and shapes, in addition to OKE creation
+permissions. No deployment credentials are stored in this repository.
+
+## Verification and release status
+
+- Terraform 1.5.7 init/validate against the actual pinned upstream root module.
+- Provider-free schema/default tests against the production configuration module.
+- Offline plan scenarios use actual upstream resource code and actual OCI provider schemas,
+  substituting only OCI data-source responses in a disposable test copy. They
+  verify OKE-only resource ownership and positive/negative validation paths.
+  AD/FD discovery uses real HTTP data sources against a loopback fixture, preserving
+  deferred-read and unknown-key behavior. A negative control restores the former
+  module-wide dependency and must reproduce the invalid-for_each error.
+- Migration-tool and plan-checker tests verify mapping, ambiguity/orphan detection,
+  preserved deployed selections and ignored/destructive update rejection.
+
+```sh
+terraform init -backend=false
+terraform validate
+TERRAFORM_BIN=/path/to/terraform-1.5.7 python3 tests/test_contract.py
+TERRAFORM_BIN=/path/to/terraform-1.5.7 python3 tests/test_offline.py
+python3 -m unittest discover -s tests -p test_migration.py
 ```
- Error: 409-Conflict, Cannot perform nodepool cycling and nodepool Placement Configuration change simultaneously.
-│ Suggestion: The resource is in a conflicted state. Please retry again or contact support for help with service: Containerengine Node Pool
-│ Documentation: https://registry.terraform.io/providers/oracle/oci/latest/docs/resources/containerengine_node_pool
-│ API Reference: https://docs.oracle.com/iaas/api/#/en/containerengine/20180222/NodePool/UpdateNodePool
-│ Request Target: PUT https://containerengine.eu-frankfurt-1.oci.oraclecloud.com/20180222/nodePools/ocid1.nodepool.oc1.eu-frankfurt-1.aaaaaaaa5gyeinkioj74eobjxv5rryn24bwkxp2k4zx6ks53nnx6l53eazza
-│ Provider version: 5.16.0, released on 2023-10-11. This provider is 10 Update(s) behind to current.
-│ Service: Containerengine Node Pool
-│ Operation Name: UpdateNodePool
-│ OPC request ID: 59bbfd0704eff01d226851aa8adba0b2/D3D0C22D125AAB7680601414509B46D8/71438074CF7D178285DD4AE5A9E82632
-│
-│
-│   with module.oke.oci_containerengine_node_pool.these["pool1"],
-│   on ../../nodepool.tf line 30, in resource "oci_containerengine_node_pool" "these":
-│   30: resource "oci_containerengine_node_pool" "these" 
-```
 
-2. When the *image* attribute is not specified, the most recent available image is selected. This means OKE selects the most recent image at every run, hence modifying the node pool. However, the new image is available only for the newly created/recreated nodes in the pool.
+A read-only, empty-state OCI-backed plan succeeded on 2026-09-21 with Terraform
+1.5.7 and OCI provider 8.29.0: enhanced/native CIS1, one E5 Flex managed pool,
+existing compartment/network dependencies. This was repeated successfully with the
+flat single-cluster API. It planned six additions (cluster,
+node pool, three validation resources and upstream random state ID), with no
+changes/deletions, and passed the plan checker. No targeting or staged apply was
+used. A separate v0.2.8 native CIS1 managed-pool migration subsequently preserved
+cluster, pool, instance and Kubernetes node identities, with healthy system pods.
+Full historical-release coverage and virtual-pool live migration remain unqualified.
+The follow-up plan retains eviction-duration formatting drift (`PT1H` versus `PT60M`).
 
-### Virtual Pool
-Some of the features available for node pools are not supported in virtual node pools. For a detailed list, check the [documentation](https://docs.public.oneportal.content.oci.oraclecloud.com/en-us/iaas/Content/ContEng/Tasks/contengcomparingvirtualwithmanagednodes_topic.htm).
-Some examples:
-1. Flannel and other third party CNI plugins are not supported. Virtual nodes only supported the OCI VCN-Native Pod Networking CNI plugin.
-2. Persistent volume claims (PVCs) are not supported.
-4. Network providers that support NetworkPolicy resources alongside the CNI plugin used in the cluster (such as Calico and Cilium) are not supported.
+### Upgrading existing deployments
+
+This is a breaking change to inputs, outputs and Terraform resource addresses.
+Do not upgrade by changing the module version alone. Back up state, obtain a clean
+legacy plan, pin deployed images/settings and review the unsupported combinations
+above. Use `tools/migrate.py --help` for legacy conversion and address-move review
+artifacts, and `tools/check_plan.py --help` to validate a saved plan. Multiple
+clusters require separate module invocations and reviewed per-resource moves.
+Stop on unexpected replacement, deletion or cycling; verify identities and health
+after applying. Upstream-ignored pool tags may require a separately reviewed legacy
+tag update. Existing workers need separate controlled cycling to adopt IMDSv2.
+
+Bare-metal (`BM.*`) shapes cannot enable `pv_transit_encryption`. This is a blocking
+validation after global defaults and pool overrides are resolved. Use a supported
+VM shape or disable in-transit encryption for the BM pool.

@@ -1,3 +1,5 @@
+> Legacy example pinned to the pre-refactor release. For the new input contract, see [upstream-wrapper](../../upstream-wrapper/README.md).
+
 # OCI Landing Zones OKE Module - NPN (Native Pod Networking) with Operator Access Example
 
 ## Introduction
