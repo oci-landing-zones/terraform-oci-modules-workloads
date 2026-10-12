@@ -341,10 +341,20 @@ resource "oci_core_instance" "these" {
   compute_cluster_id = each.value.cluster_id != null ? (contains(keys(oci_core_compute_cluster.these), each.value.cluster_id) ? oci_core_compute_cluster.these[each.value.cluster_id].id : (length(regexall("^ocid1.*$", each.value.cluster_id)) > 0 ? each.value.cluster_id : null)) : null
 }
 
+locals {
+  boot_volume_backup_policies = { for k, v in(var.instances_configuration != null ? var.instances_configuration["instances"] : {}) : k => lower(v.boot_volume != null ? v.boot_volume.backup_policy : "bronze") }
+}
+
 resource "oci_core_volume_backup_policy_assignment" "these_boot_volumes" {
-  for_each  = var.instances_configuration != null ? var.instances_configuration["instances"] : {}
+  for_each = { for k, v in local.boot_volume_backup_policies : k => v if v != "none" }
+  lifecycle {
+    precondition {
+      condition     = contains(local.oracle_managed_backup_policy_names, each.value)
+      error_message = "VALIDATION FAILURE in instance ${each.key}: boot volume backup policy \"${each.value}\" was not found. Provide an Oracle managed policy name (gold, silver, or bronze) or \"none\" to skip the assignment."
+    }
+  }
   asset_id  = oci_core_instance.these[each.key].boot_volume_id
-  policy_id = local.oracle_backup_policies[lower(each.value.boot_volume != null ? each.value.boot_volume.backup_policy : "bronze")]
+  policy_id = local.oracle_backup_policies[each.value]
 }
 
 data "oci_core_vnic_attachments" "these" {

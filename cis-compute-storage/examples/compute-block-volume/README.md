@@ -44,6 +44,8 @@ For BV-2:
 
 **Note:** Block volumes encrypted with a customer managed key cannot be replicated to another region.
 
+**Note:** Set *boot_volume.backup_policy* or a block volume's *backup_policy* to "none" to skip the backup policy assignment.
+
 See [input.auto.tfvars.template](./input.auto.tfvars.template) for the variables configuration.
 
 Note that you must provide the image *name* and *publisher_name* for provisioning the Compute instance. Use the [marketplace-images module](../../../marketplace-images/) to obtain Marketplace images information based on a search filter. It will also return the image OCID that can be used instead of the image name/publisher pair.
