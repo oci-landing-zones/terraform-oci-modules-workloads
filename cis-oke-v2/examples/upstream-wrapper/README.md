@@ -9,7 +9,7 @@ It creates no networking or IAM. Required network rules, routes and IAM policies
 must already exist. For CIS level 2, set the cluster CIS level (all pools inherit it) and supply
 existing KMS keys using the main module's inputs.
 
-Read the module's [limitations](../../README.md) and [migration guide](../../MIGRATION.md).
+Read the module's [limitations and upgrade guidance](../../README.md).
 Run Terraform 1.5.7 init/plan, save the plan, inspect its JSON with
 `tools/check_plan.py --module-address module.oke`, and review it before apply.
 No existing cluster is implicitly adopted by this example.

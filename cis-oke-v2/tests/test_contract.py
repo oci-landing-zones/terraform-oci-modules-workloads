@@ -1,4 +1,4 @@
-"""Exercise the proposed contract with Terraform 1.5; no OCI calls or applies."""
+"""Exercise the production contract with Terraform 1.5; no OCI calls or applies."""
 import copy
 import json
 import os
@@ -6,7 +6,7 @@ from pathlib import Path
 import subprocess
 import tempfile
 
-ROOT = Path(__file__).resolve().parents[2] / 'modules/configuration'
+ROOT = Path(__file__).resolve().parents[1] / 'modules/configuration'
 TF = os.environ.get('TERRAFORM_BIN', 'terraform')
 
 

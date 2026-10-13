@@ -41,7 +41,7 @@ The orchestrator is unchanged and continues to use legacy.
 ## Migration is opt-in
 
 Staying on `cis-oke/` does not require migration to the new implementation. To
-adopt `cis-oke-v2/`, follow its [migration guide](cis-oke-v2/MIGRATION.md): translate
+adopt `cis-oke-v2/`, follow its [upgrade guidance](cis-oke-v2/README.md#upgrading-existing-deployments): translate
 inputs, review generated state moves, and inspect the saved plan before applying.
 Changing the source path alone is insufficient. Do not add a second module call
 to manage the same existing cluster; migrate its ownership deliberately.
@@ -65,7 +65,7 @@ terraform -chdir=cis-oke init -backend=false
 terraform -chdir=cis-oke validate
 terraform -chdir=cis-oke-v2 init -backend=false
 terraform -chdir=cis-oke-v2 validate
-python3 cis-oke-v2/design/input-contract/test_contract.py
+python3 cis-oke-v2/tests/test_contract.py
 python3 cis-oke-v2/tests/test_offline.py
 python3 -m unittest discover -s cis-oke-v2/tests -p test_migration.py
 ```

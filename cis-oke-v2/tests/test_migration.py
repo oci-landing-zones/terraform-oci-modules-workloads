@@ -176,6 +176,41 @@ class MigrationTests(unittest.TestCase):
     def test_plan_accepts_matching_contract(self):
         self.assertEqual(checker.check(self.plan()),[])
 
+    def test_preserve_reviewed_unchanged_defined_tag(self):
+        plan = self.plan()
+        change = plan['resource_changes'][1]['change']
+        change['before'] = {'defined_tags': {'Default.owner': 'existing'}}
+        change['after']['defined_tags'] = {'Default.owner': 'existing'}
+        self.assertTrue(checker.check(plan))
+        self.assertEqual(checker.check(plan, preserve_defined_tags=['Default.owner']), [])
+
+    def test_preservation_does_not_allow_new_or_changed_tags(self):
+        for before in [{}, {'Default.owner': 'old'}]:
+            with self.subTest(before=before):
+                plan = self.plan()
+                change = plan['resource_changes'][1]['change']
+                change['before'] = {'defined_tags': before}
+                change['after']['defined_tags'] = {'Default.owner': 'new'}
+                self.assertTrue(checker.check(plan, preserve_defined_tags=['Default.owner']))
+
+    def test_preservation_does_not_override_requested_tag(self):
+        plan = self.plan()
+        plan['resource_changes'][0]['change']['after']['input']['defined_tags'] = {'Default.owner': 'new'}
+        change = plan['resource_changes'][1]['change']
+        change['before'] = {'defined_tags': {'Default.owner': 'old'}}
+        change['after']['defined_tags'] = {'Default.owner': 'old'}
+        self.assertTrue(checker.check(plan, preserve_defined_tags=['Default.owner']))
+
+    def test_preservation_does_not_relax_freeform_tags(self):
+        plan = self.plan()
+        plan['resource_changes'][1]['change']['after']['freeform_tags']['extra'] = 'old'
+        self.assertTrue(checker.check(plan, preserve_defined_tags=['extra']))
+
+    def test_preservation_does_not_allow_unknown_tags(self):
+        plan = self.plan()
+        plan['resource_changes'][1]['change']['after_unknown']['defined_tags'] = True
+        self.assertTrue(checker.check(plan, preserve_defined_tags=['Default.owner']))
+
     def test_plan_rejects_ignored_update(self):
         plan=self.plan();plan['resource_changes'][1]['change']['after']['freeform_tags']={'owner':'old'}
         self.assertTrue(any('ignore_changes' in e for e in checker.check(plan)))
@@ -192,6 +227,8 @@ class MigrationTests(unittest.TestCase):
         ]}
         self.assertEqual(checker.check(plan), [])
         placement = plan['resource_changes'][1]['change']['after']['node_config_details'][0]['placement_configs'][0]
+        placement['capacity_reservation_id'] = ''
+        self.assertEqual(checker.check(plan), [])
         placement.update({'fault_domains':['FAULT-DOMAIN-2'], 'capacity_reservation_id':'old-reservation'})
         errors = checker.check(plan)
         self.assertTrue(any('fault domains' in e for e in errors))
