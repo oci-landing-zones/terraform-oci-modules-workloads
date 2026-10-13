@@ -1,4 +1,6 @@
-# September 8, 2026 Release Notes - 0.2.9
+# October 13, 2026 Release Notes - 0.2.9
+## Updates in [Storage Module](./cis-compute-storage/)
+1. [Issue 46](https://github.com/oci-landing-zones/terraform-oci-modules-workloads/issues/46): block volumes can now be restored from a Block Volume backup or cloned from a Block Volume or replica by setting *source.type* and *source.id*.
 ## Updates in [Compute Module](./cis-compute-storage/)
 1. Added `primary_private_ip_targets`, a separate output of canonical private-IP OCIDs for Compute VNICs. Primary VNICs use `<instance-key>` and secondary VNICs use `<instance-key>.<vnic-key>`; a future third segment is reserved for selecting an explicit secondary IP. Existing `instances` and `secondary_vnics` output shapes are unchanged.
 
