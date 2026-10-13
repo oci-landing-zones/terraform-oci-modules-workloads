@@ -61,7 +61,7 @@ variable "instances_configuration" {
         secure_boot                   = optional(bool, false)               # prevents unauthorized boot loaders and operating systems from booting.
         measured_boot                 = optional(bool, false)               # enhances boot security by taking and storing measurements of boot components, such as bootloaders, drivers, and operating systems. Bare metal instances do not support Measured Boot.
         trusted_platform_module       = optional(bool, false)               # used to securely store boot measurements.
-        backup_policy                 = optional(string, "bronze")          # the Oracle managed backup policy. Valid values: "gold", "silver", "bronze". Default is "bronze".
+        backup_policy                 = optional(string, "bronze")          # the Oracle managed backup policy. Valid values: "gold", "silver", "bronze", or "none" to skip the policy assignment. Default is "bronze".
       }))
       volumes_emulation_type = optional(string, "paravirtualized")    # Emulation type for attached storage volumes. Valid values: "paravirtualized" (default for platform images), "scsi", "iscsi", "ide", "vfio". Module supported values for automated attachment: "paravirtualized", "iscsi".
       networking = optional(object({                                  # networking settings
@@ -209,7 +209,7 @@ variable "storage_configuration" {
         type = string
         id   = string
       }))
-      backup_policy = optional(string, "bronze") # the Oracle managed backup policy name or a custom_backup_policies map key. Default is "bronze".
+      backup_policy = optional(string, "bronze") # the Oracle managed backup policy name, a custom_backup_policies map key, or "none" to skip the policy assignment. Default is "bronze".
       defined_tags  = optional(map(string))      # block volume defined_tags. default_defined_tags is used if this is not defined.
       freeform_tags = optional(map(string))      # block volume freeform_tags. default_freeform_tags is used if this is not defined.
     }))),

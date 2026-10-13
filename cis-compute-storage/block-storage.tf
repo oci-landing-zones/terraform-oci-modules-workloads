@@ -3,10 +3,11 @@ data "oci_core_volume_backup_policies" "oracle_backup_policies" {}
 locals {
   oracle_backup_policies             = tomap({ for policy in data.oci_core_volume_backup_policies.oracle_backup_policies.volume_backup_policies : policy.display_name => policy.id })
   oracle_managed_backup_policy_names = toset(["gold", "silver", "bronze"])
+  reserved_backup_policy_names       = setunion(local.oracle_managed_backup_policy_names, ["none"])
 
   custom_backup_policies = var.storage_configuration != null ? var.storage_configuration.custom_backup_policies : {}
 
-  volumes_with_backup_policies = { for k, v in(var.storage_configuration != null ? (var.storage_configuration["block_volumes"] != null ? var.storage_configuration["block_volumes"] : {}) : {}) : k => v if v.backup_policy != null }
+  volumes_with_backup_policies = { for k, v in(var.storage_configuration != null ? (var.storage_configuration["block_volumes"] != null ? var.storage_configuration["block_volumes"] : {}) : {}) : k => v if v.backup_policy != null && lower(v.backup_policy) != "none" }
 
   volumes_to_replicate = { for k, v in(var.storage_configuration != null ? (var.storage_configuration["block_volumes"] != null ? var.storage_configuration["block_volumes"] : {}) : {}) : k => v if v.replication != null }
 }
@@ -15,8 +16,8 @@ resource "oci_core_volume_backup_policy" "custom" {
   for_each = local.custom_backup_policies
   lifecycle {
     precondition {
-      condition     = !contains(local.oracle_managed_backup_policy_names, lower(each.key))
-      error_message = "VALIDATION FAILURE in custom backup policy \"${each.key}\": its key conflicts with the Oracle managed backup policy \"${lower(each.key)}\". Choose a different key."
+      condition     = !contains(local.reserved_backup_policy_names, lower(each.key))
+      error_message = "VALIDATION FAILURE in custom backup policy \"${each.key}\": its key conflicts with the reserved backup policy name \"${lower(each.key)}\". Choose a different key."
     }
     precondition {
       condition     = length(each.value.schedules) > 0
@@ -137,7 +138,7 @@ resource "oci_core_volume_backup_policy_assignment" "these" {
   lifecycle {
     precondition {
       condition     = contains(local.oracle_managed_backup_policy_names, lower(each.value.backup_policy)) || contains(keys(oci_core_volume_backup_policy.custom), each.value.backup_policy)
-      error_message = "VALIDATION FAILURE in block volume ${each.key}: backup policy \"${each.value.backup_policy}\" was not found. Provide an Oracle managed policy name (gold, silver, or bronze) or a custom_backup_policies map key."
+      error_message = "VALIDATION FAILURE in block volume ${each.key}: backup policy \"${each.value.backup_policy}\" was not found. Provide an Oracle managed policy name (gold, silver, or bronze), \"none\" to skip the assignment, or a custom_backup_policies map key."
     }
   }
   asset_id  = oci_core_volume.these[each.key].id
