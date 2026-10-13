@@ -1,3 +1,7 @@
+# September 8, 2026 Release Notes - 0.2.9
+## Updates in [Compute Module](./cis-compute-storage/)
+1. Added `primary_private_ip_targets`, a separate output of canonical private-IP OCIDs for Compute VNICs. Primary VNICs use `<instance-key>` and secondary VNICs use `<instance-key>.<vnic-key>`; a future third segment is reserved for selecting an explicit secondary IP. Existing `instances` and `secondary_vnics` output shapes are unchanged.
+
 # July 06, 2026 Release Notes - 0.2.8
 ## Updates in [Compute Module](./cis-compute-storage/)
 1. [Issue 38](https://github.com/oci-landing-zones/terraform-oci-modules-workloads/issues/38): instances can now be launched or updated from an existing or restored boot volume by setting *boot_volume.source_type* to *bootVolume* and providing *boot_volume.id*. Changing the source of an existing instance replaces its attached boot volume; schedule downtime and keep *preserve_on_source_change* enabled unless the replaced volume can safely be deleted.

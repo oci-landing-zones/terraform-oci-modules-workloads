@@ -448,6 +448,54 @@ data "oci_core_vnic" "these" {
   vnic_id  = each.value.vnic_id
 }
 
+# Resolve the primary private IP object for every VNIC managed by this module.
+# OCI Compute resources expose the address and VNIC, but NLB target_id and route
+# rules require the private IP OCID. Keeping this lookup at the workload boundary
+# gives downstream modules a canonical, plan-stable target without extending the
+# generic instance dependency object.
+data "oci_core_private_ips" "primary_vnic_targets" {
+  for_each = oci_core_instance.these
+
+  ip_address = each.value.private_ip
+  subnet_id  = each.value.subnet_id
+
+  lifecycle {
+    postcondition {
+      condition     = length(self.private_ips) == 1 ? one(self.private_ips).is_primary : false
+      error_message = "Expected exactly one primary private IP for instance ${each.key}. Retry the apply if the primary private IP is not yet visible."
+    }
+  }
+}
+
+data "oci_core_private_ips" "secondary_vnic_primary_targets" {
+  for_each = data.oci_core_vnic.these
+
+  ip_address = each.value.private_ip_address
+  subnet_id  = each.value.subnet_id
+
+  lifecycle {
+    postcondition {
+      condition     = length(self.private_ips) == 1 ? one(self.private_ips).is_primary : false
+      error_message = "Expected exactly one primary private IP for secondary VNIC ${each.key}. Retry the apply if the primary private IP is not yet visible."
+    }
+  }
+}
+
+locals {
+  primary_private_ip_targets = merge(
+    {
+      for instance_key, private_ips in data.oci_core_private_ips.primary_vnic_targets : instance_key => {
+        id = one(private_ips.private_ips).id
+      }
+    },
+    {
+      for vnic_key, private_ips in data.oci_core_private_ips.secondary_vnic_primary_targets : vnic_key => {
+        id = one(private_ips.private_ips).id
+      }
+    },
+  )
+}
+
 resource "oci_core_private_ip" "these" {
   for_each = { for v in concat(local.primary_vnic_secondary_ips, local.secondary_vnics_secondary_ips) : v.key => {
     vnic_id       = v.vnic_id
