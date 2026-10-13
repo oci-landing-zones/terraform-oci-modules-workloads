@@ -160,7 +160,7 @@ if __name__ == '__main__':
     custom=fixture()
     custom['workers_configuration']['worker_pools']['P'].update({
         'cloud_init':[{'content':'#!/bin/sh\necho example','filename':'init.sh'}],
-        'gva_secondary_vnics':{'data':{'subnet_id':'DATA','nsg_ids':['NSG'],'application_resources':['example.com/data'],'nic_index':0,'ip_count':32,'assign_ipv6ip':True,'ipv6_cidrs':['2001:db8::/64'],'defined_tags':{'Test.role':'data'}}},
+        'gva_secondary_vnics':{'data':{'subnet_id':'DATA','nsg_ids':['NSG'],'application_resources':['example.com/data'],'nic_index':0,'ip_count':32,'defined_tags':{'Test.role':'data'}}},
     })
     check('cloud-init and GVA fields survive schema conversion',custom,expected={'P':{'cloud_init':[{'content':'#!/bin/sh\necho example','filename':'init.sh','content_type':'text/x-shellscript','merge_type':'list(append)+dict(no_replace,recurse_list)+str(append)'}]}})
 

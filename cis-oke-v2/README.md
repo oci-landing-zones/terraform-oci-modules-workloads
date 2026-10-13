@@ -229,8 +229,9 @@ existing pools.
 
 ### Managed-pool GVA and cloud-init
 
-`gva_secondary_vnics` is a per-pool map matching the pinned upstream VNIC profile
-fields. Each profile requires `subnet_id` (a Landing Zone dependency key or OCID);
+`gva_secondary_vnics` is a per-pool map exposing the supported IPv4 fields of
+the pinned upstream VNIC profile. IPv6 configuration is not supported.
+Each profile requires `subnet_id` (a Landing Zone dependency key or OCID);
 `nsg_ids` also resolves keys/OCIDs and deduplicates. Profiles are explicit pool
 configuration, without new global defaults or `override_defaults` paths. Their
 NSG lists are independent of ordinary pod NSGs. Omitted profile tags inherit pool
@@ -261,14 +262,14 @@ GVA requires managed pools with native CNI. Each `ip_count` defaults to 16 and
 must be a power of two from 1 to 256; their sum per node cannot exceed 256.
 The ordinary `pod_subnet_id` is not required for a GVA pool: upstream uses the
 secondary profiles and omits ordinary pod subnet/NSG/max-pod settings in that
-pool's CNI options. Shape VNIC limits, subnet address capacity, IPv6 subnet support
+pool's CNI options. Shape VNIC limits, subnet address capacity,
 and required network/IAM configuration remain deployment prerequisites owned by
 the Landing Zone. The wrapper does not install Multus or create Kubernetes network
 attachments. See [OCI GVA documentation](https://docs.oracle.com/en-us/iaas/Content/ContEng/Tasks/contengAttaching_Multiple_VNICs.htm).
 
 The schema also exposes upstream's optional `display_name`, `assign_public_ip`,
-`assign_ipv6ip`, `ipv6_addresses`, `ipv6_cidrs`, `skip_source_dest_check`, and VNIC
-`defined_tags`/`freeform_tags`. Public IP and IPv6 assignment default to false;
+`skip_source_dest_check`, and VNIC `defined_tags`/`freeform_tags`.
+Public IP assignment defaults to false;
 source/destination-check skipping defaults to true, matching upstream.
 The plan checker detects ignored GVA defined-tag changes as well as pool tags.
 

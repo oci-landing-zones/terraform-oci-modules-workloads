@@ -277,6 +277,8 @@ def main():
                             assert details['ip_count'] == 32, details
                             assert details['display_name'] == 'data', details
                             assert details['assign_public_ip'] is False, details
+                            assert details['assign_ipv6ip'] is False, details
+                            assert not details.get('ipv6address_ipv6subnet_cidr_pair_details'), details
                         if 'node_metadata' in after:
                             if name == 'raw user data':
                                 assert after['node_metadata']['user_data'] == 'IyEvYmluL3NoCg=='
