@@ -57,6 +57,8 @@ No modules.
 | [oci_core_images.these_custom](https://registry.terraform.io/providers/oracle/oci/latest/docs/data-sources/core_images) | data source |
 | [oci_core_images.these_platform](https://registry.terraform.io/providers/oracle/oci/latest/docs/data-sources/core_images) | data source |
 | [oci_core_instance.these](https://registry.terraform.io/providers/oracle/oci/latest/docs/data-sources/core_instance) | data source |
+| [oci_core_private_ips.primary_vnic_targets](https://registry.terraform.io/providers/oracle/oci/latest/docs/data-sources/core_private_ips) | data source |
+| [oci_core_private_ips.secondary_vnic_primary_targets](https://registry.terraform.io/providers/oracle/oci/latest/docs/data-sources/core_private_ips) | data source |
 | [oci_core_vnic.these](https://registry.terraform.io/providers/oracle/oci/latest/docs/data-sources/core_vnic) | data source |
 | [oci_core_vnic_attachments.these](https://registry.terraform.io/providers/oracle/oci/latest/docs/data-sources/core_vnic_attachments) | data source |
 | [oci_core_volume_backup_policies.oracle_backup_policies](https://registry.terraform.io/providers/oracle/oci/latest/docs/data-sources/core_volume_backup_policies) | data source |
@@ -117,6 +119,7 @@ No modules.
 | <a name="output_oci_marketplace_accepted_agreement"></a> [oci\_marketplace\_accepted\_agreement](#output\_oci\_marketplace\_accepted\_agreement) | n/a |
 | <a name="output_oci_marketplace_listing_package_agreement"></a> [oci\_marketplace\_listing\_package\_agreement](#output\_oci\_marketplace\_listing\_package\_agreement) | n/a |
 | <a name="output_private_ips"></a> [private\_ips](#output\_private\_ips) | The private IPs |
+| <a name="output_primary_private_ip_targets"></a> [primary\_private\_ip\_targets](#output\_primary\_private\_ip\_targets) | Primary private IP OCIDs keyed by <instance-key> for primary VNICs and <instance-key>.<vnic-key> for secondary VNICs. Explicit private-IP selection is reserved for a future third key segment. |
 | <a name="output_secondary_private_ips"></a> [secondary\_private\_ips](#output\_secondary\_private\_ips) | The secondary private IPs in all instances VNICs |
 | <a name="output_secondary_vnic_attachments"></a> [secondary\_vnic\_attachments](#output\_secondary\_vnic\_attachments) | The secondary VNIC attachments |
 | <a name="output_secondary_vnics"></a> [secondary\_vnics](#output\_secondary\_vnics) | The secondary VNICs |
