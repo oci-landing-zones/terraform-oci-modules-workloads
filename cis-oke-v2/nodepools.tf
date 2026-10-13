@@ -149,7 +149,11 @@ locals {
       cloud_init = pool.disable_default_cloud_init && length(pool.cloud_init) == 0 ? [{ content = "#cloud-config\n{}\n", content_type = "text/cloud-config" }] : [for part in pool.cloud_init : { for k, v in part : k => v if v != null }]
       gva_secondary_vnics = { for name, vnic in pool.gva_secondary_vnics : name => merge(
         { for k, v in vnic : k => v if v != null },
-        { subnet_id = local.subnets[vnic.subnet_id], nsg_ids = distinct([for ref in vnic.nsg_ids : local.nsgs[ref]]) }
+        {
+          subnet_id        = local.subnets[vnic.subnet_id]
+          nsg_ids          = distinct([for ref in vnic.nsg_ids : local.nsgs[ref]])
+          assign_public_ip = false # GVA VNICs must remain private.
+        }
       ) }
       force_node_action    = false
       node_cycling_enabled = pool.node_cycling_enabled

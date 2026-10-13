@@ -189,7 +189,6 @@ variable "workers_configuration" {
         ip_count               = optional(number, 16)
         nsg_ids                = optional(list(string), [])
         skip_source_dest_check = optional(bool, true)
-        assign_public_ip       = optional(bool, false)
         defined_tags           = optional(map(string))
         freeform_tags          = optional(map(string))
       })), {})

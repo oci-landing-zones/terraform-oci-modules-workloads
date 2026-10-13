@@ -267,9 +267,9 @@ and required network/IAM configuration remain deployment prerequisites owned by
 the Landing Zone. The wrapper does not install Multus or create Kubernetes network
 attachments. See [OCI GVA documentation](https://docs.oracle.com/en-us/iaas/Content/ContEng/Tasks/contengAttaching_Multiple_VNICs.htm).
 
-The schema also exposes upstream's optional `display_name`, `assign_public_ip`,
+The schema also exposes upstream's optional `display_name`,
 `skip_source_dest_check`, and VNIC `defined_tags`/`freeform_tags`.
-Public IP assignment defaults to false;
+GVA public IP assignment is always disabled and cannot be configured;
 source/destination-check skipping defaults to true, matching upstream.
 The plan checker detects ignored GVA defined-tag changes as well as pool tags.
 
