@@ -86,7 +86,7 @@ def main():
         subject = base / 'subject'
         shutil.copytree(ROOT, subject, ignore=shutil.ignore_patterns('.terraform*', 'tests', 'design', '*.tfstate*'))
         upstream = ROOT / '.terraform/modules/cluster'
-        assert (upstream / 'data-images.tf').exists(), 'Run Terraform init in cis-oke first'
+        assert (upstream / 'data-images.tf').exists(), 'Run Terraform init in cis-oke-v2 first'
         shutil.copytree(upstream, base / 'upstream')
         for file in subject.glob('*.tf'):
             file.write_text(file.read_text().replace('git::https://github.com/oracle-terraform-modules/terraform-oci-oke.git?ref=v5.5.1', '../upstream'))

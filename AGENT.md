@@ -63,11 +63,11 @@ related prerequisites; explicitly disable upstream creation of those resources.
 
 ## Working guidance
 
-Read [the refactoring plan](cis-oke/REFACTORING_PLAN.md) before implementation.
-Read [the initial feasibility assessment](cis-oke/FEASIBILITY.md) for the proposed
+Read [the refactoring plan](cis-oke-v2/REFACTORING_PLAN.md) before implementation.
+Read [the initial feasibility assessment](cis-oke-v2/FEASIBILITY.md) for the proposed
 input changes, preserved validation inventory, and confirmed upstream gaps.
-The contract has been promoted into `cis-oke/variables.tf` and the provider-free
-`cis-oke/modules/configuration` module. The production wrapper now calls official
+The contract has been promoted into `cis-oke-v2/variables.tf` and the provider-free
+`cis-oke-v2/modules/configuration` module. The production wrapper now calls official
 upstream submodules. Read the current README and MIGRATION.md; earlier feasibility
 notes record the design history and are not the current implementation status.
 Keep findings and open decisions distinct from maintainer requirements. Validate
@@ -150,3 +150,12 @@ customer commands; never experiment on customer state.
 - Legacy conversion requires a single cluster, materializes its defaults and validates pool ownership. Reject multi-cluster conversion unless a separately reviewed fan-out migration is supplied.
 
 - Enforce IMDSv2-only for all managed nodes through node_metadata.areLegacyImdsEndpointsDisabled = "true". No opt-out; reject conflicting input metadata. Preserve custom metadata/cloud-init. Existing nodes require replacement/cycling, not just a pool update.
+
+## Dual-module release strategy (2026-10-13; supersedes path guidance above)
+
+- Keep `cis-oke/` as the legacy implementation, restored byte-for-byte from v0.2.8 (d7da10394a828f225b4ac19aa5ac14a9838b75ac), including its examples and provider requirements. Do not apply the refactor requirements above to legacy.
+- Develop the official-upstream wrapper in `cis-oke-v2/`. The v2 suffix identifies the module generation, independently of repository release numbering.
+- Legacy receives security, critical bug and compatibility fixes; feature development belongs in v2. Review and validate fixes independently for each module.
+- Existing consumers retain the legacy source path and input/output contracts. Opting into v2 requires explicit source, input and state migration; never silently reroute legacy calls.
+- Keep the orchestrator unchanged in this task. Both implementations ship together; no legacy toggle inside the new module.
+- See OKE_VERSIONS.md for source selection, maintenance and verification.

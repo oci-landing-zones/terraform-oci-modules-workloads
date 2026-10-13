@@ -1,215 +1,174 @@
-# Copyright (c) 2026 Oracle and/or its affiliates.
-# Licensed under the Universal Permissive License v1.0.
+# Copyright (c) 2023, Oracle and/or its affiliates. All rights reserved.
+# Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
-variable "cluster_configuration" {
-  description = "One enhanced cluster. All worker pools in this invocation belong to it."
+variable "clusters_configuration" {
+  description = "Cluster configuration attributes."
   type = object({
-    cis_level          = optional(string, "1")
-    compartment_id     = string
-    kubernetes_version = optional(string)
-    name               = string
-    cluster_type       = optional(string, "enhanced")
-    cni_type           = optional(string, "native")
-    defined_tags       = optional(map(string))
-    freeform_tags      = optional(map(string))
-    options = optional(object({
-      kubernetes_network_config = optional(object({
-        pods_cidr     = optional(string)
-        services_cidr = optional(string)
-      }))
-      persistent_volume_config = optional(object({
-        defined_tags  = optional(map(string))
-        freeform_tags = optional(map(string))
-      }))
-      service_lb_config = optional(object({
-        defined_tags  = optional(map(string))
-        freeform_tags = optional(map(string))
-      }))
-      openid_connect = optional(object({
-        enable_discovery      = optional(bool, false)
-        enable_authentication = optional(bool, false)
-        ca_certificate        = optional(string)
-        signing_algorithms    = optional(list(string))
-        client_id             = optional(string)
-        configuration_file    = optional(string)
-        issuer_url            = optional(string)
-        required_claims       = optional(map(string))
-        username_claim        = optional(string)
-        username_prefix       = optional(string)
-        groups_claim          = optional(string)
-        groups_prefix         = optional(string)
-      }))
-    }))
+    default_compartment_id         = optional(string),      # the default compartment where all resources are defined. It's overriden by the compartment_ocid attribute within each object.
+    default_img_kms_key_id         = optional(string)       # the default KMS key to assign as the master encryption key for images. It's overriden by the img_kms_key_id attribute within each object.
+    default_kube_secret_kms_key_id = optional(string)       # the default KMS key to assign as the master encryption key for kubernetes secrets. It's overriden by the kube_secret_kms_key_id attribute within each object.
+    default_cis_level              = optional(string, "1")  # The CIS OCI Benchmark profile level. Level "1" is be practical and prudent. Level "2" is intended for environments where security is more critical than manageability and usability. Default is "1".
+    default_defined_tags           = optional(map(string)), # the default defined tags. It's overriden by the defined_tags attribute within each object.
+    default_freeform_tags          = optional(map(string)), # the default freeform tags. It's overriden by the freeform_tags attribute within each object.
 
-    networking = object({
-      vcn_id                 = string
-      api_endpoint_nsg_ids   = optional(list(string))
-      api_endpoint_subnet_id = string
-      service_lb_subnet_ids  = optional(list(string))
-    })
-    encryption = optional(object({
-      kube_secret_kms_key_id = optional(string)
-    }))
-    image_signing = optional(object({
-      image_policy_enabled = optional(bool)
-      kms_key_ids          = optional(list(string))
+    clusters = map(object({ # the clusters to manage in this configuration.
+      cis_level          = optional(string, "1")
+      compartment_id     = optional(string)            # the compartment where the cluster is created. default_compartment_ocid is used if this is not defined.
+      kubernetes_version = optional(string)            # the kubernetes version. If not specified the latest version will be selected.
+      name               = string                      # the cluster display name.
+      is_enhanced        = optional(bool, false)       # if the cluster is enhanced. It is designed to work only on Native CNI. Default is false.
+      cni_type           = optional(string, "flannel") # the CNI type of the cluster. Can be either "flannel" or "native". Default is "flannel".
+      defined_tags       = optional(map(string))       # clusters defined_tags. default_defined_tags is used if this is not defined.
+      freeform_tags      = optional(map(string))       # clusters freeform_tags. default_freeform_tags is used if this is not defined.
+      options = optional(object({                      # optional attributes for the cluster.
+        add_ons = optional(object({                    # configurable cluster addons.
+          dashboard_enabled = optional(bool, false)    # if the dashboard is enabled. Default to false.
+          tiller_enabled    = optional(bool, false)    # if the tiller is enabled. Default to false.
+        }))
+        admission_controller = optional(object({     # configurable cluster admission controllers. 
+          pod_policy_enabled = optional(bool, false) # if the pod policy is enabled. Default to false.
+        }))
+        kubernetes_network_config = optional(object({ # pods and services network configuration for kubernetes.
+          pods_cidr     = optional(string)            # the CIDR block for Kubernetes pods. Optional, defaults to 10.244.0.0/16.
+          services_cidr = optional(string)            # the CIDR block for Kubernetes services. Optional, defaults to 10.96.0.0/16.
+        }))
+        persistent_volume_config = optional(object({ # configuration to be applied to block volumes created by Kubernetes Persistent Volume Claims (PVC).
+          defined_tags  = optional(map(string))      # PVC defined_tags. default_defined_tags is used if this is not defined.
+          freeform_tags = optional(map(string))      # PVC freeform_tags. default_freeform_tags is used if this is not defined.
+        }))
+        service_lb_config = optional(object({   # configuration to be applied to load balancers created by Kubernetes services
+          defined_tags  = optional(map(string)) # LB defined_tags. default_defined_tags is used if this is not defined.
+          freeform_tags = optional(map(string)) # LB freeform_tags. default_freeform_tags is used if this is not defined.
+        }))
+        openid_connect = optional(object({
+          enable_discovery      = optional(bool, false) # If OIDC Discovery is enabled to allow third-party services to access non-OCI resources. Only available for enhanced clusters. Default is false.
+          enable_authentication = optional(bool, false)
+          ca_certificate        = optional(string)
+          signing_algorithms    = optional(list(string))
+          client_id             = optional(string)
+          configuration_file    = optional(string)
+          issuer_url            = optional(string)
+          required_claims       = optional(map(string))
+          username_claim        = optional(string)
+          username_prefix       = optional(string)
+          groups_claim          = optional(string)
+          groups_prefix         = optional(string)
+        }))
+      }))
+
+      networking = object({                             # cluster networking settings.
+        vcn_id                 = string                 # the vcn where the cluster will be created.
+        is_api_endpoint_public = optional(bool)         # if the api endpoint is public. default to false.
+        api_endpoint_nsg_ids   = optional(list(string)) # the nsgs used by the api endpoint.
+        api_endpoint_subnet_id = string                 # the subnet for the api endpoint.
+        services_subnet_id     = optional(list(string)) # the subnets for the services(Load Balancers).
+      })
+      encryption = optional(object({              # encryption settings
+        kube_secret_kms_key_id = optional(string) # # the KMS key to assign as the master encryption key for kube secrets. default_kube_secret_kms_key_id is used if this is not defined.
+      }))
+      image_signing = optional(object({
+        image_policy_enabled = optional(bool)   # whether the image verification policy is enabled. default to false.
+        img_kms_key_id       = optional(string) # the KMS key to assign as the master encryption key for images. default_img_kms_key_id is used if this is not defined.
+      }))
     }))
   })
   default = null
-
-  validation {
-    condition = var.cluster_configuration == null ? true : (
-      lower(var.cluster_configuration.cni_type) != "native" || try(var.cluster_configuration.options.kubernetes_network_config.pods_cidr, null) == null
-    )
-    error_message = "Native CNI clusters must omit options.kubernetes_network_config.pods_cidr; pod addresses come from the pod subnet."
-  }
-  validation {
-    condition     = var.cluster_configuration == null ? true : try(length(trimspace(var.cluster_configuration.compartment_id)) > 0, false)
-    error_message = "The cluster requires a nonblank compartment_id."
-  }
-  validation {
-    condition = var.cluster_configuration == null ? true : (
-      var.cluster_configuration.cluster_type == "enhanced" && contains(["native", "flannel"], lower(var.cluster_configuration.cni_type))
-    )
-    error_message = "Only enhanced clusters are supported (cluster_type must be enhanced); cni_type must be native/flannel."
-  }
-  validation {
-    condition     = var.cluster_configuration == null ? true : contains(["1", "2"], var.cluster_configuration.cis_level)
-    error_message = "Cluster CIS levels must be 1 or 2."
-  }
 }
 
 variable "workers_configuration" {
-  description = "Top-level default_* settings plus keyed worker_pools. Pool values override defaults; null inherits. See README for collection semantics."
+  description = "Worker Nodes configuration attributes"
   type = object({
+    default_cis_level           = optional(string, "1")  # the CIS OCI Benchmark profile level. Level "1" is be practical and prudent. Level "2" is intended for environments where security is more critical than manageability and usability. Default is "1".
+    default_compartment_id      = optional(string)       # the default compartment where all resources are defined. It's overriden by the compartment_ocid attribute within each object.
+    default_defined_tags        = optional(map(string)), # the default defined tags. It's overriden by the defined_tags attribute within each object.
+    default_freeform_tags       = optional(map(string)), # the default freeform tags. It's overriden by the freeform_tags attribute within each object.
+    default_ssh_public_key_path = optional(string)       # the default SSH public key path used to access the workers.
+    default_kms_key_id          = optional(string)       # the default KMS key to assign as the master encryption key. It's overriden by the kms_key_id attribute within each object.
+    default_initial_node_labels = optional(map(string))  # the default initial node labels, a list of key/value pairs to add to nodes after they join the Kubernetes cluster.
 
-    default_mode                       = optional(string)
-    default_disable_default_cloud_init = optional(bool, false)
-    # Custom MIME parts inherited by managed pools unless pool cloud_init is supplied.
-    # Same part fields and semantics as worker_pools.cloud_init (documented below).
-    default_cloud_init = optional(list(object({
-      content      = string
-      content_type = optional(string, "text/x-shellscript")
-      filename     = optional(string)
-      merge_type   = optional(string, "list(append)+dict(no_replace,recurse_list)+str(append)")
-    })), [])
-    default_kubernetes_version    = optional(string)
-    default_shape                 = optional(string)
-    default_size                  = optional(number)
-    default_ocpus                 = optional(number)
-    default_memory                = optional(number)
-    default_boot_volume_size      = optional(number)
-    default_os                    = optional(string, "Oracle Linux")
-    default_os_version            = optional(string, "9")
-    default_subnet_id             = optional(string)
-    default_nsg_ids               = optional(list(string))
-    default_pod_subnet_id         = optional(string)
-    default_pod_nsg_ids           = optional(list(string))
-    default_pv_transit_encryption = optional(bool)
-    default_volume_kms_key_id     = optional(string)
-    default_ssh_public_key        = optional(string)
-    default_defined_tags          = optional(map(string))
-    default_freeform_tags         = optional(map(string))
-    default_node_defined_tags     = optional(map(string))
-    default_node_freeform_tags    = optional(map(string))
-    default_node_labels           = optional(map(string))
-    worker_pools = optional(map(object({
-      # Supported collection paths to replace instead of merge; explicit {} / [] clears.
-      override_defaults = optional(set(string), [])
+    node_pools = optional(map(object({ # the node pools to manage in this configuration.
+      cis_level           = optional(string, "1")
+      kubernetes_version  = optional(string)      # the kubernetes version for the node pool. it cannot be 2 versions older behind of the cluster version or newer. If not specified, the version of the cluster will be selected.
+      cluster_id          = string                # the cluster where the node pool will be created.
+      compartment_id      = optional(string)      # the compartment where the node pool is created. default_compartment_ocid is used if this is not defined.
+      name                = string                # the node pool display name.
+      defined_tags        = optional(map(string)) # node pool defined_tags. default_defined_tags is used if this is not defined.
+      freeform_tags       = optional(map(string)) # node pool freeform_tags. default_freeform_tags is used if this is not defined.
+      initial_node_labels = optional(map(string)) # a list of key/value pairs to add to nodes after they join the Kubernetes cluster.
+      size                = optional(number)      # the number of nodes that should be in the node pool.
 
-      # Only node-pool (managed) and virtual-node-pool are supported.
-      mode                    = optional(string)
-      name                    = optional(string)
-      kubernetes_version      = optional(string)
-      shape                   = optional(string)
-      size                    = optional(number)
-      ocpus                   = optional(number)
-      memory                  = optional(number)
-      boot_volume_size        = optional(number)
-      image_id                = optional(string)
-      os                      = optional(string)
-      os_version              = optional(string)
-      subnet_id               = optional(string)
-      nsg_ids                 = optional(list(string))
-      pod_subnet_id           = optional(string)
-      pod_nsg_ids             = optional(list(string))
-      max_pods_per_node       = optional(number, 31)
-      placement_ads           = optional(list(number))
-      placement_fds           = optional(list(string))
-      capacity_reservation_id = optional(string)
-      pv_transit_encryption   = optional(bool)
-      volume_kms_key_id       = optional(string)
-      ssh_public_key          = optional(string)
-      defined_tags            = optional(map(string))
-      freeform_tags           = optional(map(string))
-      node_defined_tags       = optional(map(string))
-      node_freeform_tags      = optional(map(string))
-      node_labels             = optional(map(string))
-      node_metadata           = optional(map(string))
-      # Managed pools only. Null inherits the global setting; false enables default scripts.
-      disable_default_cloud_init = optional(bool)
-      # Omitted/null inherits default_cloud_init; a supplied list replaces it, [] clears it.
-      cloud_init = optional(list(object({
-        content = string
-        # MIME type selects how cloud-init processes this part. Common choices:
-        # - text/x-shellscript (default): executable script with a shebang (e.g. #!/bin/bash),
-        #   run once per instance during cloud-init's final stage.
-        # - text/cloud-config: YAML configuration (e.g. packages, write_files, runcmd);
-        #   use this for declarative node setup. Include the #cloud-config header.
-        # - text/cloud-boothook: early-boot script, run every boot; make it idempotent.
-        # - text/x-shellscript-per-boot: script run on every boot.
-        # - text/x-shellscript-per-instance: script run once for each instance identity.
-        # - text/x-shellscript-per-once: script run once, tracked by cloud-init's semaphore.
-        # Other handlers depend on the image's cloud-init version; list them on a node
-        # with: cloud-init devel make-mime --list-types. Upstream accepts text/[a-z-]+.
-        # https://docs.cloud-init.io/en/latest/explanation/format/mime.html
-        content_type = optional(string, "text/x-shellscript")
-        filename     = optional(string)
-        # MIME Merge-Type policy for cloud-config YAML, not shell-script concatenation
-        # or Terraform override_defaults. Syntax: list(options)+dict(options)+str(options).
-        # List options: append/prepend add items at the end/start; replace overwrites;
-        # no_replace retains an existing list. Choose the behavior needed for runcmd, etc.
-        # Dict options: no_replace keeps existing values; replace allows new values to win;
-        # allow_delete permits removal of keys absent from the incoming dictionary.
-        # Recursion options: recurse_dict (on by default), recurse_list (off by default;
-        # recurse_array is an alias), recurse_str (off by default) enable nested merging.
-        # String option: append concatenates strings when string merging is reached.
-        # The default below appends lists and retains existing dictionary values while
-        # allowing nested lists to merge; it also selects append for string merging.
-        # Example replacement policy: list(replace)+dict(replace)+str().
-        # A part's policy governs merging subsequent cloud-config parts; MIME order matters.
-        # https://docs.cloud-init.io/en/latest/reference/merging.html
-        merge_type = optional(string, "list(append)+dict(no_replace,recurse_list)+str(append)")
+      networking = object({                        # node pool networking settings.
+        workers_nsg_ids   = optional(list(string)) # the nsgs to be used by the nodes.
+        workers_subnet_id = string                 # the subnet for the nodes.
+        pods_subnet_id    = optional(string)       # the subnet for the pods. only applied to native CNI.
+        pods_nsg_ids      = optional(list(string)) # the nsgs to be used by the pods. only applied to native CNI.
+        max_pods_per_node = optional(number)       # the maximum number of pods per node. only applied to native CNI.
+      })
+
+      node_config_details = object({                    # the configuration of nodes in the node pool.
+        ssh_public_key_path     = optional(string)      # the SSH public key path used to access the workers. if not specified default_ssh_public_key_path will be used.
+        defined_tags            = optional(map(string)) # nodes defined_tags. default_defined_tags is used if this is not defined.
+        freeform_tags           = optional(map(string)) # nodes freeform_tags. default_freeform_tags is used if this is not defined.
+        node_metadata           = optional(map(string)) # key/value pairs to add to each underlying worker instance on launch. Cloud-init user_data must be base64-encoded.
+        image                   = optional(string)      # the image for the nodes. Can be specified as ocid or as an Oracle Linux Version. Example: "8.8". If not specified the latest Oracle Linux image will be selected.
+        node_shape              = string                # the shape of the nodes.
+        capacity_reservation_id = optional(string)      # the OCID of the compute capacity reservation in which to place the compute instance.
+        flex_shape_settings = optional(object({         # flex shape settings
+          memory = optional(number, 16)                 # the nodes memory for Flex shapes. Default is 16GB.
+          ocpus  = optional(number, 1)                  # the nodes ocpus number for Flex shapes. Default is 1.
+        }))
+        encryption = optional(object({                 # the encryption settings.
+          enable_encrypt_in_transit = optional(bool)   # whether to enable the encrypt in transit. Default is false.
+          kms_key_id                = optional(string) # the KMS key to assign as the master encryption key. default_kms_key_id is used if this is not defined.
+        }))
+        boot_volume_size = optional(number, 60)
+        placement = optional(list(object({                                   # placement settings.
+          enable_preemptible_node            = optional(bool, false)         # wether to enable preemptive node. Default is false.
+          preemptible_node_action_type       = optional(string, "TERMINATE") # The type of action to run when the instance is interrupted for eviction, default is "TERMINATE".
+          preserve_boot_volume_on_preempting = optional(bool, false)
+          availability_domain                = optional(number) # the nodes availability domain. Default is 1.
+          fault_domain                       = optional(number) # the nodes fault domain. Default is 1.
+        })))
+        node_eviction = optional(object({   # node eviction settings.
+          grace_duration = optional(number) # duration after which OKE will give up eviction of the pods on the node. Can be specified in seconds. Default is 60 minutes.
+          force_delete   = optional(bool)   # whether the nodes should be deleted if you cannot evict all the pods in grace period.
+        }))
+        node_cycling = optional(object({     # node cycling settings. Available only for Enhanced clusters.
+          enable_cycling  = optional(bool)   # whether to enable node cycling. Default is false.
+          max_surge       = optional(string) # maximum additional new compute instances that would be temporarily created and added to nodepool during the cycling nodepool process. OKE supports both integer and percentage input. Defaults to 1, Ranges from 0 to Nodepool size or 0% to 100%.
+          max_unavailable = optional(string) # maximum active nodes that would be terminated from nodepool during the cycling nodepool process. OKE supports both integer and percentage input. Defaults to 0, Ranges from 0 to Nodepool size or 0% to 100%.
+        }))
+      })
+    })), {})
+
+    virtual_node_pools = optional(map(object({
+      cluster_id                  = string                # the cluster where the virtual node pool will be created.
+      compartment_id              = optional(string)      # the compartment where the virtual node pool is created. default_compartment_ocid is used if this is not defined.
+      name                        = string                # the virtual node pool display name.
+      defined_tags                = optional(map(string)) # virtual node pool defined_tags. default_defined_tags is used if this is not defined.
+      freeform_tags               = optional(map(string)) # virtual node pool freeform_tags. default_freeform_tags is used if this is not defined.
+      virtual_nodes_defined_tags  = optional(map(string)) # defined_tags that apply to virtual nodes. default_defined_tags is used if this is not defined.
+      virtual_nodes_freeform_tags = optional(map(string)) # freeform_tags that apply to virtual nodes. default_freeform_tags is used if this is not defined.
+      initial_node_labels         = optional(map(string)) # a list of key/value pairs to add to virtual nodes after they join the Kubernetes cluster.
+      size                        = optional(number)      # the number of virtual nodes that should be in the virtual node pool.
+      pod_shape                   = string                # the shape assigned to pods. It can be one of Pod.Standard.A1.Flex, Pod.Standard.E3.Flex, Pod.Standard.E4.Flex.
+
+      networking = object({                        # virtual node pool networking settings.
+        workers_nsg_ids   = optional(list(string)) # the nsgs to be used by the virtual nodes.
+        workers_subnet_id = string                 # the subnet for the virtual nodes.
+        pods_subnet_id    = string                 # the subnet for the pods.
+        pods_nsg_ids      = optional(list(string)) # the nsgs to be used by the pods.
+      })
+
+      placement = optional(list(object({       # placement settings.
+        availability_domain = optional(number) # the virtual nodes availability domain. Default is 1.
+        fault_domain        = optional(number) # the virtual nodes fault domain. Default is 1.
       })))
-      gva_secondary_vnics = optional(map(object({
-        subnet_id              = string
-        display_name           = optional(string)
-        nic_index              = optional(number)
-        application_resources  = optional(list(string))
-        ip_count               = optional(number, 16)
-        nsg_ids                = optional(list(string), [])
-        skip_source_dest_check = optional(bool, true)
-        assign_public_ip       = optional(bool, false)
-        assign_ipv6ip          = optional(bool, false)
-        ipv6_addresses         = optional(list(string), [])
-        ipv6_cidrs             = optional(list(string), [])
-        defined_tags           = optional(map(string))
-        freeform_tags          = optional(map(string))
-      })), {})
-      eviction_grace_duration      = optional(number)
-      force_node_delete            = optional(bool)
-      node_cycling_enabled         = optional(bool)
-      node_cycling_max_surge       = optional(string)
-      node_cycling_max_unavailable = optional(string)
-      preemptible_config = optional(object({
-        enable                  = optional(bool, false)
-        is_preserve_boot_volume = optional(bool, false)
-      }))
-      # Virtual node pools only; nonempty taints are rejected for managed pools.
-      taints = optional(list(object({
-        key    = optional(string)
-        value  = optional(string)
-        effect = optional(string)
+
+      taints = optional(list(object({ # the taints will be applied to the Virtual Nodes for Kubernetes scheduling.
+        effect = optional(string)     # the effect of the pair.
+        key    = optional(string)     # the key of the pair.
+        value  = optional(string)     # the value of the pair.
       })))
     })), {})
   })
@@ -231,7 +190,7 @@ variable "module_name" {
 variable "compartments_dependency" {
   description = "A map of objects containing the externally managed compartments this module may depend on. All map objects must have the same type and must contain at least an 'id' attribute (representing the compartment OCID) of string type."
   type = map(object({
-    id = string
+    id = string # the compartment OCID
   }))
   default = null
 }
@@ -240,13 +199,13 @@ variable "network_dependency" {
   description = "An object containing the externally managed network resources this module may depend on. Supported resources are 'vcns', 'subnets', and 'network_security_groups', represented as map of objects. Each object, when defined, must have an 'id' attribute of string type set with the VCN, subnet, or NSG OCID."
   type = object({
     vcns = optional(map(object({
-      id = string
+      id = string # the VCN OCID
     })))
     subnets = optional(map(object({
-      id = string
+      id = string # the subnet OCID
     })))
     network_security_groups = optional(map(object({
-      id = string
+      id = string # the NSG OCID
     })))
   })
   default = null
@@ -255,7 +214,7 @@ variable "network_dependency" {
 variable "kms_dependency" {
   description = "A map of objects containing the externally managed encryption keys this module may depend on. All map objects must have the same type and must contain at least an 'id' attribute (representing the key OCID) of string type."
   type = map(object({
-    id = string
+    id = string # the key OCID.
   }))
   default = null
 }

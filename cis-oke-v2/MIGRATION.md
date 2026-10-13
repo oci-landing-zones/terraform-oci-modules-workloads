@@ -1,5 +1,9 @@
 # Migration to the official-upstream wrapper
 
+Migration is optional: `cis-oke/` retains the legacy implementation. This guide
+applies only when explicitly switching to `cis-oke-v2/`. Changing only the source
+path is insufficient.
+
 The refactor changes both inputs and resource addresses. A `moved` block handles
 addresses only; it does not translate configuration or prevent provider-driven
 replacements. This guide and tooling are a review workflow, not a guarantee that
@@ -57,7 +61,7 @@ some secondary-VNIC defined-tag changes, so continue using the plan checker.
 From your checkout of the workloads repository:
 
 ```sh
-python3 cis-oke/tools/migrate.py \
+python3 cis-oke-v2/tools/migrate.py \
   --config /private/path/old-inputs.json \
   --state-json /private/path/old-state.json \
   --module-address 'module.oke[0]' \
@@ -86,7 +90,8 @@ fault-domain placement must be reviewed even if no placement was written in tfva
 
 ## Verify and apply a reviewed plan
 
-1. Update the module source to this branch/release and use the converted input
+1. Change the module source subdirectory from `//cis-oke` to `//cis-oke-v2`,
+   pin the reviewed branch/release, and use the converted input
    document. Pass `providers = { oci = oci }` explicitly from the caller on
    Terraform 1.5. Review all blocked combinations before proceeding. There is no
    support for external-cluster references in this release.
@@ -98,7 +103,7 @@ fault-domain placement must be reviewed even if no placement was written in tfva
 4. Run the checker against the module scope:
 
    ```sh
-   python3 cis-oke/tools/check_plan.py /private/path/plan.json \
+   python3 cis-oke-v2/tools/check_plan.py /private/path/plan.json \
      --module-address 'module.oke[0]'
    ```
 
