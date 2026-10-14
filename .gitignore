@@ -18,3 +18,4 @@ mounting-block-volumes.txt
 **/clean-setup
 **/object-storage
 .gitlab-ci.yml
+**/__pycache__/
