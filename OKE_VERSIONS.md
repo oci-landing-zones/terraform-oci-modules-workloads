@@ -1,76 +1,74 @@
-# OKE module versions
+# OKE versions and release workflow
 
-Both module generations ship in this repository. Choose the source subdirectory
-explicitly; repository release numbers and the `v2` module generation are separate.
+The OKE module has one source directory: `cis-oke/`. Select the implementation
+through the Git ref, not a different directory.
 
-| | Legacy | New generation |
+| | Legacy | Refactored module |
 | --- | --- | --- |
-| Directory | [`cis-oke/`](cis-oke/) | [`cis-oke-v2/`](cis-oke-v2/) |
-| Implementation | Original OCI resources | Official OKE module, pinned to v5.5.1 |
+| Git ref | Pre-0.3.0 tags, such as `v0.2.9` | `release-0.3.0` for release testing |
+| Source directory | `cis-oke/` | `cis-oke/` |
+| Implementation | Original OCI resources | Official OKE module, pinned to v5.5.2 |
 | Cluster input | `clusters_configuration` | `cluster_configuration` |
 | Scope | Existing cluster/pool contracts | One enhanced private cluster per invocation |
 | Cluster output | `clusters` map | `cluster` object |
-| Maintenance | Security, critical bug and compatibility fixes | Feature development |
 
-The legacy directory, including its examples and provider constraints, is restored
-unchanged from `v0.2.8` (`d7da10394a828f225b4ac19aa5ac14a9838b75ac`). Existing
-consumers can retain their source path, configuration and Terraform resource
-addresses. Keep a tested Git ref pinned; consumers using an older release should
-still review changes between their release and v0.2.8.
-
-For example, the legacy source at its baseline release is:
+Legacy consumers can retain their tested release tag, configuration and resource
+addresses. For example:
 
 ```hcl
-source = "git::https://github.com/oci-landing-zones/terraform-oci-modules-workloads.git//cis-oke?ref=v0.2.8"
+source = "git::https://github.com/oci-landing-zones/terraform-oci-modules-workloads.git//cis-oke?ref=v0.2.9"
 ```
 
-The new module is available for testing on the feature branch once these changes
-are pushed:
+For testing the new release:
 
 ```hcl
-source = "git::https://github.com/oci-landing-zones/terraform-oci-modules-workloads.git//cis-oke-v2?ref=feat/cis-oke-v1.0.0-refactor"
+source = "git::https://github.com/oci-landing-zones/terraform-oci-modules-workloads.git//cis-oke?ref=release-0.3.0"
 ```
 
-Pin a reviewed commit for repeatable testing and a published release tag for
-production. The new module remains a release candidate, with upstream limitations
-and live migration qualification still outstanding. Its [single-cluster example](cis-oke-v2/examples/upstream-wrapper/)
-and [multiple-cluster caller example](cis-oke-v2/examples/multiple-clusters/) use
-relative sources to test this checkout. Legacy examples remain under `cis-oke/`.
-The orchestrator is unchanged and continues to use legacy.
+Pin a reviewed commit for repeatable testing. Once 0.3.0 is published, use its
+published `v0.3.0` tag for production; the release branch itself is mutable.
+The [single-cluster example](cis-oke/examples/upstream-wrapper/) and
+[multiple-cluster caller example](cis-oke/examples/multiple-clusters/) test this
+checkout. Legacy examples remain in their historical tags. The orchestrator is
+unchanged and continues to use its pinned legacy release.
 
-## Migration is opt-in
+## Upgrade existing deployments
 
-Staying on `cis-oke/` does not require migration to the new implementation. To
-adopt `cis-oke-v2/`, follow its [upgrade guidance](cis-oke-v2/README.md#upgrading-existing-deployments): translate
-inputs, review generated state moves, and inspect the saved plan before applying.
-Changing the source path alone is insufficient. Do not add a second module call
-to manage the same existing cluster; migrate its ownership deliberately.
+Moving from a legacy tag to 0.3.0 changes inputs, outputs and Terraform resource
+addresses, even though the source directory is unchanged. Follow the
+[upgrade guidance](cis-oke/README.md#upgrading-existing-deployments): translate
+inputs, review generated state moves and inspect the saved plan before applying.
+Changing only the Git ref is insufficient. Do not create another module call to
+manage the same cluster without a reviewed ownership migration.
 
-The directory split itself does not alter v2's Terraform resource addresses when
-the caller's module address is retained. Testers already using the unpublished
-refactor at `//cis-oke` must update their source to `//cis-oke-v2` and reinitialize
-before planning; the old path now selects legacy again.
+Testers of the temporary `cis-oke-v2/` layout must change their source back to
+`//cis-oke` and reinitialize. This directory-only change does not alter refactored
+resource addresses when the caller's module address remains the same.
 
-## Maintenance and validation
+## Release workflow
 
-Keep the implementations and their provider requirements independent. Review fixes
-for each generation rather than automatically applying v2 policy or API changes
-to legacy. This split creates no release tag or maintenance branch. A `release/0.2`
-branch can be cut when an independent legacy patch release is needed.
+1. Create `release-0.3.0` from current `main` (including the v0.2.9 release).
+2. Complete and validate the refactor on its feature branch.
+3. Merge the completed feature branch into `release-0.3.0` for release testing.
+4. Follow the repository's review and publication process to release 0.3.0.
 
-With Terraform 1.5.7 on PATH, validate the modules separately from the repository root:
+`release.txt` is `0.3.0`; the existing feature branch name does not set the release
+version. Creating and updating the release branch does not publish a release tag
+or merge the release into `main`. Upstream limitations and outstanding live
+qualification are documented in the module README.
+
+## Validation
+
+With Terraform 1.5.7 on PATH, run from the repository root:
 
 ```sh
 terraform -chdir=cis-oke init -backend=false
 terraform -chdir=cis-oke validate
-terraform -chdir=cis-oke-v2 init -backend=false
-terraform -chdir=cis-oke-v2 validate
-python3 cis-oke-v2/tests/test_contract.py
-python3 cis-oke-v2/tests/test_offline.py
-python3 -m unittest discover -s cis-oke-v2/tests -p test_migration.py
+python3 cis-oke/tests/test_contract.py
+python3 cis-oke/tests/test_offline.py
+python3 -m unittest discover -s cis-oke/tests -p test_migration.py
 ```
 
-The v2 tests support `TERRAFORM_BIN` for an explicit Terraform 1.5 binary. Offline
-tests use disposable data fixtures with real provider schemas; they do not apply
-resources or qualify a live migration. Validate legacy fixes against the legacy
-examples and supported provider versions separately.
+The tests support `TERRAFORM_BIN` for an explicit Terraform 1.5 binary. Offline
+tests use disposable fixtures with real provider schemas; they do not apply
+resources or qualify a live migration.

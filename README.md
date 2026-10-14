@@ -9,8 +9,8 @@ This repository contains Terraform modules for managing workload resources in OC
 The following modules are available:
 
 - [Compute](./cis-compute-storage/) - supporting Compute, Block Volumes, File Storage, Compute Clusters and Cluster Networks.
-- [OKE legacy](./cis-oke/) — existing input/output contracts and resource implementation.
-- [OKE v2](./cis-oke-v2/) — new single-cluster wrapper around the official OKE module (release candidate).
+- [OKE](./cis-oke/) — single-cluster wrapper around the official OKE module, introduced in 0.3.0.
+  Legacy users can retain a pre-0.3.0 Git tag such as `v0.2.9`.
 
 See [OKE module versions](OKE_VERSIONS.md) for source selection and migration.
 

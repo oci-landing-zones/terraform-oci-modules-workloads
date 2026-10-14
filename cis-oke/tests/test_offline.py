@@ -86,10 +86,10 @@ def main():
         subject = base / 'subject'
         shutil.copytree(ROOT, subject, ignore=shutil.ignore_patterns('.terraform*', 'tests', 'design', '*.tfstate*'))
         upstream = ROOT / '.terraform/modules/cluster'
-        assert (upstream / 'data-images.tf').exists(), 'Run Terraform init in cis-oke-v2 first'
+        assert (upstream / 'data-images.tf').exists(), 'Run Terraform init in cis-oke first'
         shutil.copytree(upstream, base / 'upstream')
         for file in subject.glob('*.tf'):
-            file.write_text(file.read_text().replace('git::https://github.com/oracle-terraform-modules/terraform-oci-oke.git?ref=v5.5.1', '../upstream'))
+            file.write_text(file.read_text().replace('git::https://github.com/oracle-terraform-modules/terraform-oci-oke.git?ref=v5.5.2', '../upstream'))
         # Reuse the installed official VCN dependency without registry lookup.
         file = base / 'upstream/module-network.tf'
         text = file.read_text().replace('source  = "oracle-terraform-modules/vcn/oci"', 'source = ' + json.dumps('../registry-vcn')).replace('  version = "4.0.0"', '')
@@ -259,6 +259,7 @@ def main():
                         if after['node_shape'].endswith('.Flex'):
                             assert after['node_shape_config'][0]['memory_in_gbs'] == 16
                         assert after['node_eviction_node_pool_settings'][0]['is_force_delete_after_grace_duration'] is False
+                        assert after['node_eviction_node_pool_settings'][0]['eviction_grace_duration'] == 'PT1H'
                         if name in ['custom cloud-init', 'global custom cloud-init']:
                             metadata = after.get('node_metadata') or {}
                             if metadata.get('user_data') is not None:
