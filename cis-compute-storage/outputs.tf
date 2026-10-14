@@ -21,6 +21,11 @@ output "secondary_vnic_attachments" {
   value       = var.enable_output ? oci_core_vnic_attachment.these : null
 }
 
+output "primary_private_ip_targets" {
+  description = "Primary private IP OCIDs keyed by <instance-key> for primary VNICs and <instance-key>.<vnic-key> for secondary VNICs. Explicit private-IP selection is reserved for a future third key segment."
+  value       = var.enable_output ? local.primary_private_ip_targets : null
+}
+
 output "secondary_private_ips" {
   description = "The secondary private IPs in all instances VNICs"
   value       = var.enable_output ? oci_core_private_ip.these : null
