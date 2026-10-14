@@ -8,7 +8,7 @@ locals {
   } }
   pool_settings = { for k, p in local.pools : k => {
     compartment_id     = local.pool_targets[k].compartment_id
-    version            = coalesce(p.kubernetes_version, local.pool_targets[k].version, "v0.0.0")
+    version            = coalesce(p.kubernetes_version, local.pool_targets[k].version)
     subnet_id          = local.subnets[p.subnet_id]
     pod_subnet_id      = p.pod_subnet_id == null ? null : local.subnets[p.pod_subnet_id]
     nsg_ids            = distinct([for ref in coalesce(p.nsg_ids, []) : local.nsgs[ref]])
@@ -19,9 +19,9 @@ locals {
     node_defined_tags  = coalesce(p.node_defined_tags, p.defined_tags, {})
     node_freeform_tags = merge(local.cislz_module_tag, coalesce(p.node_freeform_tags, p.freeform_tags, {}))
     ssh_public_key     = p.ssh_public_key
-    placement_ads      = coalesce(p.placement_ads, [1])
+    placement_ads      = p.placement_ads
     placement_fds      = p.placement_fds
-    preemptible        = coalesce(p.preemptible_config, { enable = false, is_preserve_boot_volume = false })
+    preemptible        = p.preemptible_config
   } }
 }
 

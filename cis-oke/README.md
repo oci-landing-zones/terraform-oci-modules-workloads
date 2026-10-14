@@ -63,8 +63,9 @@ compartment/network/KMS references resolve through the existing dependency maps;
 OCIDs can be supplied directly. Region selection remains the caller's OCI provider
 configuration, not a per-pool setting.
 
-Precedence is **CIS fallback < shared defaults < pool override**. Null/omitted
-fields inherit; false and zero remain explicit values. Supported maps merge by
+Precedence is **shared defaults < pool override**. Defaults are declared in
+`variables.tf`, not in an internal fallback map. Null/omitted inheritable pool
+fields use the shared values; false and zero remain explicit values. Supported maps merge by
 key (local values win), and supported set-like lists combine and deduplicate.
 Empty maps/lists retain inherited entries unless explicitly overridden.
 
@@ -101,6 +102,19 @@ capacity reservations, metadata, eviction, cycling, preemption and taints are pe
 pool. `max_pods_per_node` is per pool and defaults to 31. SSH accepts key content
 (`default_ssh_public_key` or pool `ssh_public_key`), not a filesystem-path input;
 callers may pass `file("path/to/key.pub")` themselves.
+
+The shared input defaults are `default_mode = "node-pool"`, `default_ocpus = 1`,
+`default_memory = 16`, `default_boot_volume_size = 60`, `default_os = "Oracle Linux"`,
+`default_os_version = "9"`, and `default_pv_transit_encryption = false`.
+Override these globals to set your baseline, then override individual pools as needed.
+Shape, size and subnet have no built-in default and must resolve from global or
+pool inputs. Terraform applies declared non-null defaults to omitted or null global
+values; null pool overrides inherit those effective globals.
+
+Pool-only defaults are also explicit in the input schema: `placement_ads = [1]`,
+`eviction_grace_duration = 3600`, `force_node_delete = false`,
+`node_cycling_enabled = false`, `node_cycling_max_surge = "1"`, and
+`node_cycling_max_unavailable = "0"`. Preemptible nodes are disabled by default.
 
 Memory/boot-volume sizes are GB; eviction duration is seconds.
 

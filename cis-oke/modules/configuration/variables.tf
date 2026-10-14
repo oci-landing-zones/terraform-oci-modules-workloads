@@ -83,7 +83,7 @@ variable "workers_configuration" {
   description = "Top-level default_* settings plus keyed worker_pools. Pool values override defaults; null inherits. See README for collection semantics."
   type = object({
 
-    default_mode                       = optional(string)
+    default_mode                       = optional(string, "node-pool")
     default_disable_default_cloud_init = optional(bool, false)
     # Custom MIME parts inherited by managed pools unless pool cloud_init is supplied.
     # Same part fields and semantics as worker_pools.cloud_init (documented below).
@@ -96,16 +96,16 @@ variable "workers_configuration" {
     default_kubernetes_version    = optional(string)
     default_shape                 = optional(string)
     default_size                  = optional(number)
-    default_ocpus                 = optional(number)
-    default_memory                = optional(number)
-    default_boot_volume_size      = optional(number)
+    default_ocpus                 = optional(number, 1)
+    default_memory                = optional(number, 16)
+    default_boot_volume_size      = optional(number, 60)
     default_os                    = optional(string, "Oracle Linux")
     default_os_version            = optional(string, "9")
     default_subnet_id             = optional(string)
     default_nsg_ids               = optional(list(string))
     default_pod_subnet_id         = optional(string)
     default_pod_nsg_ids           = optional(list(string))
-    default_pv_transit_encryption = optional(bool)
+    default_pv_transit_encryption = optional(bool, false)
     default_volume_kms_key_id     = optional(string)
     default_ssh_public_key        = optional(string)
     default_defined_tags          = optional(map(string))
@@ -134,7 +134,7 @@ variable "workers_configuration" {
       pod_subnet_id           = optional(string)
       pod_nsg_ids             = optional(list(string))
       max_pods_per_node       = optional(number, 31)
-      placement_ads           = optional(list(number))
+      placement_ads           = optional(list(number), [1])
       placement_fds           = optional(list(string))
       capacity_reservation_id = optional(string)
       pv_transit_encryption   = optional(bool)
@@ -192,15 +192,15 @@ variable "workers_configuration" {
         defined_tags           = optional(map(string))
         freeform_tags          = optional(map(string))
       })), {})
-      eviction_grace_duration      = optional(number)
-      force_node_delete            = optional(bool)
-      node_cycling_enabled         = optional(bool)
-      node_cycling_max_surge       = optional(string)
-      node_cycling_max_unavailable = optional(string)
+      eviction_grace_duration      = optional(number, 3600)
+      force_node_delete            = optional(bool, false)
+      node_cycling_enabled         = optional(bool, false)
+      node_cycling_max_surge       = optional(string, "1")
+      node_cycling_max_unavailable = optional(string, "0")
       preemptible_config = optional(object({
         enable                  = optional(bool, false)
         is_preserve_boot_volume = optional(bool, false)
-      }))
+      }), {})
       # Virtual node pools only; nonempty taints are rejected for managed pools.
       taints = optional(list(object({
         key    = optional(string)

@@ -1,18 +1,6 @@
 # Normalize before CIS checks and before translating to upstream inputs.
 # Null means inherit, while false, zero and empty collections are explicit values.
 locals {
-  worker_pool_fallbacks = {
-    mode                         = "node-pool"
-    ocpus                        = 1
-    memory                       = 16
-    boot_volume_size             = 60
-    os                           = "Oracle Linux"
-    eviction_grace_duration      = 3600
-    force_node_delete            = false
-    node_cycling_enabled         = false
-    node_cycling_max_surge       = "1"
-    node_cycling_max_unavailable = "0"
-  }
   worker_defaults = var.workers_configuration == null ? null : {
     for field, value in var.workers_configuration : trimprefix(field, "default_") => value if startswith(field, "default_")
   }
@@ -26,7 +14,6 @@ locals {
   inherited_worker_pools = {
     for key, pool in local.worker_pools : key => merge(
       { for field, value in pool : field => null },
-      local.worker_pool_fallbacks,
       { for field, value in local.worker_defaults : field => value if value != null },
       { for field, value in pool : field => value if value != null },
       {

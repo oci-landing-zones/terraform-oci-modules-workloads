@@ -16,6 +16,10 @@ def run(*args):
 
 def assert_preserved(source, target, path='contract', exact_empty=False):
     # Terraform object conversion can silently drop unknown fields: reject that.
+    # Input nulls may become declared optional-attribute defaults during conversion.
+    # Expected normalized output (exact_empty=True) must still match exactly.
+    if source is None and not exact_empty:
+        return
     if exact_empty and source == {}:
         assert target == {}, (path, target)
     if path.endswith('.override_defaults'):
@@ -79,6 +83,22 @@ if __name__ == '__main__':
     check('empty', {}, expected={})
     full=fixture()
     check('managed and virtual defaults', full, expected={'P':{'mode':'node-pool','os':'Oracle Linux','os_version':'9','max_pods_per_node':31,'image_type':'oke'}})
+    baseline={'mode':'node-pool','ocpus':1,'memory':16,'boot_volume_size':60,
+              'pv_transit_encryption':False,'placement_ads':[1],'eviction_grace_duration':3600,
+              'force_node_delete':False,'node_cycling_enabled':False,
+              'node_cycling_max_surge':'1','node_cycling_max_unavailable':'0',
+              'preemptible_config':{'enable':False,'is_preserve_boot_volume':False}}
+    check('declared schema defaults',full,expected={'P':baseline})
+    sizing=copy.deepcopy(full)
+    sizing['workers_configuration'].update({'default_ocpus':4,'default_memory':64,'default_boot_volume_size':100})
+    sizing['workers_configuration']['worker_pools']['P'].update({'ocpus':None,'memory':None,'boot_volume_size':None})
+    check('null pool sizing inherits global values',sizing,expected={'P':{'ocpus':4,'memory':64,'boot_volume_size':100}})
+    sizing['workers_configuration']['worker_pools']['P'].update({'ocpus':2,'memory':32,'boot_volume_size':80})
+    check('pool sizing overrides global values',sizing,expected={'P':{'ocpus':2,'memory':32,'boot_volume_size':80}})
+    for field in ('ocpus','memory','boot_volume_size'):
+        sizing['workers_configuration']['default_'+field]=None
+        sizing['workers_configuration']['worker_pools']['P'][field]=None
+    check('null globals use declared schema defaults',sizing,expected={'P':baseline})
     check('cluster only', {'cluster_configuration':full['cluster_configuration']})
     override=copy.deepcopy(full)
     override['workers_configuration'].update({'default_memory':32, 'default_node_labels':{'team':'platform','tier':'general'}, 'default_ssh_public_key':'shared'})
