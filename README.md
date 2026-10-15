@@ -7,8 +7,12 @@ Welcome to the [OCI Landing Zones (OLZ) Community](https://github.com/oci-landin
 This repository contains Terraform modules for managing workload resources in OCI (Oracle Cloud Infrastructure). By workload we mean resources that are typically deployed within a landing zone, and may trigger OCI consumption. By secure we mean they are designed to cover the key security features available in the OCI platform. When appropriate, the modules align with CIS OCI Foundations Benchmark recommendations.
 
 The following modules are available:
+
 - [Compute](./cis-compute-storage/) - supporting Compute, Block Volumes, File Storage, Compute Clusters and Cluster Networks.
-- [OKE (Oracle Kubernetes Engine)](./cis-oke/)
+- [OKE](./cis-oke/) — single-cluster wrapper around the official OKE module, introduced in 0.3.0.
+  Legacy users can retain a pre-0.3.0 Git tag such as `v0.2.9`.
+
+See [OKE module versions](OKE_VERSIONS.md) for source selection and migration.
 
 Helper modules:
 - [Platform Images](./platform-images/) - aids in finding OCI Platform images. Use it to obtain image information for provisioning a Compute instance.
