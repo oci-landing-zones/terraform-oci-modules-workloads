@@ -42,3 +42,7 @@ Run Terraform 1.5.7 init/plan, export the saved plan JSON, and run check_plan.py
 once per invocation, using e.g. `--module-address 'module.oke["platform"]'`.
 Review legacy address moves before replacing a multi-cluster module invocation;
 the single-cluster converter intentionally does not guess a fan-out mapping.
+
+The supplied `terraform.tfvars.example` demonstrates a cluster-only platform and a
+separate applications cluster with managed workers. Copy it to `terraform.tfvars`
+and replace every placeholder. Follow the [shared run instructions](../README.md).

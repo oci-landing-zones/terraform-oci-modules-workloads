@@ -29,7 +29,8 @@ Pin a reviewed commit for repeatable testing. Once 0.3.0 is published, use its
 published `v0.3.0` tag for production; the release branch itself is mutable.
 The [single-cluster example](cis-oke/examples/upstream-wrapper/) and
 [multiple-cluster caller example](cis-oke/examples/multiple-clusters/) test this
-checkout. Legacy examples remain in their historical tags. The orchestrator is
+checkout. Legacy examples are retained under [examples/legacy](cis-oke/examples/legacy/)
+with OKE calls pinned to `v0.2.9`, and remain available in historical tags. The orchestrator is
 unchanged and continues to use its pinned legacy release.
 
 ## Upgrade existing deployments

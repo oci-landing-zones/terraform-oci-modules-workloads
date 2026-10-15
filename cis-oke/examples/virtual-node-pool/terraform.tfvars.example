@@ -1,0 +1,12 @@
+# Replace every placeholder with your existing resources and an OCI-supported version.
+region             = "<region>"
+compartment_id     = "<compartment_id>"
+vcn_id             = "<vcn_id>"
+api_subnet_id      = "<api_subnet_id>"
+lb_subnet_id       = "<lb_subnet_id>"
+kubernetes_version = "<kubernetes_version>"
+api_nsg_id         = "<api_nsg_id>"
+worker_subnet_id   = "<worker_subnet_id>"
+worker_nsg_id      = "<worker_nsg_id>"
+pod_subnet_id      = "<pod_subnet_id>"
+pod_nsg_id         = "<pod_nsg_id>"

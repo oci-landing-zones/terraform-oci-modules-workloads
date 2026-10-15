@@ -35,6 +35,7 @@ cluster_configuration = {
 }
 ```
 
+The [example catalog](examples/README.md) includes current 0.3.0 and pinned legacy examples.
 Use the [single-cluster example](examples/upstream-wrapper) or the
 [multi-cluster for_each caller example](examples/multiple-clusters). Caller map
 keys determine module-instance identities; they are not CIS OKE input fields.
@@ -121,7 +122,7 @@ Memory/boot-volume sizes are GB; eviction duration is seconds.
 The full typed schema is in [variables.tf](variables.tf). Normalization is in
 [modules/configuration](modules/configuration). A [current example](examples/upstream-wrapper)
 shows the complete module call. Legacy examples remain in
-[the v0.2.9 tag](https://github.com/oci-landing-zones/terraform-oci-modules-workloads/tree/v0.2.9/cis-oke/examples). See [module selection](../OKE_VERSIONS.md)
+[examples/legacy](examples/legacy/). See [module selection](../OKE_VERSIONS.md)
 before changing an existing deployment’s source path.
 
 Clusters default to `cluster_type = "enhanced"` and `cni_type = "native"`

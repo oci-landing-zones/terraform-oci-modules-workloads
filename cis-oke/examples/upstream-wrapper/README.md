@@ -1,4 +1,4 @@
-# Official upstream wrapper example
+# Managed pools and shared defaults (0.3.0)
 
 Supply existing compartment, VCN, subnet OCIDs, region and an OCI-supported
 Kubernetes version, plus OCI provider credentials using your usual provider
@@ -19,3 +19,6 @@ virtual pool, use `mode = "virtual-node-pool"`, a supported pod shape, and a non
 `pod_nsg_ids` list. Explicit virtual fault domains remain blocked by upstream.
 
 For multiple clusters, see [the for_each caller example](../multiple-clusters).
+
+Copy `terraform.tfvars.example` to `terraform.tfvars` and replace every placeholder.
+See the [example guide](../README.md) for prerequisites and exact plan-check commands.

@@ -5,7 +5,8 @@
 1. Refactored cluster and worker provisioning around official OKE module v5.5.2, including its one-hour eviction-duration drift fix.
 2. **Breaking change:** each invocation now uses one `cluster_configuration`, shared worker defaults and keyed `worker_pools`; cluster output is singular. Only enhanced clusters with private API endpoints are supported. Managed nodes enforce IMDSv2; GVA is IPv4-only with public IP assignment disabled.
 3. Added configurable cloud-init, managed-pool GVA, collection overrides, migration tooling and plan validation. Review the [module limitations and upgrade guidance](./cis-oke/README.md#upgrading-existing-deployments) before upgrading an existing deployment.
-4. The module remains at `cis-oke/`. Legacy implementations and examples remain available through pre-0.3.0 Git tags, including `v0.2.9`; there is no separate v2 directory.
+4. Added current examples for cluster-only, managed and virtual pools, CIS level 2, GVA and multiple-cluster callers. Restored historical examples under `cis-oke/examples/legacy/`, with OKE sources pinned to `v0.2.9`.
+5. The module remains at `cis-oke/`. Legacy implementations and examples remain available through pre-0.3.0 Git tags, including `v0.2.9`; there is no separate v2 directory.
 
 # October 13, 2026 Release Notes - 0.2.9
 ## Updates in [Storage Module](./cis-compute-storage/)

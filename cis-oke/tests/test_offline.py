@@ -416,6 +416,61 @@ def main():
         workers_only=copy.deepcopy(full);workers_only.pop('cluster_configuration')
         plan('workers require the local cluster',workers_only,'Worker pools require cluster_configuration')
 
+        # Exercise the published example files and tfvars templates themselves.
+        if not os.environ.get('ONLY_CASE') or 'documented examples' in os.environ['ONLY_CASE'].split('|'):
+            credentials = (subject / 'provider_fixture.tf').read_text()
+            (subject / 'provider_fixture.tf').unlink()
+            replacements = {
+                'region':'us-ashburn-1', 'kubernetes_version':'v1.33.1',
+                'compartment_id':'ocid1.compartment.oc1..test',
+                'vcn_id':'ocid1.vcn.oc1..test', 'applications_vcn_id':'ocid1.vcn.oc1..applications',
+                'cluster_kms_key_id':'ocid1.key.oc1..cluster', 'worker_kms_key_id':'ocid1.key.oc1..worker',
+            }
+            for name in ['api','lb','worker','pod','gva','applications_api','applications_lb','applications_worker','applications_pod']:
+                replacements[name+'_subnet_id']='ocid1.subnet.oc1..'+name
+            for name in ['api','worker','pod','gva']:
+                replacements[name+'_nsg_id']='ocid1.networksecuritygroup.oc1..'+name
+            expected = {
+                'cluster-only': (1,0,0), 'upstream-wrapper': (1,2,0),
+                'virtual-node-pool': (1,0,1), 'cis-level2': (1,1,0),
+                'gva': (1,1,0), 'multiple-clusters': (2,1,0),
+            }
+            for name, counts in expected.items():
+                directory=base / ('example-'+name)
+                directory.mkdir()
+                for file in (ROOT / 'examples' / name).glob('*.tf'):
+                    content=file.read_text().replace('"../.."','"../subject"')
+                    content=re.sub(r'provider "oci" \{.*?\}', '', content, flags=re.S)
+                    (directory / file.name).write_text(content)
+                (directory / 'provider_fixture.tf').write_text(credentials)
+                template=(ROOT / 'examples' / name / 'terraform.tfvars.example').read_text()
+                for key, value in replacements.items():
+                    template=template.replace('<'+key+'>',value)
+                assert not re.search(r'<[a-z_]+>',template),name
+                (directory / 'terraform.tfvars').write_text(template)
+                command(directory,'init','-backend=false','-input=false','-no-color',f'-plugin-dir={ROOT / ".terraform/providers"}')
+                command(directory,'validate','-no-color')
+                command(directory,'plan','-input=false','-refresh=false','-no-color','-out=example.plan')
+                document=json.loads(command(directory,'show','-json','example.plan').stdout)
+                resources=[r for r in document['resource_changes'] if r['mode']=='managed' and r['type'].startswith('oci_')]
+                types=['oci_containerengine_cluster','oci_containerengine_node_pool','oci_containerengine_virtual_node_pool']
+                assert sorted(r['type'] for r in resources)==sorted(t for t,n in zip(types,counts) for _ in range(n)),name
+                prefixes=['module.oke["platform"]','module.oke["applications"]'] if name=='multiple-clusters' else ['module.oke']
+                for prefix in prefixes:
+                    assert not checker.check(document,prefix),(name,checker.check(document,prefix))
+                for resource in resources:
+                    after=resource['change']['after']
+                    if resource['type']=='oci_containerengine_cluster':
+                        assert not after['endpoint_config'][0]['is_public_ip_enabled'],name
+                        if name=='cis-level2':assert after['kms_key_id']==replacements['cluster_kms_key_id']
+                    if resource['type']=='oci_containerengine_node_pool':
+                        if name=='cis-level2':assert after['node_config_details'][0]['kms_key_id']==replacements['worker_kms_key_id']
+                        if name=='gva':
+                            details=after['secondary_vnics'][0]['create_vnic_details'][0]
+                            assert details['assign_public_ip'] is False and details['assign_ipv6ip'] is False
+                print('PASS documented example '+name,flush=True)
+            (subject / 'provider_fixture.tf').write_text(credentials)
+
         if not os.environ.get('ONLY_CASE') or 'multiple-cluster caller' in os.environ['ONLY_CASE'].split('|'):
             caller = base / 'caller'
             caller.mkdir()
