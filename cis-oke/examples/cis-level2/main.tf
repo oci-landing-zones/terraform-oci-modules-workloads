@@ -6,6 +6,7 @@ terraform {
 }
 provider "oci" { region = var.region }
 
+variable "tenancy_id" { type = string }
 variable "region" { type = string }
 variable "compartment_id" { type = string }
 variable "vcn_id" { type = string }
@@ -20,8 +21,9 @@ variable "cluster_kms_key_id" { type = string }
 variable "worker_kms_key_id" { type = string }
 
 module "oke" {
-  source    = "../.."
-  providers = { oci = oci }
+  tenancy_id = var.tenancy_id
+  source     = "../.."
+  providers  = { oci = oci }
   cluster_configuration = {
     name               = "cis-level2"
     compartment_id     = var.compartment_id

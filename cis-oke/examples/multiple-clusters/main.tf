@@ -4,6 +4,7 @@ terraform {
     oci = { source = "oracle/oci", version = ">= 8.19.0, < 9.0.0" }
   }
 }
+variable "tenancy_id" { type = string }
 variable "region" { type = string }
 # Each entry is validated by CIS OKE's concrete cluster and worker input types.
 # Any permits different optional pool settings in different cluster configurations.
@@ -13,6 +14,7 @@ variable "deployments" {
 }
 provider "oci" { region = var.region }
 module "oke" {
+  tenancy_id              = var.tenancy_id
   for_each                = var.deployments
   source                  = "../.."
   providers               = { oci = oci }

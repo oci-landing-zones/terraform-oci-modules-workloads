@@ -50,7 +50,7 @@ def fixture():
 def check(name, config, error=None, expected=None, collections=None):
     with tempfile.TemporaryDirectory(prefix='cis-oke-contract-') as tmp:
         inputs, plan = Path(tmp) / 'inputs.tfvars.json', Path(tmp) / 'plan'
-        inputs.write_text(json.dumps(config))
+        inputs.write_text(json.dumps({"tenancy_id":"ocid1.tenancy.oc1..test", **config}))
         result = run('plan', '-input=false', '-refresh=false', '-no-color', f'-var-file={inputs}', f'-out={plan}')
         if error:
             assert result.returncode != 0, f'{name}: unexpectedly accepted'
@@ -81,6 +81,10 @@ if __name__ == '__main__':
     assert version.startswith('1.5.'), version
     assert run('init', '-backend=false', '-input=false', '-no-color').returncode == 0
     check('empty', {}, expected={})
+    check('tenancy OCID preserved', {'tenancy_id':'ocid1.tenancy.oc1..test'})
+    for invalid in ['', 'COMP', 'ocid1.compartment.oc1..test']:
+        check('invalid tenancy rejected '+invalid, {'tenancy_id':invalid}, 'tenancy_id must be a tenancy OCID')
+    check('null tenancy rejected', {'tenancy_id':None}, 'required variable may not be set to null')
     full=fixture()
     check('managed and virtual defaults', full, expected={'P':{'mode':'node-pool','os':'Oracle Linux','os_version':'9','max_pods_per_node':31,'image_type':'oke'}})
     baseline={'mode':'node-pool','ocpus':1,'memory':16,'boot_volume_size':60,
@@ -234,15 +238,6 @@ if __name__ == '__main__':
     check('inherited BM shape with encryption blocked',bm,'Affected pools: P')
     bm['workers_configuration']['worker_pools']['P']['shape']='VM.Standard.E5.Flex'
     check('VM encryption accepted',bm,expected={'P':{'pv_transit_encryption':True}})
-
-    # Converter output must be accepted by the actual public Terraform schema.
-    import importlib.util
-    test_path=ROOT.parents[1]/'tests/test_migration.py'
-    spec=importlib.util.spec_from_file_location('migration_tests',test_path)
-    migration_tests=importlib.util.module_from_spec(spec);spec.loader.exec_module(migration_tests)
-    legacy,state=migration_tests.MigrationTests().fixture()
-    converted,_,_=migration_tests.migrate.convert(legacy,state,'module.oke[0]')
-    check('legacy migration emits valid single-cluster inputs',converted)
 
     for value in ['false', '', None]:
         imds=fixture()

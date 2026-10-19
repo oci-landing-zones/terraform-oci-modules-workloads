@@ -17,7 +17,8 @@ checkout. Each invocation owns one enhanced cluster with a private API endpoint.
 ### Prerequisites
 
 Use Terraform 1.5.7 and configure OCI provider authentication through your normal
-OCI configuration/environment. Supply existing compartment, VCN, subnet, NSG and
+OCI configuration/environment. Supply a plan-known `tenancy_id` independently
+of provider authentication, and existing compartment, VCN, subnet, NSG and
 (where requested) KMS key OCIDs, plus a Kubernetes version supported in your region.
 Replace every placeholder in the supplied `terraform.tfvars.example`; it is a
 configuration template, not deployable as-is. Confirm the selected shapes are
@@ -40,19 +41,11 @@ terraform init
 terraform validate
 terraform plan -out=plan.out
 terraform show -json plan.out > plan.json
-python3 ../../tools/check_plan.py plan.json --module-address module.oke
-```
-
-For `multiple-clusters`, run the checker separately for each caller instance:
-
-```sh
-python3 ../../tools/check_plan.py plan.json --module-address 'module.oke["platform"]'
-python3 ../../tools/check_plan.py plan.json --module-address 'module.oke["applications"]'
 ```
 
 Review the complete saved plan before applying it. Keep tfvars containing secrets,
 state and saved plans out of Git. These examples create new clusters; they do not
-adopt existing ones. Existing deployments need the module's [upgrade procedure](../README.md#upgrading-existing-deployments), including reviewed state moves.
+adopt existing ones. Existing deployments should retain their tested legacy Git tag; no in-place upgrade is supplied.
 
 For remote consumption, replace the relative source with
 `git::https://github.com/oci-landing-zones/terraform-oci-modules-workloads.git//cis-oke?ref=release-0.3.0`

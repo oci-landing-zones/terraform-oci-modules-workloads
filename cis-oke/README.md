@@ -1,7 +1,7 @@
 # CIS OKE: Landing Zone wrapper for the official OKE module
 
 The `cis-oke/` directory implements the 0.3.0 refactor using only official upstream
-code. It is an implementation candidate, **not yet a release-qualified migration**.
+code. It is a release candidate for new deployments.
 Cluster and worker provisioning uses the official OKE root module
 pinned to release `v5.5.2` (the latest official release verified
 on 2026-10-14; commit `cbf5c71e33b0d804befac54b7dbb1d83a56ea090`).
@@ -24,6 +24,7 @@ external-cluster calls are rejected. Null cluster input permits a disabled/no-op
 invocation, but cannot be combined with nonempty worker pools.
 
 ```hcl
+tenancy_id = "ocid1.tenancy.oc1..<tenancy-id>"
 cluster_configuration = {
   name = "platform"
   compartment_id = "COMPARTMENT-KEY"
@@ -170,18 +171,25 @@ Version skew is compared numerically by major/minor, avoiding dependence on OCI
 list ordering. Upstream handles image selection and its failure diagnostics.
 The default OS is Oracle Linux 9; image type is inferred from a pool image ID.
 An explicit image ID is passed to upstream as custom, without requiring membership
-in the OKE catalog. Migration pins deployed images rather than selecting new ones.
+in the OKE catalog.
+
+## Tenancy and newly created compartments
+
+Supply the required top-level `tenancy_id` as a tenancy OCID known at plan time,
+independently of the workload compartment. Upstream uses it to discover regional
+availability domains. A compartment dependency ID may be unknown until apply, so
+compartment and OKE resources can be created in a single plan. Provider
+authentication settings do not automatically populate module inputs.
 
 ## Explicit upstream limitations
 
-The maintainer selected **official upstream only**. The following cases are blocked by wrapper validation or the migration converter
+The maintainer selected **official upstream only**. The following cases are blocked by wrapper validation
 pending official upstream support:
 
 - Missing or multiple service load-balancer subnets; upstream needs exactly one.
 - Different tags on a pool and its nodes.
-- Heterogeneous legacy per-AD settings: the flat upstream schema cannot express
-  them, so the migration converter refuses those mappings. Duplicate AD entries
-  are rejected.
+- Heterogeneous per-AD settings: the flat upstream schema cannot express
+  them. Duplicate AD entries are rejected.
 - Duplicate virtual taint keys.
 - Explicit virtual fault-domain placement. The pinned upstream lookup uses AD
   names against a numerically keyed map and falls back to `FD-*` rather than OCI's
@@ -196,17 +204,14 @@ pending official upstream support:
 - Duplicate pool names within a cluster.
 - A nonempty set of pools whose total size is zero: upstream suppresses detailed
   pool outputs in that case, so the wrapper cannot preserve its output contract.
-- An omitted pool size; migrate the deployed size instead of accepting a new
-  zero-size default.
+- An omitted pool size; specify a pool size or a global default size.
 
 Upstream ignores some subsequent changes to cluster defined tags/network CIDRs
 and pool names/tags/placements. Terraform alone may therefore report a successful
-no-op for a desired change. **Run [check_plan.py](tools/check_plan.py) on every
-saved migration/update plan before apply.** It rejects destructive OKE changes,
-unexpected OCI resource ownership and detectable ignored tag/placement/CIDR
-updates, including AD numbers that upstream filtered out as unavailable. It does not replace review of all provider diffs or qualify live OCI
-migration. Unsupported ignored updates remain a release blocker; no claim is made
-that the parent module can override an upstream lifecycle block.
+no-op for a desired change. Review both the requested configuration and the saved
+plan before updates: a successful plan does not prove that ignored fields will
+change. The wrapper cannot override upstream lifecycle blocks. Updating these
+ignored fields is not supported by this wrapper.
 
 Upstream also adds tracking tags, labels and metadata, including state/pool
 identity. These are observable differences to review. Upstream default cloud-init
@@ -286,7 +291,7 @@ The schema also exposes upstream's optional `display_name`,
 `skip_source_dest_check`, and VNIC `defined_tags`/`freeform_tags`.
 GVA public IP assignment is always disabled and cannot be configured;
 source/destination-check skipping defaults to true, matching upstream.
-The plan checker detects ignored GVA defined-tag changes as well as pool tags.
+Upstream also ignores subsequent GVA defined-tag changes.
 
 ## Outputs and dependencies
 
@@ -323,42 +328,27 @@ permissions. No deployment credentials are stored in this repository.
   AD/FD discovery uses real HTTP data sources against a loopback fixture, preserving
   deferred-read and unknown-key behavior. A negative control restores the former
   module-wide dependency and must reproduce the invalid-for_each error.
-- Migration-tool and plan-checker tests verify mapping, ambiguity/orphan detection,
-  preserved deployed selections and ignored/destructive update rejection.
 
 ```sh
 terraform init -backend=false
 terraform validate
 TERRAFORM_BIN=/path/to/terraform-1.5.7 python3 tests/test_contract.py
 TERRAFORM_BIN=/path/to/terraform-1.5.7 python3 tests/test_offline.py
-python3 -m unittest discover -s tests -p test_migration.py
 ```
 
-A read-only, empty-state OCI-backed plan succeeded on 2026-09-21 with Terraform
-1.5.7 and OCI provider 8.29.0: enhanced/native CIS1, one E5 Flex managed pool,
-existing compartment/network dependencies. This was repeated successfully with the
-flat single-cluster API. It planned six additions (cluster,
-node pool, three validation resources and upstream random state ID), with no
-changes/deletions, and passed the plan checker. No targeting or staged apply was
-used. A separate v0.2.8 native CIS1 managed-pool migration subsequently preserved
-cluster, pool, instance and Kubernetes node identities, with healthy system pods.
-Full historical-release coverage and virtual-pool live migration remain unqualified.
-That follow-up plan exposed eviction-duration formatting drift (`PT1H` versus `PT60M`).
-Upstream v5.5.2 fixes the one-hour representation; offline plans verify `PT1H`.
+Offline tests verify provisioning plans and validation with Terraform 1.5.7.
+They also verify a new compartment whose ID is unknown until apply, including
+negative controls for subnet selection and availability-domain discovery. They
+do not apply resources or qualify live OCI behavior. Upstream v5.5.2 fixes the
+one-hour eviction-duration representation; offline plans verify `PT1H`.
 
 ### Upgrading existing deployments
 
-The source directory remains `cis-oke/`. Legacy users can remain on a pre-0.3.0
-Git tag such as `v0.2.9`. Upgrading to 0.3.0 is a breaking change to inputs,
-outputs and Terraform resource addresses.
-Do not upgrade by changing the module version alone. Back up state, obtain a clean
-legacy plan, pin deployed images/settings and review the unsupported combinations
-above. Use `tools/migrate.py --help` for legacy conversion and address-move review
-artifacts, and `tools/check_plan.py --help` to validate a saved plan. Multiple
-clusters require separate module invocations and reviewed per-resource moves.
-Stop on unexpected replacement, deletion or cycling; verify identities and health
-after applying. Upstream-ignored pool tags may require a separately reviewed legacy
-tag update. Existing workers need separate controlled cycling to adopt IMDSv2.
+Existing deployments should remain pinned to their tested pre-0.3.0 Git tag,
+such as `v0.2.9`. Version 0.3.0 is for new deployments; it changes inputs, outputs
+and Terraform resource addresses. No in-place upgrade procedure, input converter
+or state migration tooling is supplied. Changing only the Git ref is not a
+supported upgrade, and a new module call must not manage an existing cluster.
 
 Bare-metal (`BM.*`) shapes cannot enable `pv_transit_encryption`. This is a blocking
 validation after global defaults and pool overrides are resolved. Use a supported

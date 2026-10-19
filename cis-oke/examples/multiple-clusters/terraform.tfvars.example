@@ -1,3 +1,4 @@
+tenancy_id = "<tenancy_id>"
 region = "<region>"
 deployments = {
   platform = {

@@ -1,3 +1,4 @@
+tenancy_id = "<tenancy_id>"
 # Replace every placeholder with your existing resources and an OCI-supported version.
 region             = "<region>"
 compartment_id     = "<compartment_id>"

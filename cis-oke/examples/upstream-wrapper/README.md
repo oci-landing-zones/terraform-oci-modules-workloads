@@ -9,9 +9,8 @@ It creates no networking or IAM. Required network rules, routes and IAM policies
 must already exist. For CIS level 2, set the cluster CIS level (all pools inherit it) and supply
 existing KMS keys using the main module's inputs.
 
-Read the module's [limitations and upgrade guidance](../../README.md).
-Run Terraform 1.5.7 init/plan, save the plan, inspect its JSON with
-`tools/check_plan.py --module-address module.oke`, and review it before apply.
+Read the module's [limitations and version guidance](../../README.md).
+Run Terraform 1.5.7 init/plan, save the plan, and review it before apply.
 No existing cluster is implicitly adopted by this example.
 
 Worker-only deployments and external-cluster references are unsupported. For a
@@ -21,4 +20,4 @@ virtual pool, use `mode = "virtual-node-pool"`, a supported pod shape, and a non
 For multiple clusters, see [the for_each caller example](../multiple-clusters).
 
 Copy `terraform.tfvars.example` to `terraform.tfvars` and replace every placeholder.
-See the [example guide](../README.md) for prerequisites and exact plan-check commands.
+See the [example guide](../README.md) for prerequisites and plan commands.

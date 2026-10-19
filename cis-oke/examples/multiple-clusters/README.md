@@ -38,10 +38,9 @@ apply; use separate stacks for independent lifecycle management. All entries use
 the configured region. This example creates no networking or IAM and does not
 modify the Landing Zone orchestrator.
 
-Run Terraform 1.5.7 init/plan, export the saved plan JSON, and run check_plan.py
-once per invocation, using e.g. `--module-address 'module.oke["platform"]'`.
-Review legacy address moves before replacing a multi-cluster module invocation;
-the single-cluster converter intentionally does not guess a fan-out mapping.
+Supply a plan-known `tenancy_id` shared by all invocations. Run Terraform 1.5.7
+init/plan and review the saved plan before applying. These are new deployments;
+existing deployments should remain on their tested legacy tag.
 
 The supplied `terraform.tfvars.example` demonstrates a cluster-only platform and a
 separate applications cluster with managed workers. Copy it to `terraform.tfvars`

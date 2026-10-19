@@ -3,7 +3,7 @@
 OCI data sources are substituted in a disposable copy. AD/FD discovery uses real
 HTTP data reads against a local fixture to preserve dependency behavior. Providers and OCI
 resource schemas are real; no apply or real OCI request is performed. This tests
-Terraform wiring, not live OCI reconciliation or replacement-free migration.
+Terraform wiring, not live OCI reconciliation.
 """
 import copy
 import base64
@@ -11,7 +11,6 @@ import gzip
 import atexit
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import threading
-import importlib.util
 import json
 import os
 from pathlib import Path
@@ -22,9 +21,6 @@ import tempfile
 
 ROOT = Path(__file__).resolve().parents[1]
 TF = os.environ.get('TERRAFORM_BIN', 'terraform')
-spec = importlib.util.spec_from_file_location('check_plan', ROOT / 'tools/check_plan.py')
-checker = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(checker)
 
 
 def command(directory, *args, check=True):
@@ -46,6 +42,7 @@ def replace_data(directory, replacements):
 
 def config():
     return {
+        'tenancy_id': 'ocid1.tenancy.oc1..test',
         'cluster_configuration': {'compartment_id': 'COMP',
             'name': 'test-cluster', 'cluster_type': 'enhanced', 'cni_type': 'native', 'kubernetes_version': 'v1.33.1',
             'networking': {'vcn_id': 'VCN', 'api_endpoint_subnet_id': 'API', 'service_lb_subnet_ids': ['LB']},
@@ -140,7 +137,7 @@ def main():
         # Real provider data reads preserve deferred-read semantics. Do not replace
         # discovery with locals: doing so conceals unknown for_each keys on fresh plans.
         (base / 'upstream/discovery_fixture.tf').write_text(
-            'data "http" "fixture_ads" {\n url = ' + json.dumps(discovery_url) + '\n request_headers = { compartment = var.compartment_id }\n}\n')
+            'data "http" "fixture_ads" {\n url = ' + json.dumps(discovery_url) + '\n request_headers = { compartment = local.tenancy_id != "unknown" ? local.tenancy_id : local.compartment_id }\n}\n')
         workers = base / 'upstream/modules/workers'
         replace_data(workers, {
             'data.oci_identity_fault_domains.all': 'local.fixture_fds',
@@ -185,7 +182,7 @@ def main():
             if os.environ.get('ONLY_CASE') and name not in os.environ['ONLY_CASE'].split('|'):
                 return
             path = base / 'input.tfvars.json'
-            path.write_text(json.dumps({k:v for k,v in inputs.items() if k != 'expected_image'}))
+            path.write_text(json.dumps({'tenancy_id':'ocid1.tenancy.oc1..test', **{k:v for k,v in inputs.items() if k != 'expected_image'}}))
             result = command(subject, 'plan', '-input=false', '-refresh=false', '-no-color', f'-var-file={path}', f'-out={base / "plan"}', check=False)
             if expected_error:
                 assert result.returncode != 0 and expected_error in " ".join((result.stdout + result.stderr).split()), result.stdout + result.stderr
@@ -208,7 +205,6 @@ def main():
                     assert len([r for r in document.get('resource_changes', []) if r['type'] == 'cloudinit_config']) == 1
                 actual = [r['type'] for r in document.get('resource_changes', []) if r['mode'] == 'managed' and r['type'].startswith('oci_')]
                 assert sorted(actual) == sorted(resources or []), actual
-                assert not checker.check(document), checker.check(document)
                 for resource in document.get('resource_changes', []):
                     if resource['type'] == 'cloudinit_config' and name.startswith('boot defaults '):
                         parts = resource['change']['after']['part']
@@ -416,12 +412,54 @@ def main():
         workers_only=copy.deepcopy(full);workers_only.pop('cluster_configuration')
         plan('workers require the local cluster',workers_only,'Worker pools require cluster_configuration')
 
-        # Exercise the published example files and tfvars templates themselves.
+        # New compartment IDs must not make discovery keys unknown.
+        if not os.environ.get('ONLY_CASE') or 'new compartment' in os.environ['ONLY_CASE'].split('|'):
+            caller = base / 'new-compartment'
+            caller.mkdir()
+            credentials = (subject / 'provider_fixture.tf').read_text()
+            (subject / 'provider_fixture.tf').unlink()
+            (caller / 'provider_fixture.tf').write_text(credentials)
+            inputs = config()
+            inputs.pop('compartments_dependency')
+            (caller / 'inputs.json').write_text(json.dumps(inputs))
+            arguments = '\n'.join(f'  {key} = local.inputs.{key}' for key in inputs)
+            (caller / 'main.tf').write_text(
+                'terraform {\n required_providers {\n oci = { source = "oracle/oci" }\n }\n}\n'
+                'locals { inputs = jsondecode(file("inputs.json")) }\n'
+                'resource "terraform_data" "compartment" { input = "new compartment" }\n'
+                'module "oke" {\n source = "../subject"\n providers = { oci = oci }\n' + arguments +
+                '\n compartments_dependency = { COMP = { id = terraform_data.compartment.id } }\n}\n')
+            command(caller, 'init', '-backend=false', '-input=false', '-no-color', f'-plugin-dir={ROOT / ".terraform/providers"}')
+            source_file = subject / 'oke.tf'
+            original = source_file.read_text()
+            guarded = '(length(local.cluster_settings[each.key].lb_subnets) > 0 ? local.cluster_settings[each.key].lb_subnets[0] : null)'
+            assert guarded in original
+            for name, source, fails in [
+                ('known tenancy and guarded subnet', original, False),
+                ('unguarded subnet negative control', original.replace(guarded, 'try(local.cluster_settings[each.key].lb_subnets[0], null)'), True),
+                ('missing tenancy negative control', re.sub(r'^  tenancy_id\s+= var.tenancy_id\n', '', original, flags=re.M), True),
+            ]:
+                source_file.write_text(source)
+                result = command(caller, 'plan', '-input=false', '-refresh=false', '-no-color', '-out=new.plan', check=False)
+                if fails:
+                    assert result.returncode != 0 and 'Invalid for_each argument' in result.stdout + result.stderr, result.stdout + result.stderr
+                else:
+                    assert result.returncode == 0, result.stdout + result.stderr
+                    document = json.loads(command(caller, 'show', '-json', 'new.plan').stdout)
+                    resources = [r for r in document['resource_changes'] if r['mode'] == 'managed' and r['type'].startswith('oci_')]
+                    assert sorted(r['type'] for r in resources) == ['oci_containerengine_cluster', 'oci_containerengine_node_pool', 'oci_containerengine_virtual_node_pool']
+                    assert all(r['change']['after_unknown'].get('compartment_id') is True for r in resources)
+                    cluster = next(r for r in resources if r['type'] == 'oci_containerengine_cluster')
+                    assert cluster['change']['after']['options'][0]['service_lb_subnet_ids'] == ['ocid1.subnet.oc1..lb']
+                print('PASS new compartment: ' + name, flush=True)
+            source_file.write_text(original)
+            (subject / 'provider_fixture.tf').write_text(credentials)
+
         if not os.environ.get('ONLY_CASE') or 'documented examples' in os.environ['ONLY_CASE'].split('|'):
             credentials = (subject / 'provider_fixture.tf').read_text()
             (subject / 'provider_fixture.tf').unlink()
             replacements = {
-                'region':'us-ashburn-1', 'kubernetes_version':'v1.33.1',
+                'tenancy_id':'ocid1.tenancy.oc1..test', 'region':'us-ashburn-1', 'kubernetes_version':'v1.33.1',
                 'compartment_id':'ocid1.compartment.oc1..test',
                 'vcn_id':'ocid1.vcn.oc1..test', 'applications_vcn_id':'ocid1.vcn.oc1..applications',
                 'cluster_kms_key_id':'ocid1.key.oc1..cluster', 'worker_kms_key_id':'ocid1.key.oc1..worker',
@@ -455,9 +493,6 @@ def main():
                 resources=[r for r in document['resource_changes'] if r['mode']=='managed' and r['type'].startswith('oci_')]
                 types=['oci_containerengine_cluster','oci_containerengine_node_pool','oci_containerengine_virtual_node_pool']
                 assert sorted(r['type'] for r in resources)==sorted(t for t,n in zip(types,counts) for _ in range(n)),name
-                prefixes=['module.oke["platform"]','module.oke["applications"]'] if name=='multiple-clusters' else ['module.oke']
-                for prefix in prefixes:
-                    assert not checker.check(document,prefix),(name,checker.check(document,prefix))
                 for resource in resources:
                     after=resource['change']['after']
                     if resource['type']=='oci_containerengine_cluster':
@@ -483,7 +518,7 @@ def main():
             for key, deployment in deployments.items():
                 deployment['cluster_configuration']['name'] = key
                 deployment['network_dependency']['vcns']['VCN']['id'] = 'ocid1.vcn.oc1..' + key
-            (caller / 'input.tfvars.json').write_text(json.dumps({'region':'us-ashburn-1','deployments':deployments}))
+            (caller / 'input.tfvars.json').write_text(json.dumps({'tenancy_id':'ocid1.tenancy.oc1..test','region':'us-ashburn-1','deployments':deployments}))
             command(caller, 'init', '-backend=false', '-input=false', '-no-color', f'-plugin-dir={ROOT / ".terraform/providers"}')
             command(caller, 'plan', '-input=false', '-refresh=false', '-no-color', '-var-file=input.tfvars.json', '-out=caller.plan')
             document=json.loads(command(caller, 'show', '-json', 'caller.plan').stdout)
@@ -491,7 +526,6 @@ def main():
             assert len(resources)==6, resources
             for key in deployments:
                 prefix='module.oke['+json.dumps(key)+']'
-                assert not checker.check(document,prefix), checker.check(document,prefix)
                 own=[item for item in resources if item['address'].startswith(prefix+'.')]
                 assert sorted(item['type'] for item in own)==['oci_containerengine_cluster','oci_containerengine_node_pool','oci_containerengine_virtual_node_pool']
                 cluster=next(item for item in own if item['type']=='oci_containerengine_cluster')

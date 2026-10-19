@@ -12,7 +12,7 @@ The following modules are available:
 - [OKE](./cis-oke/) — single-cluster wrapper around the official OKE module, introduced in 0.3.0.
   Legacy users can retain a pre-0.3.0 Git tag such as `v0.2.9`.
 
-See [OKE module versions](OKE_VERSIONS.md) for source selection and migration.
+See [OKE module versions](OKE_VERSIONS.md) for source selection and legacy release guidance.
 
 Helper modules:
 - [Platform Images](./platform-images/) - aids in finding OCI Platform images. Use it to obtain image information for provisioning a Compute instance.

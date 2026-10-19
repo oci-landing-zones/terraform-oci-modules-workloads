@@ -4,6 +4,7 @@ terraform {
     oci = { source = "oracle/oci", version = ">= 8.19.0, < 9.0.0" }
   }
 }
+variable "tenancy_id" { type = string }
 variable "region" { type = string }
 variable "compartment_id" { type = string }
 variable "vcn_id" { type = string }
@@ -16,8 +17,9 @@ variable "kubernetes_version" { type = string }
 provider "oci" { region = var.region }
 
 module "oke" {
-  providers = { oci = oci }
-  source    = "../.."
+  tenancy_id = var.tenancy_id
+  providers  = { oci = oci }
+  source     = "../.."
   cluster_configuration = {
     compartment_id     = var.compartment_id
     name               = "landing-zone-oke"

@@ -103,7 +103,7 @@ module "cluster" {
   subnets = {
     for role in ["bastion", "operator", "cp", "int_lb", "pub_lb", "workers", "pods"] : role => {
       create = "never"
-      id     = role == "cp" ? local.cluster_settings[each.key].subnet_id : (role == "int_lb" ? try(local.cluster_settings[each.key].lb_subnets[0], null) : null)
+      id     = role == "cp" ? local.cluster_settings[each.key].subnet_id : (role == "int_lb" ? (length(local.cluster_settings[each.key].lb_subnets) > 0 ? local.cluster_settings[each.key].lb_subnets[0] : null) : null)
     }
   }
   nsgs                              = { for role in ["bastion", "operator", "cp", "int_lb", "pub_lb", "workers", "pods"] : role => { create = "never" } }
@@ -116,6 +116,7 @@ module "cluster" {
   worker_is_public                  = false
   for_each                          = local.clusters
   source                            = "git::https://github.com/oracle-terraform-modules/terraform-oci-oke.git?ref=v5.5.2"
+  tenancy_id                        = var.tenancy_id
   compartment_id                    = local.cluster_settings[each.key].compartment_id
   state_id                          = each.key
   cluster_name                      = each.value.name

@@ -33,14 +33,13 @@ checkout. Legacy examples are retained under [examples/legacy](cis-oke/examples/
 with OKE calls pinned to `v0.2.9`, and remain available in historical tags. The orchestrator is
 unchanged and continues to use its pinned legacy release.
 
-## Upgrade existing deployments
+## Existing deployments
 
-Moving from a legacy tag to 0.3.0 changes inputs, outputs and Terraform resource
-addresses, even though the source directory is unchanged. Follow the
-[upgrade guidance](cis-oke/README.md#upgrading-existing-deployments): translate
-inputs, review generated state moves and inspect the saved plan before applying.
-Changing only the Git ref is insufficient. Do not create another module call to
-manage the same cluster without a reviewed ownership migration.
+Existing deployments should remain pinned to their tested pre-0.3.0 Git tag,
+such as `v0.2.9`. Version 0.3.0 is for new deployments; it changes inputs, outputs
+and Terraform resource addresses. No in-place upgrade procedure, input converter
+or state migration tooling is supplied. Changing only the Git ref is not a
+supported upgrade, and a new module call must not manage an existing cluster.
 
 Testers of the temporary `cis-oke-v2/` layout must change their source back to
 `//cis-oke` and reinitialize. This directory-only change does not alter refactored
@@ -67,9 +66,8 @@ terraform -chdir=cis-oke init -backend=false
 terraform -chdir=cis-oke validate
 python3 cis-oke/tests/test_contract.py
 python3 cis-oke/tests/test_offline.py
-python3 -m unittest discover -s cis-oke/tests -p test_migration.py
 ```
 
 The tests support `TERRAFORM_BIN` for an explicit Terraform 1.5 binary. Offline
 tests use disposable fixtures with real provider schemas; they do not apply
-resources or qualify a live migration.
+resources or qualify live OCI behavior.

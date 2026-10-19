@@ -1,3 +1,4 @@
+tenancy_id = "<tenancy_id>"
 # Replace all placeholders; select a Kubernetes version supported in your region.
 region             = "<region>"
 compartment_id     = "<compartment_id>"

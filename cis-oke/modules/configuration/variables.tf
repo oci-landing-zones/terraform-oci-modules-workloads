@@ -1,6 +1,17 @@
 # Copyright (c) 2026 Oracle and/or its affiliates.
 # Licensed under the Universal Permissive License v1.0.
 
+variable "tenancy_id" {
+  description = "Tenancy OCID known at plan time, used for availability-domain discovery independently of the workload compartment."
+  type        = string
+  nullable    = false
+
+  validation {
+    condition     = can(regex("^ocid1\\.tenancy\\.[^.]+\\.\\..+$", var.tenancy_id))
+    error_message = "tenancy_id must be a tenancy OCID supplied independently of the workload compartment."
+  }
+}
+
 variable "cluster_configuration" {
   description = "One enhanced cluster. All worker pools in this invocation belong to it."
   type = object({
