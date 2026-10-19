@@ -62,12 +62,10 @@ qualification are documented in the module README.
 With Terraform 1.5.7 on PATH, run from the repository root:
 
 ```sh
+terraform -chdir=cis-oke fmt -check -recursive
 terraform -chdir=cis-oke init -backend=false
 terraform -chdir=cis-oke validate
-python3 cis-oke/tests/test_contract.py
-python3 cis-oke/tests/test_offline.py
 ```
 
-The tests support `TERRAFORM_BIN` for an explicit Terraform 1.5 binary. Offline
-tests use disposable fixtures with real provider schemas; they do not apply
-resources or qualify live OCI behavior.
+For functional validation, configure one of the current examples and review its
+Terraform plan against the intended OCI environment before applying.

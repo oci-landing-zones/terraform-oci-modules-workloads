@@ -320,27 +320,17 @@ permissions. No deployment credentials are stored in this repository.
 
 ## Verification and release status
 
-- Terraform 1.5.7 init/validate against the actual pinned upstream root module.
-- Provider-free schema/default tests against the production configuration module.
-- Offline plan scenarios use actual upstream resource code and actual OCI provider schemas,
-  substituting only OCI data-source responses in a disposable test copy. They
-  verify OKE-only resource ownership and positive/negative validation paths.
-  AD/FD discovery uses real HTTP data sources against a loopback fixture, preserving
-  deferred-read and unknown-key behavior. A negative control restores the former
-  module-wide dependency and must reproduce the invalid-for_each error.
+Use Terraform 1.5.7 to validate the module against the pinned upstream release:
 
 ```sh
+terraform fmt -check -recursive
 terraform init -backend=false
 terraform validate
-TERRAFORM_BIN=/path/to/terraform-1.5.7 python3 tests/test_contract.py
-TERRAFORM_BIN=/path/to/terraform-1.5.7 python3 tests/test_offline.py
 ```
 
-Offline tests verify provisioning plans and validation with Terraform 1.5.7.
-They also verify a new compartment whose ID is unknown until apply, including
-negative controls for subnet selection and availability-domain discovery. They
-do not apply resources or qualify live OCI behavior. Upstream v5.5.2 fixes the
-one-hour eviction-duration representation; offline plans verify `PT1H`.
+For functional validation, configure one of the [current examples](examples/README.md)
+and review its Terraform plan against the intended OCI environment before applying.
+Configuration validation alone does not verify live OCI behavior.
 
 ### Upgrading existing deployments
 
