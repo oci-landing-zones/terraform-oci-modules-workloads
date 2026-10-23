@@ -1,0 +1,45 @@
+tenancy_id = "<tenancy_id>"
+region = "<region>"
+deployments = {
+  platform = {
+    cluster_configuration = {
+      name               = "platform"
+      compartment_id     = "COMP"
+      kubernetes_version = "<kubernetes_version>"
+      networking = {
+        vcn_id                 = "VCN"
+        api_endpoint_subnet_id = "API"
+        service_lb_subnet_ids  = ["LB"]
+      }
+    }
+    compartments_dependency = { COMP = { id = "<compartment_id>" } }
+    network_dependency = {
+      vcns = { VCN = { id = "<vcn_id>" } }
+      subnets = {
+        API = { id = "<api_subnet_id>" }
+        LB  = { id = "<lb_subnet_id>" }
+      }
+    }
+  }
+  applications = {
+    cluster_configuration = {
+      name               = "applications"
+      compartment_id     = "<compartment_id>"
+      kubernetes_version = "<kubernetes_version>"
+      networking = {
+        vcn_id                 = "<applications_vcn_id>"
+        api_endpoint_subnet_id = "<applications_api_subnet_id>"
+        service_lb_subnet_ids  = ["<applications_lb_subnet_id>"]
+      }
+    }
+    workers_configuration = {
+      default_shape         = "VM.Standard.E4.Flex"
+      default_size          = 3
+      default_ocpus         = 2
+      default_memory        = 32
+      default_subnet_id     = "<applications_worker_subnet_id>"
+      default_pod_subnet_id = "<applications_pod_subnet_id>"
+      worker_pools          = { general = {} }
+    }
+  }
+}
