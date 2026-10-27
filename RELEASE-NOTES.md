@@ -1,4 +1,4 @@
-# 0.3.0 Release Notes (unreleased)
+# October 27, 2026 Release Notes - 0.3.0 
 
 ## Updates in [OKE Module](./cis-oke/)
 
@@ -8,6 +8,10 @@
 4. Require a plan-known tenancy OCID for availability-domain discovery, allowing OKE and its workload compartment to be planned together.
 4. Added current examples for cluster-only, managed and virtual pools, CIS level 2, GVA and multiple-cluster callers. Restored historical examples under `cis-oke/examples/legacy/`, with OKE sources pinned to `v0.2.9`.
 5. The module remains at `cis-oke/`. Legacy implementations and examples remain available through pre-0.3.0 Git tags, including `v0.2.9`; there is no separate v2 directory.
+
+## Breaking changes
+
+1. OKE module is replaced with a new implementation without backward compatibility. Previuos implementations and examples remain available through pre-0.3.0 Git tags
 
 # October 13, 2026 Release Notes - 0.2.9
 ## Updates in [Storage Module](./cis-compute-storage/)
