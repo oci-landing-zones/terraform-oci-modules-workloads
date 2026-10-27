@@ -1,0 +1,10 @@
+tenancy_id = "<tenancy_id>"
+# Replace all placeholders; select a Kubernetes version supported in your region.
+region             = "<region>"
+compartment_id     = "<compartment_id>"
+vcn_id             = "<vcn_id>"
+api_subnet_id      = "<api_subnet_id>"
+lb_subnet_id       = "<lb_subnet_id>"
+kubernetes_version = "<kubernetes_version>"
+worker_subnet_id   = "<worker_subnet_id>"
+pod_subnet_id      = "<pod_subnet_id>"

@@ -1,3 +1,18 @@
+# October 27, 2026 Release Notes - 0.3.0 
+
+## Updates in [OKE Module](./cis-oke/)
+
+1. Refactored cluster and worker provisioning around official OKE module v5.5.2, including its one-hour eviction-duration drift fix.
+2. **Breaking change:** each invocation now uses one `cluster_configuration`, shared worker defaults and keyed `worker_pools`; cluster output is singular. Only enhanced clusters with private API endpoints are supported. Managed nodes enforce IMDSv2; GVA is IPv4-only with public IP assignment disabled.
+3. Added configurable cloud-init, managed-pool GVA, collection overrides and input validation. Version 0.3.0 targets new deployments; existing deployments should retain their tested legacy Git tag. No migration tooling is supplied.
+4. Require a plan-known tenancy OCID for availability-domain discovery, allowing OKE and its workload compartment to be planned together.
+4. Added current examples for cluster-only, managed and virtual pools, CIS level 2, GVA and multiple-cluster callers. Restored historical examples under `cis-oke/examples/legacy/`, with OKE sources pinned to `v0.2.9`.
+5. The module remains at `cis-oke/`. Legacy implementations and examples remain available through pre-0.3.0 Git tags, including `v0.2.9`; there is no separate v2 directory.
+
+## Breaking changes
+
+1. OKE module is replaced with a new implementation without backward compatibility. Previuos implementations and examples remain available through pre-0.3.0 Git tags
+
 # October 13, 2026 Release Notes - 0.2.9
 ## Updates in [Storage Module](./cis-compute-storage/)
 1. [Issue 46](https://github.com/oci-landing-zones/terraform-oci-modules-workloads/issues/46): block volumes can now be restored from a Block Volume backup or cloned from a Block Volume or replica by setting *source.type* and *source.id*.
@@ -37,7 +52,7 @@ output "nodes" {
   value = { for k,v in module.oke.node_pools : k => v.nodes }
 }
 ```
-See [outputs.tf](./cis-oke/examples/flannel/basic/outputs.tf) for an example.
+See [outputs.tf](https://github.com/oci-landing-zones/terraform-oci-modules-workloads/blob/v0.2.9/cis-oke/examples/flannel/basic/outputs.tf) for an example.
 
 # March 5, 2026 Release Notes - 0.2.5
 ## Updates in [OKE module](./cis-oke/)
