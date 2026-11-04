@@ -7,6 +7,8 @@
 
 ## Breaking changes
 
+- A boot volume `backup_policy` must be known during planning because it determines whether an assignment exists. If it currently comes from a resource value known only after apply, supply a configuration-known policy name or obtain that value in an earlier apply. Omitted or null values still select bronze.
+
 - `none` is now reserved as a `custom_backup_policies` key, case insensitive. Rename an existing key such as `none` or `None` to a different key and update its references before upgrading. For example, replace `custom_backup_policies.none` and `backup_policy = "none"` with a key such as `external-policy` and `backup_policy = "external-policy"`. The custom policy resource key changes, so move its Terraform state address with a `moved` block or `terraform state mv` to avoid replacing that policy. Existing managed policy defaults and volume resource addresses are unchanged.
 
 # October 27, 2026 Release Notes - 0.3.0 
