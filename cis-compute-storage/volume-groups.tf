@@ -60,10 +60,10 @@ resource "oci_core_volume_backup_policy_assignment" "these_volume_groups" {
   for_each = local.volume_groups_with_backup_policies
   lifecycle {
     precondition {
-      condition     = contains(keys(local.oracle_backup_policies), lower(each.value.backup_policy))
-      error_message = "VALIDATION FAILURE in block volume ${each.key}: Invalid backup policy name \"${each.value.backup_policy}\". Unable to find backup policy."
+      condition     = contains(keys(oci_core_volume_backup_policy.custom), each.value.backup_policy)
+      error_message = "VALIDATION FAILURE in volume group ${each.key}: backup_policy must be a custom_backup_policies map key. Oracle-managed backup policies are not supported for volume groups."
     }
   }
   asset_id  = oci_core_volume_group.these[each.key].id
-  policy_id = local.oracle_backup_policies[lower(each.value.backup_policy)]
+  policy_id = oci_core_volume_backup_policy.custom[each.value.backup_policy].id
 }
