@@ -6,7 +6,7 @@ locals {
 
   custom_backup_policies = var.storage_configuration != null ? var.storage_configuration.custom_backup_policies : {}
 
-  volumes_with_backup_policies = { for k, v in(var.storage_configuration != null ? (var.storage_configuration["block_volumes"] != null ? var.storage_configuration["block_volumes"] : {}) : {}) : k => v if v.enable_backup_policy }
+  volumes_with_backup_policies = { for k, v in(var.storage_configuration != null ? (var.storage_configuration["block_volumes"] != null ? var.storage_configuration["block_volumes"] : {}) : {}) : k => v if lower(v.backup_policy) != "none" }
 
   volumes_to_replicate = { for k, v in(var.storage_configuration != null ? (var.storage_configuration["block_volumes"] != null ? var.storage_configuration["block_volumes"] : {}) : {}) : k => v if v.replication != null }
 }
@@ -15,8 +15,8 @@ resource "oci_core_volume_backup_policy" "custom" {
   for_each = local.custom_backup_policies
   lifecycle {
     precondition {
-      condition     = !contains(local.oracle_managed_backup_policy_names, lower(each.key))
-      error_message = "VALIDATION FAILURE in custom backup policy \"${each.key}\": its key conflicts with the Oracle managed backup policy \"${lower(each.key)}\". Choose a different key."
+      condition     = !contains(setunion(local.oracle_managed_backup_policy_names, toset(["none"])), lower(each.key))
+      error_message = "VALIDATION FAILURE in custom backup policy \"${each.key}\": its key conflicts with the reserved backup policy name \"${lower(each.key)}\". Choose a different key."
     }
     precondition {
       condition     = length(each.value.schedules) > 0

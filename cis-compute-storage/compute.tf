@@ -353,7 +353,7 @@ resource "oci_core_instance" "these" {
 }
 
 resource "oci_core_volume_backup_policy_assignment" "these_boot_volumes" {
-  for_each  = { for k, v in(var.instances_configuration != null ? var.instances_configuration.instances : {}) : k => v if try(v.boot_volume.enable_backup_policy, true) }
+  for_each  = { for k, v in(var.instances_configuration != null ? var.instances_configuration.instances : {}) : k => v if lower(v.boot_volume != null ? v.boot_volume.backup_policy : "bronze") != "none" }
   asset_id  = oci_core_instance.these[each.key].boot_volume_id
   policy_id = local.oracle_backup_policies[lower(each.value.boot_volume != null ? each.value.boot_volume.backup_policy : "bronze")]
 }

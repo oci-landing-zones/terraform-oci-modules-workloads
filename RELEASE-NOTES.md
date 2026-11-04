@@ -1,10 +1,13 @@
-# Unreleased - 0.3.1
+# Unreleased - 0.4.0
 
 ## Compute and Storage
 
-- Volume groups now resolve `backup_policy` from `custom_backup_policies`. OCI requires user-defined policies for volume groups; Oracle-managed policy names are rejected during planning instead of failing during apply.
+- [Issue 51](https://github.com/oci-landing-zones/terraform-oci-modules-workloads/issues/51): set `backup_policy = "none"` (case insensitive) on boot or block volumes to skip their backup-policy assignments. Omitting the value or setting it to null retains the bronze default. Removing an existing assignment preserves the volume and existing backups. For existing group members, apply removal first, then assign the group policy in a second apply.
+- Volume groups resolve `backup_policy` from `custom_backup_policies`. OCI requires user-defined policies for volume groups; Oracle-managed policy names are rejected during planning instead of failing during apply. Individual boot and block volumes still support gold, silver, and bronze.
 
-- [Issue 51](https://github.com/oci-landing-zones/terraform-oci-modules-workloads/issues/51): boot and block volumes accept `enable_backup_policy = false` to skip their backup-policy assignments, allowing member volumes to use a volume-group policy. The default remains enabled with the bronze policy. Disabling an existing assignment removes the assignment while preserving the volume and existing backups; re-enabling assigns the selected policy again.
+## Breaking changes
+
+- `none` is now reserved as a `custom_backup_policies` key, case insensitive. Rename an existing key such as `none` or `None` to a different key and update its references before upgrading. For example, replace `custom_backup_policies.none` and `backup_policy = "none"` with a key such as `external-policy` and `backup_policy = "external-policy"`. The custom policy resource key changes, so move its Terraform state address with a `moved` block or `terraform state mv` to avoid replacing that policy. Existing managed policy defaults and volume resource addresses are unchanged.
 
 # October 27, 2026 Release Notes - 0.3.0 
 
