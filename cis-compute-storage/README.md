@@ -220,9 +220,10 @@ The instances themselves are defined within the **instances** attribute, In Terr
   - **secure_boot** &ndash; (Optional) Prevents unauthorized boot loaders and operating systems from booting. Default is false. Only applicable if *platform_type* is set.
   - **measured_boot** &ndash; (Optional) enhances boot security by taking and storing measurements of boot components, such as bootloaders, drivers, and operating systems. Bare metal instances do not support Measured Boot. Default is false. Only applicable if *platform_type* is set.
   - **trusted_platform_module** &ndash; (Optional) Used to securely store boot measurements. Default is false. Only applicable if *platform_type* is set.
+  - **enable_backup_policy** &ndash; (Optional) Set to `false` to skip the boot volume backup-policy assignment. Default is `true`.
   - **backup_policy** &ndash; (Optional) The Oracle managed backup policy for the boot volume. Valid values: "gold", "silver", "bronze". Default is "bronze".
 
-Changing an existing instance to a different boot volume source is disruptive because OCI replaces the attached boot volume. Schedule downtime and keep *preserve_on_source_change* enabled unless the replaced volume can safely be deleted. For a "bootVolume" source, *encryption.kms_key_id* and *default_kms_key_id* do not re-encrypt the restored volume; CIS level 2 therefore requires the source boot volume to already use a customer-managed KMS key. The module manages the backup-policy assignment for the resulting active boot volume under the existing behavior, including the default "bronze" assignment when *backup_policy* is omitted.
+Changing an existing instance to a different boot volume source is disruptive because OCI replaces the attached boot volume. Schedule downtime and keep *preserve_on_source_change* enabled unless the replaced volume can safely be deleted. For a "bootVolume" source, *encryption.kms_key_id* and *default_kms_key_id* do not re-encrypt the restored volume; CIS level 2 therefore requires the source boot volume to already use a customer-managed KMS key. The module manages the backup-policy assignment for the resulting active boot volume under the existing behavior, including the default "bronze" assignment when *backup_policy* is omitted, unless *enable_backup_policy* is `false`.
 - **volumes_emulation_type** &ndash; (Optional) emulation type for attached storage volumes. Valid values: "paravirtualized" (default), "scsi", "iscsi", "ide", "vfio". 
 - **networking** &ndash; (Optional) Networking settings. 
   - **type** &ndash; (Optional) Emulation type for the physical network interface card (NIC). Valid values: "paravirtualized" (default), "vfio" (SR-IOV networking), "e1000" (compatible with Linux e1000 driver).
@@ -396,7 +397,10 @@ Block volumes are defined using the optional **block_volumes** attribute. In Ter
 - **source** &ndash; (Optional) The source used to populate the new volume. If omitted, the new volume is empty.
   - **type** &ndash; The source type. Valid values are "blockVolumeReplica", "volume", and "volumeBackup".
   - **id** &ndash; The OCID of the Block Volume replica, Block Volume, or Block Volume backup identified by *type*.
+- **enable_backup_policy** &ndash; (Optional) Set to `false` to skip the block volume backup-policy assignment. Default is `true`. Set this to `false` on every member volume before assigning a backup policy to its volume group.
 - **backup_policy** &ndash; (Optional) The backup policy to assign. Use an Oracle managed policy name ("gold", "silver", or "bronze", case insensitive) or the exact key of a policy in *custom_backup_policies*. Default is "bronze".
+
+Setting *enable_backup_policy* to `false` on an existing volume removes its managed policy assignment; it does not delete the volume or existing backups. Re-enabling it assigns the selected policy again. For existing group members, apply the individual assignment removal first, then assign the group policy in a second apply. The policy name is ignored while assignment is disabled.
 
 Custom Block Volume backup policies are defined using the optional **custom_backup_policies** attribute. It is a map keyed by a policy identifier that can be used by *block_volumes.*\*.*backup_policy*.
 

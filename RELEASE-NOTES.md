@@ -1,3 +1,9 @@
+# Unreleased - 0.3.1
+
+## Compute and Storage
+
+- [Issue 51](https://github.com/oci-landing-zones/terraform-oci-modules-workloads/issues/51): boot and block volumes accept `enable_backup_policy = false` to skip their backup-policy assignments, allowing member volumes to use a volume-group policy. The default remains enabled with the bronze policy. Disabling an existing assignment removes the assignment while preserving the volume and existing backups; re-enabling assigns the selected policy again.
+
 # October 27, 2026 Release Notes - 0.3.0 
 
 ## Updates in [OKE Module](./cis-oke/)
