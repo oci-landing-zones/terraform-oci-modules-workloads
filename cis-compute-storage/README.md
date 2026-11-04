@@ -400,8 +400,6 @@ Block volumes are defined using the optional **block_volumes** attribute. In Ter
 
 Setting *backup_policy* to `"none"` on an existing volume removes its managed policy assignment; it does not delete the volume or existing backups. Selecting a policy name again creates its assignment. For existing group members, apply the individual assignment removal first, then assign the group policy in a second apply.
 
-The custom policy keys `gold`, `silver`, `bronze`, and `none` are reserved, case insensitive.
-
 Custom Block Volume backup policies are defined using the optional **custom_backup_policies** attribute. It is a map keyed by a policy identifier that can be used by *block_volumes.*\*.*backup_policy*.
 
 - **compartment_id** &ndash; (Optional) The policy compartment. The *default_compartment_id* is used if undefined. This attribute accepts a literal OCID or a key in *compartments_dependency*.
