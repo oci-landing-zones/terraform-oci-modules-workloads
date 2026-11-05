@@ -49,6 +49,7 @@ variable "instances_configuration" {
         availability_domain = optional(number, 1) # the instance availability domain. Default is 1.
         fault_domain        = optional(number, 1) # the instance fault domain. Default is 1.
       }))
+      enable_boot_volume_backup_policy = optional(bool, true)               # whether to assign the boot volume backup policy. Default is true.
       boot_volume = optional(object({                                       # boot volume settings
         source_type                   = optional(string, "image")           # source used to launch or update the instance. Valid values: "image" (default) or "bootVolume" (case-insensitive).
         id                            = optional(string)                    # direct OCID of an existing boot volume. Required only when source_type is "bootVolume".
@@ -61,7 +62,7 @@ variable "instances_configuration" {
         secure_boot                   = optional(bool, false)               # prevents unauthorized boot loaders and operating systems from booting.
         measured_boot                 = optional(bool, false)               # enhances boot security by taking and storing measurements of boot components, such as bootloaders, drivers, and operating systems. Bare metal instances do not support Measured Boot.
         trusted_platform_module       = optional(bool, false)               # used to securely store boot measurements.
-        backup_policy                 = optional(string, "bronze")          # the Oracle managed backup policy. Valid values: "gold", "silver", "bronze", or "none" to skip assignment. Default is "bronze".
+        backup_policy                 = optional(string, "bronze")          # the Oracle managed backup policy. Valid values: "gold", "silver", "bronze". Default is "bronze".
       }))
       volumes_emulation_type = optional(string, "paravirtualized")    # Emulation type for attached storage volumes. Valid values: "paravirtualized" (default for platform images), "scsi", "iscsi", "ide", "vfio". Module supported values for automated attachment: "paravirtualized", "iscsi".
       networking = optional(object({                                  # networking settings
@@ -209,9 +210,10 @@ variable "storage_configuration" {
         type = string
         id   = string
       }))
-      backup_policy = optional(string, "bronze") # the Oracle managed backup policy name, a custom_backup_policies map key, or "none" to skip assignment. Default is "bronze".
-      defined_tags  = optional(map(string))      # block volume defined_tags. default_defined_tags is used if this is not defined.
-      freeform_tags = optional(map(string))      # block volume freeform_tags. default_freeform_tags is used if this is not defined.
+      enable_backup_policy = optional(bool, true)       # whether to assign the block volume backup policy. Default is true.
+      backup_policy        = optional(string, "bronze") # the Oracle managed backup policy name or a custom_backup_policies map key. Default is "bronze".
+      defined_tags         = optional(map(string))      # block volume defined_tags. default_defined_tags is used if this is not defined.
+      freeform_tags        = optional(map(string))      # block volume freeform_tags. default_freeform_tags is used if this is not defined.
     }))),
 
     file_storage = optional(object({        # file storage settings.
