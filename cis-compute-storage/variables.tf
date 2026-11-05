@@ -49,7 +49,7 @@ variable "instances_configuration" {
         availability_domain = optional(number, 1) # the instance availability domain. Default is 1.
         fault_domain        = optional(number, 1) # the instance fault domain. Default is 1.
       }))
-      enable_boot_volume_backup_policy = optional(bool, true)               # whether to assign the boot volume backup policy. Default is true.
+      enable_backup_policy = optional(bool, true)                           # whether to assign the boot volume backup policy. Default is true.
       boot_volume = optional(object({                                       # boot volume settings
         source_type                   = optional(string, "image")           # source used to launch or update the instance. Valid values: "image" (default) or "bootVolume" (case-insensitive).
         id                            = optional(string)                    # direct OCID of an existing boot volume. Required only when source_type is "bootVolume".
