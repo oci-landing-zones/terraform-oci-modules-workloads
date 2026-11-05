@@ -58,6 +58,11 @@ resource "oci_core_volume_group_backup" "these" {
 
 resource "oci_core_volume_backup_policy_assignment" "these_volume_groups" {
   for_each = local.volume_groups_with_backup_policies
+  # OCI requires individual member assignments to be removed before group assignment.
+  depends_on = [
+    oci_core_volume_backup_policy_assignment.these,
+    oci_core_volume_backup_policy_assignment.these_boot_volumes
+  ]
   lifecycle {
     precondition {
       condition     = contains(keys(oci_core_volume_backup_policy.custom), each.value.backup_policy)

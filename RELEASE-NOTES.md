@@ -2,12 +2,12 @@
 
 ## Compute and Storage
 
-- [Issue 51](https://github.com/oci-landing-zones/terraform-oci-modules-workloads/issues/51): set `backup_policy = "none"` (case insensitive) on boot or block volumes to skip their backup-policy assignments. Omitting the value or setting it to null retains the bronze default. Removing an existing assignment preserves the volume and existing backups. For existing group members, apply removal first, then assign the group policy in a second apply.
+- [Issue 51](https://github.com/oci-landing-zones/terraform-oci-modules-workloads/issues/51): set `backup_policy = "none"` (case insensitive) on boot or block volumes to skip their backup-policy assignments. Omitting the value or setting it to null retains the bronze default. Removing an existing assignment preserves the volume and existing backups. Existing group members can switch to a custom group policy in one apply: set their individual policies to `"none"` and select the group's custom policy. The module removes its managed individual assignments before assigning the group policy.
 - Volume groups resolve `backup_policy` from `custom_backup_policies`. OCI requires user-defined policies for volume groups; Oracle-managed policy names are rejected during planning instead of failing during apply. Individual boot and block volumes still support gold, silver, and bronze.
 
 ## Breaking changes
 
-- A boot volume `backup_policy` must be known during planning because it determines whether an assignment exists. If it currently comes from a resource value known only after apply, supply a configuration-known policy name or obtain that value in an earlier apply. Omitted or null values still select bronze.
+- Terraform callers that derive a boot volume `backup_policy` from a value available only after apply must now supply it before planning, because it determines whether an assignment exists. Those configurations can no longer obtain that value and create the assignment in one apply; supply a configuration-known policy name or obtain the value in an earlier apply. Literal policy values in JSON configuration already satisfy this requirement. Omitted or null values still select bronze.
 
 - `none` is now reserved as a `custom_backup_policies` key, case insensitive. Rename an existing key such as `none` or `None` to a different key and update its references before upgrading. For example, replace `custom_backup_policies.none` and `backup_policy = "none"` with a key such as `external-policy` and `backup_policy = "external-policy"`. The custom policy resource key changes, so move its Terraform state address with a `moved` block or `terraform state mv` to avoid replacing that policy. Existing managed policy defaults and volume resource addresses are unchanged.
 
