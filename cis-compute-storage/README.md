@@ -208,6 +208,7 @@ The instances themselves are defined within the **instances** attribute, In Terr
 - **placement** &ndash; (Optional) Instance placement settings.
   - **availability_domain** &ndash; (Optional) The instance availability domain. Default is 1.
   - **fault_domain** &ndash; (Optional) The instance fault domain. Default is 1.
+- **enable_backup_policy** &ndash; (Optional) Whether to assign the boot volume backup policy. Default is true, including when omitted or null. Set to false to skip assignment or remove an existing managed assignment without deleting the volume or its backups.
 - **boot_volume** &ndash; (Optional) Boot volume settings.
   - **source_type** &ndash; (Optional) Instance source type. Valid values are "image" and "bootVolume" (case-insensitive). Default is "image".
   - **id** &ndash; (Optional) Direct OCID of an existing boot volume. It is required when *source_type* is "bootVolume" and invalid for image sources. Dependency keys are not accepted. The source boot volume must be in the intended instance availability domain. Marketplace, platform, and custom image selectors must be omitted.
@@ -220,9 +221,9 @@ The instances themselves are defined within the **instances** attribute, In Terr
   - **secure_boot** &ndash; (Optional) Prevents unauthorized boot loaders and operating systems from booting. Default is false. Only applicable if *platform_type* is set.
   - **measured_boot** &ndash; (Optional) enhances boot security by taking and storing measurements of boot components, such as bootloaders, drivers, and operating systems. Bare metal instances do not support Measured Boot. Default is false. Only applicable if *platform_type* is set.
   - **trusted_platform_module** &ndash; (Optional) Used to securely store boot measurements. Default is false. Only applicable if *platform_type* is set.
-  - **backup_policy** &ndash; (Optional) The Oracle managed backup policy for the boot volume. Valid values: "gold", "silver", "bronze". Default is "bronze".
+  - **backup_policy** &ndash; (Optional) The Oracle managed backup policy for the boot volume. Valid values: "gold", "silver", "bronze" (case insensitive). Default is "bronze".
 
-Changing an existing instance to a different boot volume source is disruptive because OCI replaces the attached boot volume. Schedule downtime and keep *preserve_on_source_change* enabled unless the replaced volume can safely be deleted. For a "bootVolume" source, *encryption.kms_key_id* and *default_kms_key_id* do not re-encrypt the restored volume; CIS level 2 therefore requires the source boot volume to already use a customer-managed KMS key. The module manages the backup-policy assignment for the resulting active boot volume under the existing behavior, including the default "bronze" assignment when *backup_policy* is omitted.
+Changing an existing instance to a different boot volume source is disruptive because OCI replaces the attached boot volume. Schedule downtime and keep *preserve_on_source_change* enabled unless the replaced volume can safely be deleted. For a "bootVolume" source, *encryption.kms_key_id* and *default_kms_key_id* do not re-encrypt the restored volume; CIS level 2 therefore requires the source boot volume to already use a customer-managed KMS key. The module manages the backup-policy assignment for the resulting active boot volume, including the default "bronze" assignment when *backup_policy* is omitted, unless *enable_backup_policy* is false.
 - **volumes_emulation_type** &ndash; (Optional) emulation type for attached storage volumes. Valid values: "paravirtualized" (default), "scsi", "iscsi", "ide", "vfio". 
 - **networking** &ndash; (Optional) Networking settings. 
   - **type** &ndash; (Optional) Emulation type for the physical network interface card (NIC). Valid values: "paravirtualized" (default), "vfio" (SR-IOV networking), "e1000" (compatible with Linux e1000 driver).
@@ -396,6 +397,7 @@ Block volumes are defined using the optional **block_volumes** attribute. In Ter
 - **source** &ndash; (Optional) The source used to populate the new volume. If omitted, the new volume is empty.
   - **type** &ndash; The source type. Valid values are "blockVolumeReplica", "volume", and "volumeBackup".
   - **id** &ndash; The OCID of the Block Volume replica, Block Volume, or Block Volume backup identified by *type*.
+- **enable_backup_policy** &ndash; (Optional) Whether to assign the block volume backup policy. Default is true, including when omitted or null. Set to false to skip assignment.
 - **backup_policy** &ndash; (Optional) The backup policy to assign. Use an Oracle managed policy name ("gold", "silver", or "bronze", case insensitive) or the exact key of a policy in *custom_backup_policies*. Default is "bronze".
 
 Custom Block Volume backup policies are defined using the optional **custom_backup_policies** attribute. It is a map keyed by a policy identifier that can be used by *block_volumes.*\*.*backup_policy*.
@@ -621,7 +623,7 @@ In Terraform terms, it is a map of objects, where each object is referred by an 
 - **display_name** &ndash; (Optional) Volume group display name. *volume-group* is used if undefined.
 - **kms_key** &ndash; (Optional) The OCID of the Vault service key which is the master encryption key for the volume's cross region backups, which will be used in the destination region to encrypt the backup's encryption keys. For more information about the Vault service and encryption keys, see [Overview of Vault service](https://docs.oracle.com/en-us/iaas/Content/KeyManagement/Concepts/keyoverview.htm) and [Using Keys](https://docs.oracle.com/en-us/iaas/Content/KeyManagement/Tasks/usingkeys.htm).
 - **cluster_placement_group_id** &ndash; (Optional) The clusterPlacementGroup Id of the volume group for volume group placement.
-- **backup_policy** &ndash; (Optional) If provided, specifies the display name of the volume backup policy to assign to the newly created volume group. If omitted, no policy will be assigned. Note that a given volume or volume group can only have one backup policy assigned to it. This is used for a volume group that contains a volume without a backup policy.
+- **backup_policy** &ndash; (Optional) The exact key of a user-defined policy in *custom_backup_policies* to assign to the volume group. Member volumes must have no individual backup-policy assignments. If omitted, no policy is assigned.
 - **replication** &ndash; (Optional) The list of volume group replicas that this volume group will be enabled to have in the specified destination availability domains.
   - **availability_domain** &ndash; (Required) The availability domain of the volume group replica.
   - **kms_key** &ndash; (Optional)  The OCID of the Vault service key which is the master encryption key for the cross region volume group's replicas, which will be used in the destination region to encrypt the volume group's replicas encryption keys. For more information about the Vault service and encryption keys, see [Overview of Vault service](https://docs.oracle.com/en-us/iaas/Content/KeyManagement/Concepts/keyoverview.htm) and [Using Keys](https://docs.oracle.com/en-us/iaas/Content/KeyManagement/Tasks/usingkeys.htm).

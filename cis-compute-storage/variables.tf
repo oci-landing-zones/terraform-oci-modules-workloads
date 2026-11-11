@@ -49,6 +49,7 @@ variable "instances_configuration" {
         availability_domain = optional(number, 1) # the instance availability domain. Default is 1.
         fault_domain        = optional(number, 1) # the instance fault domain. Default is 1.
       }))
+      enable_backup_policy = optional(bool, true)                           # whether to assign the boot volume backup policy. Default is true.
       boot_volume = optional(object({                                       # boot volume settings
         source_type                   = optional(string, "image")           # source used to launch or update the instance. Valid values: "image" (default) or "bootVolume" (case-insensitive).
         id                            = optional(string)                    # direct OCID of an existing boot volume. Required only when source_type is "bootVolume".
@@ -209,9 +210,10 @@ variable "storage_configuration" {
         type = string
         id   = string
       }))
-      backup_policy = optional(string, "bronze") # the Oracle managed backup policy name or a custom_backup_policies map key. Default is "bronze".
-      defined_tags  = optional(map(string))      # block volume defined_tags. default_defined_tags is used if this is not defined.
-      freeform_tags = optional(map(string))      # block volume freeform_tags. default_freeform_tags is used if this is not defined.
+      enable_backup_policy = optional(bool, true)       # whether to assign the block volume backup policy. Default is true.
+      backup_policy        = optional(string, "bronze") # the Oracle managed backup policy name or a custom_backup_policies map key. Default is "bronze".
+      defined_tags         = optional(map(string))      # block volume defined_tags. default_defined_tags is used if this is not defined.
+      freeform_tags        = optional(map(string))      # block volume freeform_tags. default_freeform_tags is used if this is not defined.
     }))),
 
     file_storage = optional(object({        # file storage settings.

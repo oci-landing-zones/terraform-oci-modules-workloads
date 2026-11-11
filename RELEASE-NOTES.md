@@ -1,3 +1,10 @@
+# Unreleased - 0.3.1
+
+## Compute and Storage
+
+- [Issue 51](https://github.com/oci-landing-zones/terraform-oci-modules-workloads/issues/51): set `instances_configuration.instances.<key>.enable_backup_policy` or `storage_configuration.block_volumes.<key>.enable_backup_policy` to false to skip the individual backup-policy assignment. Both switches default to true, including when omitted or null. Removing an existing assignment preserves the volume and its backups. Policy names, bronze defaults and volume resource addresses retain their existing behavior; computed policy values can still resolve during apply.
+- Volume groups resolve `backup_policy` from `custom_backup_policies`. OCI requires user-defined policies for volume groups; Oracle-managed policy names are rejected during planning instead of failing during apply. Existing members managed by this module can switch to a group policy in one apply: disable their individual assignments and select the group's custom policy. The module removes its managed individual assignments before creating the group assignment.
+
 # October 27, 2026 Release Notes - 0.3.0 
 
 ## Updates in [OKE Module](./cis-oke/)
