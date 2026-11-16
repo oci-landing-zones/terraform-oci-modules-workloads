@@ -57,7 +57,7 @@ resource "terraform_data" "cluster_validation" {
     }
     precondition {
       condition     = length(local.cluster_settings[each.key].lb_subnets) == 1
-      error_message = "Cluster ${each.key}: official upstream v5.5.2 requires exactly one service_lb_subnet_ids entry. Omitted/multiple LB subnets are blocked pending upstream support."
+      error_message = "Cluster ${each.key}: official upstream v5.5.3 requires exactly one service_lb_subnet_ids entry. Omitted/multiple LB subnets are blocked pending upstream support."
     }
     precondition {
       condition     = !try(coalesce(each.value.image_signing.image_policy_enabled, false), false) || length(local.cluster_refs[each.key].signing_keys) > 0
@@ -115,7 +115,7 @@ module "cluster" {
   worker_cloud_init                 = []
   worker_is_public                  = false
   for_each                          = local.clusters
-  source                            = "git::https://github.com/oracle-terraform-modules/terraform-oci-oke.git?ref=v5.5.2"
+  source                            = "git::https://github.com/oracle-terraform-modules/terraform-oci-oke.git?ref=v5.5.3"
   tenancy_id                        = var.tenancy_id
   compartment_id                    = local.cluster_settings[each.key].compartment_id
   state_id                          = each.key

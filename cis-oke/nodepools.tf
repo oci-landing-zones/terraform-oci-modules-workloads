@@ -77,7 +77,7 @@ resource "terraform_data" "worker_validation" {
     }
     precondition {
       condition     = local.pool_settings[each.key].defined_tags == local.pool_settings[each.key].node_defined_tags && local.pool_settings[each.key].freeform_tags == local.pool_settings[each.key].node_freeform_tags
-      error_message = "Pool ${each.key}: official upstream v5.5.2 cannot apply different pool and node tags. This configuration is blocked pending upstream support."
+      error_message = "Pool ${each.key}: official upstream v5.5.3 cannot apply different pool and node tags. This configuration is blocked pending upstream support."
     }
     precondition {
       condition     = length(distinct(local.pool_settings[each.key].placement_ads)) == length(local.pool_settings[each.key].placement_ads)
