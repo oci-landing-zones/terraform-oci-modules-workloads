@@ -3,8 +3,8 @@
 The `cis-oke/` directory implements the 0.3.0 refactor using only official upstream
 code. It is a release candidate for new deployments.
 Cluster and worker provisioning uses the official OKE root module
-pinned to release `v5.5.2` (the latest official release verified
-on 2026-10-14; commit `cbf5c71e33b0d804befac54b7dbb1d83a56ea090`).
+pinned to release `v5.5.3` (the latest official release verified
+on 2026-11-16; commit `06c13df0d21df0eef45c38495fd9b2b516de77ac`).
 There is no vendored snapshot, patched provider, or duplicate OCI resource
 implementation in the wrapper.
 
@@ -198,7 +198,7 @@ pending official upstream support:
 - Empty virtual pod NSG lists; upstream's `coalescelist` path either inherits
   worker NSGs or errors when both lists are empty.
 - Different managed-pool SSH keys or transit-encryption settings within one
-  cluster: v5.5.2's effective worker implementation reads the global SSH key and
+  cluster: v5.5.3's effective worker implementation reads the global SSH key and
   recomputes transit encryption from the global flag. Equal per-pool values are
   forwarded through those globals; virtual pools are excluded from this check.
 - Duplicate pool names within a cluster.
